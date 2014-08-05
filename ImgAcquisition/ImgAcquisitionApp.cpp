@@ -42,7 +42,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	threads[0].start();
 	threads[1].start();	
 	threads[2].start();
-	threads[3].start();
+	//threads[3].start();
 	
 
 }
