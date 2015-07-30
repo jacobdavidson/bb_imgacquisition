@@ -14,10 +14,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 {
 	printBuildInfo();
 
-	checkCameras(); // when the number of cameras is insuficient it should interrupt the program
+	checkCameras(); // when the number of cameras is insufficient it should interrupt the program
 
 		
-	//one connect for each cmbination signal-slot
+	//one connect for each combination signal-slot
 	connect(&threads[0],	SIGNAL(logMessage(int, QString)),
 			this,			SLOT(logMessage(int, QString)));	
 	
@@ -42,7 +42,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	threads[0].start();
 	threads[1].start();	
 	threads[2].start();
-	//threads[3].start();
+	threads[3].start();
 	
 
 }

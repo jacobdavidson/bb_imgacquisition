@@ -139,7 +139,7 @@ bool Flea3CamThread::initCamera()
 	if ( !checkReturnCode( _Camera.GetConfiguration(&BufferFrame) ) )
 		return false;
 	// Modify a couple of parameters and send it back to the camera
-	BufferFrame.numBuffers = 40;
+	BufferFrame.numBuffers = 50;
 	BufferFrame.grabMode = BUFFER_FRAMES;
 
 	if ( !checkReturnCode( _Camera.SetConfiguration(&BufferFrame) ) )
@@ -302,14 +302,21 @@ bool Flea3CamThread::startCapture()
 //this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
-	struct	tm * timeinfo;
-	char	timeresult[15];
-	char	filename[512];
+	struct			tm * timeinfo;
+	char			timeresult[15];
+	char			filename[512];
 
 	timeresult[14] = 0;
+	/////////////////////////////////////////////
 
-	int oldTime = 0;
-	int cont = 0;
+	int				oldTime = 0;
+	unsigned int	oldTimeUs = 1000000;
+	unsigned int	difTimeStampUs;
+
+	BusManager				busMgr;
+	PGRGuid					guid;
+	////////////////////////////////////////////
+	int				cont = 0;
 
 	while (1)
 	//while (cont < 50)
@@ -332,11 +339,35 @@ void Flea3CamThread::run()
 
 		//name of the file
 		//sprintf (filename, "G:\\images\\Cam_%u\\Cam_%u_%s_%u.jpeg", _ID, _ID, timeresult, _FrameNumber);
-		sprintf (filename, "G:\\images\\Cam_%u\\Cam_%u_%s_%u.jpeg", _ID, _ID, timeresult, _LocalCounter);
+		//sprintf (filename, "G:\\images\\Cam_%u\\Cam_%u_%s_%u.jpeg", _ID, _ID, timeresult, _LocalCounter);
+		sprintf (filename, "G:\\images\\Cam_%u\\Cam_%u_%s_%06u.jpeg", _ID, _ID, timeresult, _TimeStamp.microSeconds);
 		_Image.SetColorProcessing(NO_COLOR_PROCESSING);
 		_Image.Save(filename, &_jpegConf);
-		
+				
+		//////////////////////////////////////////////
+		if (_TimeStamp.microSeconds > oldTimeUs)
+			difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs;
+		else
+			difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs + 1000000;
+	
+		generateLog("D:/logfiles/Cam_" + QString::number(_ID) + "/", timeresult + QString::number(difTimeStampUs));
+		oldTimeUs = _TimeStamp.microSeconds;
+
+		///////////////////////////////////
+
 		oldTime = timeinfo -> tm_sec;
+		
+		if (difTimeStampUs == 1000000)
+		{
+			_Camera.StopCapture();
+			_Camera.Disconnect();
+			// Gets the PGRGuid from the camera
+			busMgr.GetCameraFromIndex( _ID, &guid );
+			// Connect to camera
+			_Camera.Connect(&guid);	
+			_Camera.StartCapture();
+		}
+
 		//cont ++;		
 		//if (cont == 2400)
 		////if (cont == 10)
@@ -399,6 +430,16 @@ void Flea3CamThread::cleanFolder(QString path, QString message)
 			dir.remove(dirFile);
 		}
 	QString filename = (path + "log.txt");
+	QFile file(filename);
+	file.open(QIODevice::Append);
+	QTextStream stream(&file);
+	stream << message <<"\r\n";
+	file.close();	
+}
+
+void Flea3CamThread::generateLog(QString path, QString message)
+{	
+	QString filename = (path + "log" + message.left(8) + ".txt");
 	QFile file(filename);
 	file.open(QIODevice::Append);
 	QTextStream stream(&file);

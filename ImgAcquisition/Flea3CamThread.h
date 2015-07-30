@@ -26,6 +26,7 @@ private:
 	void				sendLogMessage			(int logLevel, QString message);
 
 	void				cleanFolder(QString path, QString message); // function to clean the folder and avoid to run out of memory
+	void				generateLog(QString path, QString message); // function to generate log file
 	void				localCounter(unsigned int oldTime, unsigned int newTime); // 
 		
 	JPEGOption			_jpegConf; //compression parameters
