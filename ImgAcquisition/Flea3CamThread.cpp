@@ -8,15 +8,18 @@
 
 #include "FlyCapture2.h"
 
+//Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread()
 {
 	initialized = false;	
 }
 
+//Flea3CamThread constructor
 Flea3CamThread::~Flea3CamThread()
 {
 
 }
+
 //this function reads the data input vector 
 bool Flea3CamThread::initialize(unsigned int id)
 {
@@ -33,6 +36,7 @@ bool Flea3CamThread::initialize(unsigned int id)
 bool Flea3CamThread::initCamera()
 {
 	
+	// SET VIDEO MODE HERE!!!
 	Format7Info				fmt7Info;
 	
 	const Mode				fmt7Mode		= MODE_10;
@@ -41,8 +45,7 @@ bool Flea3CamThread::initCamera()
 	const float				frameRate		= 4;
 
 	Format7ImageSettings	fmt7ImageSettings;
-
-	// SET VIDEO MODE HERE!!!		
+			
 	fmt7ImageSettings.mode					= fmt7Mode;
 	fmt7ImageSettings.offsetX				= 0;
 	fmt7ImageSettings.offsetY				= 0;
@@ -51,8 +54,7 @@ bool Flea3CamThread::initCamera()
 	fmt7ImageSettings.pixelFormat			= fmt7PixFmt;	
 
 	Format7PacketInfo		fmt7PacketInfo;
-	
-	
+		
 	BusManager				busMgr;
 	PGRGuid					guid;
 	CameraInfo				camInfo;
@@ -138,10 +140,11 @@ bool Flea3CamThread::initCamera()
 	// Grab the current configuration from the camera in ss_BufferFrame
 	if ( !checkReturnCode( _Camera.GetConfiguration(&BufferFrame) ) )
 		return false;
-	// Modify a couple of parameters and send it back to the camera
+	// Modify the maximum number of frames to be buffered and send it back to the camera
 	BufferFrame.numBuffers = 50;
 	BufferFrame.grabMode = BUFFER_FRAMES;
 
+	// Exits if the configuration is not supported
 	if ( !checkReturnCode( _Camera.SetConfiguration(&BufferFrame) ) )
 		return false;
 	
@@ -337,9 +340,7 @@ void Flea3CamThread::run()
 		
 		localCounter(oldTime, timeinfo -> tm_sec);
 
-		//name of the file
-		//sprintf (filename, "G:\\images\\Cam_%u\\Cam_%u_%s_%u.jpeg", _ID, _ID, timeresult, _FrameNumber);
-		//sprintf (filename, "G:\\images\\Cam_%u\\Cam_%u_%s_%u.jpeg", _ID, _ID, timeresult, _LocalCounter);
+		//name of the file		
 		sprintf (filename, "G:\\images\\Cam_%u\\Cam_%u_%s_%06u.jpeg", _ID, _ID, timeresult, _TimeStamp.microSeconds);
 		_Image.SetColorProcessing(NO_COLOR_PROCESSING);
 		_Image.Save(filename, &_jpegConf);
