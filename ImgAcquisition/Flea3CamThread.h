@@ -3,6 +3,7 @@
 
 #include <QThread>
 #include "FlyCapture2.h"
+#include "MutexRingbuffer.h"
 using namespace FlyCapture2;
 
 //inherits from Qthread
@@ -13,7 +14,7 @@ class Flea3CamThread : public QThread
 public:
 	Flea3CamThread(); //constructor
 	~Flea3CamThread(); //destructor
-	bool				initialize(unsigned int id); //here goes the camera ID (from 0 to 3)
+	bool				initialize(unsigned int id, beeCompress::MutexRingbuffer * pBuffer); //here goes the camera ID (from 0 to 3)
 	bool				initialized;
 	unsigned int		_ID; //private variable
 
@@ -38,6 +39,8 @@ private:
 	TimeStamp			_TimeStamp; //time stamp from the current frame
 
 	unsigned int		_LocalCounter; //to enumerate each image in a second
+
+	beeCompress::MutexRingbuffer *_Buffer;
 	
 protected:
 	void run(); //this is the function that will be iterated indefinitely

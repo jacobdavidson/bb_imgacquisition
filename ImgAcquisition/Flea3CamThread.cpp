@@ -7,6 +7,7 @@
 #include <qtextstream.h>
 
 #include "FlyCapture2.h"
+#include <unistd.h> //sleep
 
 //Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread()
@@ -21,49 +22,56 @@ Flea3CamThread::~Flea3CamThread()
 }
 
 //this function reads the data input vector 
-bool Flea3CamThread::initialize(unsigned int id)
+bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexRingbuffer * pBuffer)
 {
+	_Buffer 					= pBuffer;
 	_ID							= id;	
 	_jpegConf.quality			= 90;
 	_jpegConf.progressive		= false;
 
-	if ( initCamera() )
+	if ( initCamera() ){
+		std::cout << "Starting capture on camera "<< id << std::endl;
 		initialized = startCapture();
+		std::cout << "Done starting capture." << std::endl;
+	}
+	else{
+		std::cerr << "Error on camera init "<< id << std::endl;
+	}
 
 	return initialized;
 }
 
 bool Flea3CamThread::initCamera()
 {
-	
 	// SET VIDEO MODE HERE!!!
 	Format7Info				fmt7Info;
-	
+
 	const Mode				fmt7Mode		= MODE_10;
 	const PixelFormat		fmt7PixFmt		= PIXEL_FORMAT_RAW8;		
-	
-	const float				frameRate		= 4;
+
+	const float				frameRate		= 3;
 
 	Format7ImageSettings	fmt7ImageSettings;
-			
+
 	fmt7ImageSettings.mode					= fmt7Mode;
 	fmt7ImageSettings.offsetX				= 0;
 	fmt7ImageSettings.offsetY				= 0;
-	fmt7ImageSettings.width					= 4000;
-	fmt7ImageSettings.height				= 3000;
+	fmt7ImageSettings.width					= 1200;
+	fmt7ImageSettings.height				= 800;
 	fmt7ImageSettings.pixelFormat			= fmt7PixFmt;	
 
 	Format7PacketInfo		fmt7PacketInfo;
-		
+	//fmt7PacketInfo.recommendedBytesPerPacket = 5040;
+
 	BusManager				busMgr;
 	PGRGuid					guid;
 	CameraInfo				camInfo;
 	unsigned int			snum;
-		
+
 	FC2Config				BufferFrame;
-	
+
 	EmbeddedImageInfo		EmbeddedInfo;
-	
+
 	// Properties to be modified
 
 	Property				brightness;
@@ -74,27 +82,27 @@ bool Flea3CamThread::initCamera()
 
 	Property				shutter;
 	shutter.type			= SHUTTER;
-	
+
 	Property				frmRate;
 	frmRate.type			= FRAME_RATE;	
-	
+
 	Property				gain;
 	gain.type				= GAIN;
 
 	Property				wBalance;
 	wBalance.type			= WHITE_BALANCE;
-		
+
 	bool					supported;
-	
+
 	Error					error;
-	
+
 
 	// Gets the Camera serial number
 	if ( !checkReturnCode( busMgr.GetCameraSerialNumberFromIndex( _ID, &snum ) ) )
 		return false;
 
 	sendLogMessage (3, "Camera " + QString::number(_ID) + " Serial Number: " + QString::number(snum));	// serial number is printed
-	
+
 	// Gets the PGRGuid from the camera		
 	if ( !checkReturnCode( busMgr.GetCameraFromIndex( _ID, &guid ) ) )
 		return false;	
@@ -113,11 +121,11 @@ bool Flea3CamThread::initCamera()
 
 	// Query for available Format 7 modes						
 	if ( !checkReturnCode( _Camera.GetFormat7Info(&fmt7Info, &supported) ) )
-	 return false;
-		
+		return false;
+
 	// Print the camera capabilities for fmt7
 	PrintFormat7Capabilities(fmt7Info);
-					
+
 	// Validate the settings to make sure that they are valid
 	if ( !checkReturnCode( _Camera.ValidateFormat7Settings( &fmt7ImageSettings, &supported, &fmt7PacketInfo ) ) )
 		return false;
@@ -126,13 +134,13 @@ bool Flea3CamThread::initCamera()
 	{
 		// Settings are not valid
 		sendLogMessage(1, "Format7 settings are not valid");
-	    return false;
+		return false;
 	}
-		
+
 	// Set the settings to the camera
 	if ( !checkReturnCode( _Camera.SetFormat7Configuration(&fmt7ImageSettings, fmt7PacketInfo.recommendedBytesPerPacket) ) )
 		return false;
-				
+
 	/////////////////////////////// ENDS PROCESS WITH FORMAT 7 //////////////////////////////////////////
 
 	/////////////////// ALL THE PROCESS WITH FC2Config  ////////////////////////////////
@@ -141,13 +149,14 @@ bool Flea3CamThread::initCamera()
 	if ( !checkReturnCode( _Camera.GetConfiguration(&BufferFrame) ) )
 		return false;
 	// Modify the maximum number of frames to be buffered and send it back to the camera
-	BufferFrame.numBuffers = 50;
+	BufferFrame.numBuffers = 20;
 	BufferFrame.grabMode = BUFFER_FRAMES;
-
+	/*
+	TODO: Re-enable this, if it happens to work some day
 	// Exits if the configuration is not supported
 	if ( !checkReturnCode( _Camera.SetConfiguration(&BufferFrame) ) )
 		return false;
-	
+	 */
 	/////////////////// ENDS PROCESS WITH FC2Config  ////////////////////////////////
 
 	/////////////////// ALL THE PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
@@ -179,7 +188,7 @@ bool Flea3CamThread::initCamera()
 
 	if ( !checkReturnCode( _Camera.SetEmbeddedImageInfo(&EmbeddedInfo) ) )
 		return false;
-	
+
 	/////////////////// ENDS PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
 
 	/////////////////// ALL THE PROCESS WITH PROPERTIES  ////////////////////////////////
@@ -191,14 +200,14 @@ bool Flea3CamThread::initCamera()
 	brightness.onOff				= true;
 	brightness.autoManualMode		= false;
 	brightness.absValue				= 0;
-		
+
 	if ( !checkReturnCode( _Camera.SetProperty(&brightness) ) )
 		return false;
 
 	if ( !checkReturnCode( _Camera.GetProperty(&brightness) ) )
 		return false;
 
-	 sendLogMessage(3, "Brightness Parameter is: " + QString().sprintf("%s and %.2f", brightness.onOff ? "On":"Off", brightness.absValue ));
+	sendLogMessage(3, "Brightness Parameter is: " + QString().sprintf("%s and %.2f", brightness.onOff ? "On":"Off", brightness.absValue ));
 
 	//-------------------- BROGHTNESS ENDS -----------------------------------
 
@@ -208,25 +217,25 @@ bool Flea3CamThread::initCamera()
 
 	exposure.onOff				= false;
 	exposure.autoManualMode		= true;
-		
+
 	if ( !checkReturnCode( _Camera.SetProperty(&exposure) ) )
 		return false;
 
 	if ( !checkReturnCode( _Camera.GetProperty(&exposure) ) )
 		return false;
 
-	 sendLogMessage(3, "Exposure Parameter is: " + QString().sprintf("%s and %s", exposure.onOff ? "On":"Off", exposure.autoManualMode ? "Auto":"Manual" ));
-	
+	sendLogMessage(3, "Exposure Parameter is: " + QString().sprintf("%s and %s", exposure.onOff ? "On":"Off", exposure.autoManualMode ? "Auto":"Manual" ));
+
 	//-------------------- EXPOSURE ENDS -----------------------------------
-	 
+
 	//-------------------- SHUTTER STARTS -----------------------------------	
 	if ( !checkReturnCode( _Camera.GetProperty(&shutter) ) )
 		return false;
-	 
+
 	shutter.onOff				= true; 
 	shutter.autoManualMode		= false;
 	shutter.absValue			= 40;
-	
+
 	if ( !checkReturnCode( _Camera.SetProperty(&shutter) ) )
 		return false;
 
@@ -235,55 +244,55 @@ bool Flea3CamThread::initCamera()
 
 	sendLogMessage(3, "New shutter parameter is: " + QString().sprintf("%s and %.2f ms", shutter.autoManualMode ? "Auto":"Manual", shutter.absValue ));	
 	//-------------------- SHUTTER ENDS -----------------------------------
-	
+
 	//-------------------- FRAME RATE STARTS -----------------------------------		
 	if ( !checkReturnCode( _Camera.GetProperty(&frmRate) ) )
 		return false;
-	 
+
 	frmRate.absControl			= true;
 	frmRate.onOff				= true;
 	frmRate.autoManualMode		= false;
 	frmRate.absValue			= frameRate;
-	
+
 	if ( !checkReturnCode( _Camera.SetProperty(&frmRate) ) )
 		return false;
 
 	if ( !checkReturnCode( _Camera.GetProperty(&frmRate) ) )
 		return false;
 
-	 sendLogMessage(3, "New frame rate is " + QString().sprintf("%.2f", frmRate.absValue ) + " fps" );
-	
+	sendLogMessage(3, "New frame rate is " + QString().sprintf("%.2f", frmRate.absValue ) + " fps" );
+
 	//-------------------- FRAME RATE ENDS -----------------------------------
 
-	 //-------------------- GAIN STARTS -----------------------------------		
+	//-------------------- GAIN STARTS -----------------------------------
 	if ( !checkReturnCode( _Camera.GetProperty(&gain) ) )
 		return false;
-	 
+
 	gain.onOff				= true;
 	gain.autoManualMode		= false;
 	gain.absValue			= 0;
-	
+
 	if ( !checkReturnCode( _Camera.SetProperty(&gain) ) )
 		return false;
-	
+
 	if ( !checkReturnCode( _Camera.GetProperty(&gain) ) )
 		return false;
-	
+
 	sendLogMessage(3, "New gain parameter is: " + QString().sprintf("%s", gain.autoManualMode ? "Auto":"Manual" ) );	
 	//-------------------- GAIN ENDS -----------------------------------
 
 	//-------------------- WHITE BALANCE STARTS -----------------------------------		
 	if ( !checkReturnCode( _Camera.GetProperty(&wBalance) ) )
 		return false;
-	 
+
 	wBalance.onOff				= false;
-	
+
 	if ( !checkReturnCode( _Camera.SetProperty(&wBalance) ) )
 		return false;
-	
+
 	if ( !checkReturnCode( _Camera.GetProperty(&wBalance) ) )
 		return false;
-	
+
 	sendLogMessage(3, "New White Balance parameter is: " + QString().sprintf("%s", wBalance.onOff ? "On":"Off" ) );	
 	//-------------------- WHITE BALANCE ENDS -----------------------------------
 
@@ -302,85 +311,74 @@ bool Flea3CamThread::startCapture()
 	return checkReturnCode( _Camera.StartCapture() );
 }
 
+//#define LOGDIR "D:/logfiles/Cam_"
+//#define IMGPATH "G:\\images\\Cam_%u\\Cam_%u_%s_%06u.jpeg"
+
+#define LOGDIR "./log/Cam_%d/"
+#define IMGPATH "./out/Cam_%u/Cam_%u_%s_%06u.jpeg"
+
 //this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
 	struct			tm * timeinfo;
+	time_t rawtime;
 	char			timeresult[15];
+	char			logfilepathFull[256];
 	char			filename[512];
 
 	timeresult[14] = 0;
 	/////////////////////////////////////////////
-
-	int				oldTime = 0;
-	unsigned int	oldTimeUs = 1000000;
-	unsigned int	difTimeStampUs;
 
 	BusManager				busMgr;
 	PGRGuid					guid;
 	////////////////////////////////////////////
 	int				cont = 0;
 
+
 	while (1)
-	//while (cont < 50)
 	{
-		_Camera.RetrieveBuffer(&_Image);
-		_ImInfo = _Image.GetMetadata();		
-		_FrameNumber = _ImInfo.embeddedFrameCounter;
-		_TimeStamp = _Image.GetTimeStamp();
-		timeinfo = localtime(&_TimeStamp.seconds);  //converts the time in seconds to local time
+		FlyCapture2::Image* cimg = _Buffer->front();
+
+		_Camera.RetrieveBuffer(cimg);
+		//_ImInfo = cimg->GetMetadata();
+		//_FrameNumber = _ImInfo.embeddedFrameCounter;
+		//_TimeStamp = cimg->GetTimeStamp();
+
+		_Buffer->push();
+
+		//TODO Fix, use camera time, not own
+		time (&rawtime);
+		timeinfo = localtime (&rawtime);
+		//timeinfo = localtime(&secs);  //converts the time in seconds to local time
 		// string with local time info
 		sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d%",
-		timeinfo -> tm_year + 1900,
-		timeinfo -> tm_mon  + 1,
-		timeinfo -> tm_mday,
-		timeinfo -> tm_hour,
-		timeinfo -> tm_min,
-		timeinfo -> tm_sec);
-		
-		localCounter(oldTime, timeinfo -> tm_sec);
+				timeinfo -> tm_year + 1900,
+				timeinfo -> tm_mon  + 1,
+				timeinfo -> tm_mday,
+				timeinfo -> tm_hour,
+				timeinfo -> tm_min,
+				timeinfo -> tm_sec);
 
-		//name of the file		
-		sprintf (filename, "G:\\images\\Cam_%u\\Cam_%u_%s_%06u.jpeg", _ID, _ID, timeresult, _TimeStamp.microSeconds);
-		_Image.SetColorProcessing(NO_COLOR_PROCESSING);
-		_Image.Save(filename, &_jpegConf);
-				
-		//////////////////////////////////////////////
-		if (_TimeStamp.microSeconds > oldTimeUs)
-			difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs;
-		else
-			difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs + 1000000;
-	
-		generateLog("D:/logfiles/Cam_" + QString::number(_ID) + "/", timeresult + QString::number(difTimeStampUs));
-		oldTimeUs = _TimeStamp.microSeconds;
+		//localCounter(oldTime, timeinfo -> tm_sec);
 
-		///////////////////////////////////
+		sprintf(logfilepathFull, LOGDIR,_ID);
+		generateLog(logfilepathFull,timeresult);
 
-		oldTime = timeinfo -> tm_sec;
-		
-		if (difTimeStampUs == 1000000)
-		{
+		//Do this every second
 			_Camera.StopCapture();
 			_Camera.Disconnect();
 			// Gets the PGRGuid from the camera
 			busMgr.GetCameraFromIndex( _ID, &guid );
 			// Connect to camera
-			_Camera.Connect(&guid);	
+			_Camera.Connect(&guid);
 			_Camera.StartCapture();
-		}
 
-		//cont ++;		
-		//if (cont == 2400)
-		////if (cont == 10)
-		//{
-		//	cleanFolder("G:/images/Cam_" + QString::number(_ID) + "/", timeresult + QString::number(_LocalCounter));
-		//	cont = 0;
-		//}
+
 	}	
 
 	_Camera.StopCapture();
 	_Camera.Disconnect();
-	
+
 	std::cout << "done" << std::endl;
 	return;
 }
@@ -389,21 +387,21 @@ void Flea3CamThread::run()
 void Flea3CamThread::PrintFormat7Capabilities(Format7Info fmt7Info)
 {    
 	sendLogMessage(3,  "Max image pixels: " + QString::number(fmt7Info.maxWidth) + " x " + QString::number(fmt7Info.maxHeight) + "\n" 
-					+	"Image Unit size: " + QString::number(fmt7Info.imageHStepSize) + " x " + QString::number(fmt7Info.imageVStepSize) + "\n"
-					+	"Offset Unit size: " + QString::number(fmt7Info.offsetHStepSize) + " x " + QString::number(fmt7Info.offsetVStepSize) + "\n"
-					+	"Pixel format bitfield: " + QString::number(fmt7Info.pixelFormatBitField));	
+			+	"Image Unit size: " + QString::number(fmt7Info.imageHStepSize) + " x " + QString::number(fmt7Info.imageVStepSize) + "\n"
+			+	"Offset Unit size: " + QString::number(fmt7Info.offsetHStepSize) + " x " + QString::number(fmt7Info.offsetVStepSize) + "\n"
+			+	"Pixel format bitfield: " + QString::number(fmt7Info.pixelFormatBitField));
 }
 
 // Just prints the camera's info
 void Flea3CamThread::PrintCameraInfo(CameraInfo* pCamInfo)
 {
 	sendLogMessage(3,  QString() + "\n*** CAMERA INFORMATION ***\n" + "Serial number - " + QString::number( pCamInfo->serialNumber ) + "\n" 
-		+ "Camera model - " +	QString( pCamInfo->modelName ) + "\n"
-		+ "Camera vendor - " +	QString( pCamInfo->vendorName ) + "\n"
-		+ "Sensor - " +			QString( pCamInfo->sensorInfo ) + "\n"
-		+ "Resolution - " +		QString( pCamInfo->sensorResolution ) + "\n"
-		+ "Firmware version - " + QString( pCamInfo->firmwareVersion ) + "\n"
-		+ "Firmware build time - " + QString( pCamInfo->firmwareBuildTime ) + "\n"+ "\n");
+			+ "Camera model - " +	QString( pCamInfo->modelName ) + "\n"
+			+ "Camera vendor - " +	QString( pCamInfo->vendorName ) + "\n"
+			+ "Sensor - " +			QString( pCamInfo->sensorInfo ) + "\n"
+			+ "Resolution - " +		QString( pCamInfo->sensorResolution ) + "\n"
+			+ "Firmware version - " + QString( pCamInfo->firmwareVersion ) + "\n"
+			+ "Firmware build time - " + QString( pCamInfo->firmwareBuildTime ) + "\n"+ "\n");
 }
 
 bool Flea3CamThread::checkReturnCode(Error error)
@@ -427,9 +425,9 @@ void Flea3CamThread::cleanFolder(QString path, QString message)
 	dir.setNameFilters(QStringList() << "*.jpeg");
 	dir.setFilter(QDir::Files);
 	foreach(QString dirFile, dir.entryList())
-		{
-			dir.remove(dirFile);
-		}
+	{
+		dir.remove(dirFile);
+	}
 	QString filename = (path + "log.txt");
 	QFile file(filename);
 	file.open(QIODevice::Append);
@@ -451,6 +449,6 @@ void Flea3CamThread::generateLog(QString path, QString message)
 void Flea3CamThread::localCounter(unsigned int oldTime, unsigned int newTime)
 {
 	if (oldTime != newTime)
-			_LocalCounter=0;
+		_LocalCounter=0;
 	_LocalCounter++;	
 }
