@@ -56,10 +56,12 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams() {
 	    pt.put(IMACQUISITION::BITRATE, 1000000);
 	    pt.put(IMACQUISITION::RCMODE, 6);
 	    pt.put(IMACQUISITION::QP, 2);
+	    pt.put(IMACQUISITION::FRAMESPERVIDEO, 500);
+	    pt.put(IMACQUISITION::BUFFERSIZE, 20);
 	    pt.put(IMACQUISITION::FPS, 3);
 	    pt.put(IMACQUISITION::PRESET, 20);
-	    pt.put(IMACQUISITION::LOGDIR, 20);
-	    pt.put(IMACQUISITION::IMDIR, 20);
+	    pt.put(IMACQUISITION::LOGDIR, "./log/Cam_%d/");
+	    pt.put(IMACQUISITION::IMDIR, "./out/Cam_%u/Cam_%u_%s.mp4");
 
 
     return pt;

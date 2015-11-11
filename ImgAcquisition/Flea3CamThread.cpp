@@ -7,7 +7,12 @@
 #include <qtextstream.h>
 
 #include "FlyCapture2.h"
+#if HAVE_UNISTD_H
 #include <unistd.h> //sleep
+#else
+#include <stdint.h>
+#endif
+#include "settings/Settings.h"
 
 //Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread()
@@ -43,21 +48,24 @@ bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexRingbuffer * 
 
 bool Flea3CamThread::initCamera()
 {
+
+	SettingsIAC 	*set = SettingsIAC::getInstance();
+
 	// SET VIDEO MODE HERE!!!
 	Format7Info				fmt7Info;
 
 	const Mode				fmt7Mode		= MODE_10;
 	const PixelFormat		fmt7PixFmt		= PIXEL_FORMAT_RAW8;		
 
-	const float				frameRate		= 3;
+	const float				frameRate		= set->getValueOfParam<int>(IMACQUISITION::FPS);
 
 	Format7ImageSettings	fmt7ImageSettings;
 
 	fmt7ImageSettings.mode					= fmt7Mode;
 	fmt7ImageSettings.offsetX				= 0;
 	fmt7ImageSettings.offsetY				= 0;
-	fmt7ImageSettings.width					= 1200;
-	fmt7ImageSettings.height				= 800;
+	fmt7ImageSettings.width					= set->getValueOfParam<int>(IMACQUISITION::VIDEO_WIDTH);
+	fmt7ImageSettings.height				= set->getValueOfParam<int>(IMACQUISITION::VIDEO_HEIGHT);
 	fmt7ImageSettings.pixelFormat			= fmt7PixFmt;	
 
 	Format7PacketInfo		fmt7PacketInfo;
@@ -311,12 +319,6 @@ bool Flea3CamThread::startCapture()
 	return checkReturnCode( _Camera.StartCapture() );
 }
 
-//#define LOGDIR "D:/logfiles/Cam_"
-//#define IMGPATH "G:\\images\\Cam_%u\\Cam_%u_%s_%06u.jpeg"
-
-#define LOGDIR "./log/Cam_%d/"
-#define IMGPATH "./out/Cam_%u/Cam_%u_%s_%06u.jpeg"
-
 //this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
@@ -324,7 +326,8 @@ void Flea3CamThread::run()
 	time_t rawtime;
 	char			timeresult[15];
 	char			logfilepathFull[256];
-	char			filename[512];
+	SettingsIAC 	*set = SettingsIAC::getInstance();
+	std::string 	logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
 
 	timeresult[14] = 0;
 	/////////////////////////////////////////////
@@ -361,7 +364,7 @@ void Flea3CamThread::run()
 
 		//localCounter(oldTime, timeinfo -> tm_sec);
 
-		sprintf(logfilepathFull, LOGDIR,_ID);
+		sprintf(logfilepathFull, logdir.c_str(),_ID);
 		generateLog(logfilepathFull,timeresult);
 
 		//Do this every second

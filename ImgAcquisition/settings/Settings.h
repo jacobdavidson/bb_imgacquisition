@@ -13,17 +13,6 @@
 
 #include <fstream>
 
-//TODO: Some of these are not needed. Just need some enums from there...
-extern "C" {
-#include <libavutil/opt.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/common.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/mathematics.h>
-#include <libavutil/samplefmt.h>
-};
-
 namespace {
 template<typename Test, template<typename...> class Ref>
 struct is_specialization : std::false_type {};

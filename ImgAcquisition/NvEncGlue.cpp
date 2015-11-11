@@ -5,54 +5,60 @@
  *      Author: hauke
  */
 
-#include "NvEncGlue.h"
-#include "nvenc/NvEncoder.h"
 #include <time.h>
 
+#if HAVE_UNISTD_H
 #include <unistd.h> //sleep
+#else
+#include <stdint.h>
+#endif
 #include <iostream>
+#include "settings/utility.h"
+#include "settings/Settings.h"
+//The order is important!
+#include "NvEncGlue.h"
+#include "nvenc/NvEncoder.h"
 
 namespace beeCompress {
 
-std::string NvEncGlue::getTimestamp(){
-	struct			tm * timeinfo;
-	time_t rawtime;
-	char			timeresult[15];
-	time (&rawtime);
-	timeinfo = localtime (&rawtime);
-	//timeinfo = localtime(&secs);  //converts the time in seconds to local time
-	// string with local time info
-	sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d%",
-			timeinfo -> tm_year + 1900,
-			timeinfo -> tm_mon  + 1,
-			timeinfo -> tm_mday,
-			timeinfo -> tm_hour,
-			timeinfo -> tm_min,
-			timeinfo -> tm_sec);
-	std::string r(timeresult);
-	return r;
-}
-
 void NvEncGlue::run(){
 
-	int rcmode=6;
-	int preset=2;
-	int qp=20;
-	int bitrate=1000000;
-	double elapsedTimeP,avgtimeP;
-	int totalFrames=30;
+	SettingsIAC *set = SettingsIAC::getInstance();
+
+	int 		rcmode			= set->getValueOfParam<int>(IMACQUISITION::RCMODE);
+	int 		preset			= set->getValueOfParam<int>(IMACQUISITION::PRESET);
+	int 		qp				= set->getValueOfParam<int>(IMACQUISITION::QP);
+	int 		bitrate			= set->getValueOfParam<int>(IMACQUISITION::BITRATE);
+	int 		totalFrames		= set->getValueOfParam<int>(IMACQUISITION::FRAMESPERVIDEO);
+	std::string imdir 			= set->getValueOfParam<std::string>(IMACQUISITION::IMDIR);
+	char 		filepath[512];
+	double 		elapsedTimeP,avgtimeP;
 
 	while(1){
 		CNvEncoder enc;
 		//enc.EncodeMain(int rcmode, int preset, int qp, int bitrate, double *elapsedTimeP, double *avgtimeP, beeCompress::MutexRingbuffer *buffer, FILE *f, int totalFrames);
 
+		int c1 = _Ring1->_Count;
+		int c2 = _Ring2->_Count;
+		int currentCam=0;
+		MutexRingbuffer *currentCamBuffer;
+
+		if(c1>=c2){
+			currentCamBuffer = _Ring1;
+			currentCam = _CamRing1;
+		}else{
+			currentCamBuffer = _Ring2;
+			currentCam = _CamRing2;
+		}
+
 		FILE *f;
 		std::string timestamp = getTimestamp();
-		f=fopen("out/test.avi","wb");
-		enc.EncodeMain(rcmode, preset, qp, bitrate, &elapsedTimeP, &avgtimeP, &_Ring1, f, totalFrames);
+		sprintf(filepath, imdir.c_str(),
+				currentCam,currentCam,timestamp.c_str(),0);
+		std::cout << "Creating: " << filepath << std::endl;
+		f=fopen(filepath,"wb");
+		enc.EncodeMain(rcmode, preset, qp, bitrate, &elapsedTimeP, &avgtimeP, currentCamBuffer, f, totalFrames);
 		fclose(f);
-		exit(0);
-		break;
 
 		/*
 		usleep(5*1000*1000);
@@ -69,7 +75,10 @@ void NvEncGlue::run(){
 }
 
 NvEncGlue::NvEncGlue() {
-	// TODO Auto-generated constructor stub
+	SettingsIAC *set 			= SettingsIAC::getInstance();
+	int 		buffersize		= set->getValueOfParam<int>(IMACQUISITION::BUFFERSIZE);
+	_Ring1 						= new MutexRingbuffer(buffersize);
+	_Ring2 						= new MutexRingbuffer(buffersize);
 
 }
 

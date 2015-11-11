@@ -1,12 +1,17 @@
 # Minimal benötigte CMake-Version wenn z.B. bestimmte CMake-Kommandos benutzt werden
 cmake_minimum_required(VERSION 2.6)
+cmake_policy (SET CMP0020 NEW)
+#cmake_policy(SET CMP0054 NEW)
 
 # Der Projektname
 project(bb_imageacquisition)
 
 set(CMAKE_AUTOMOC ON)
-find_package(Qt5Core REQUIRED)
+
+add_definitions( -DBOOST_ALL_NO_LIB )
+find_package(Qt5Core REQUIRED) # PATHS "C:\\Qt\\Qt5.4.1\\5.4\\msvc2013_64_opengl"
 find_package( Boost 1.54.0 REQUIRED system filesystem program_options)
+find_package(CUDA REQUIRED COMPONENTS cuda cudart)
 
 # project dependecies
 

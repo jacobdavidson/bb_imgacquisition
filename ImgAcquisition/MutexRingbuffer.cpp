@@ -14,8 +14,7 @@ MutexRingbuffer::~MutexRingbuffer() {
 	// TODO Auto-generated destructor stub
 }
 
-MutexRingbuffer::MutexRingbuffer(){
-	int pSize = 500;
+MutexRingbuffer::MutexRingbuffer(int pSize){
 	_Frontp=0;
 	_Backp=0;
 	_Size=pSize;
@@ -38,7 +37,7 @@ FlyCapture2::Image* MutexRingbuffer::back(){
 		r = _Images[_Backp];
 		_Backp++;
 		_Count--;
-		if(_Backp==_Size) _Frontp=0;
+		if(_Backp==_Size-1) _Backp=0;
 	}
 	else
 		r = NULL;
@@ -50,7 +49,7 @@ void MutexRingbuffer::push(){
 	_Access.lock();
 	_Frontp++;
 	_Count++;
-	if(_Frontp==_Size)
+	if(_Frontp==_Size-1)
 		_Frontp=0;
 	if(_Frontp==_Backp){
 		std::cerr << "Buffer overrun detected. Exiting."<<std::endl;

@@ -1,35 +1,40 @@
 
-set(LIBS flycapture
-    ${Boost_LIBRARIES} )
+set(LIBS 
+    ${CUDA_LIBRARIES} 
+    ${Qt5Core_LIBRARIES} 
+    ${Boost_LIBRARIES}
+		)
 
 set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 
-# Location of the CUDA Toolkit binaries and libraries
-set(CUDA_PATH /usr/local/cuda-7.5)
-set(CUDA_INC_PATH   ${CUDA_PATH}/include)
-set(CUDA_LIB_PATH   ${CUDA_PATH}/lib)
-set(CUDA_BIN_PATH   ${CUDA_PATH}/bin)
 
-# Common binaries
-set(NVCC  ${CUDA_BIN_PATH}/nvcc)
-
-set(CUDA_LIBS 	cuda
-		cudart
-		nvidia-encode
-		dl)
-set(CUDA_LIBS  ${CUDA_LIBS} -L${CUDA_LIB_PATH}64 )
-
-message("CUDA_LIBS is ${CUDA_LIBS}")
+message("CUDA_LIBRARIES is ${CUDA_LIBRARIES}")
+message("Boost_LIBRARIES is ${Boost_LIBRARIES}")
+message("Qt5Core_LIBRARIES is ${Qt5Core_LIBRARIES}")
 
 
-#TODO: configure this properly
-set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ ${CUDA_INC_PATH})
-set(LIBS ${LIBS} -L/usr/local/lib Qt5::Core)
+if("${CMAKE_SYSTEM}" MATCHES "Linux")
+	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ ${CUDA_INCLUDE_DIRS})
+	set(LIBS ${LIBS} dl flycapture cuda -L/usr/local/lib)
+	
+	message("Configuring for linux...")
+else()
+	set(INCLUDE_DIRS "C:\\Program Files\\Point Grey Research\\FlyCapture2\\include" ${CUDA_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+	set(LIBS ${LIBS}  
+	"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2.lib"
+	"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2_v110.lib"
+	#"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\lib\\x64\\cudart.lib"
+	#"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\lib\\x64\\cuda.lib"
+	)
+	message("Configuring for windows...")
+endif()
+
+
 include_directories(${INCLUDE_DIRS})
 
 message("Configuring ImageAcquisition...")
 set(EXE_NAME bb_ImageAcquistion)
 file(GLOB_RECURSE ImgAcquisitionSrc RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.c *.h *.hpp)
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc} )
-target_link_libraries(${EXE_NAME} ${LIBS} ${CUDA_LIBS})
+target_link_libraries(${EXE_NAME} ${LIBS})
 

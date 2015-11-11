@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/assign.hpp>
+//#include <boost/assign.hpp>
 #include <boost/bimap.hpp>
 #include <boost/optional.hpp>
 #include <boost/property_tree/ptree.hpp>

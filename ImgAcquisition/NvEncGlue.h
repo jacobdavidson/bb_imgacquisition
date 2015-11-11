@@ -19,13 +19,13 @@ class NvEncGlue : public QThread{
 
 public:
 
-	MutexRingbuffer _Ring1;
-	MutexRingbuffer _Ring2;
+	MutexRingbuffer *_Ring1;
+	int _CamRing1;
+	MutexRingbuffer *_Ring2;
+	int _CamRing2;
 
 	NvEncGlue();
 	virtual ~NvEncGlue();
-
-	std::string getTimestamp();
 
 protected:
 	void run(); //this is the function that will be iterated indefinitely

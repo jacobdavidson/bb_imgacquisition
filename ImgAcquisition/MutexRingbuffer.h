@@ -21,7 +21,7 @@ public:
 	int _Count;
 	std::mutex _Access;
 
-	MutexRingbuffer();
+	MutexRingbuffer(int pSize);
 	~MutexRingbuffer();
 
 	FlyCapture2::Image* front();

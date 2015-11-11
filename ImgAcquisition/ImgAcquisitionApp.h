@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include "Flea3CamThread.h"
+#include "NvEncGlue.h"
 using namespace FlyCapture2;
 
 //inherits from QCoreApplication
@@ -20,6 +21,7 @@ public:
 private:
 	Flea3CamThread		threads[4];					// A vector of the class Flea3CamThread, they are accessed from the constructor
 	unsigned int		numCameras;					// Number of detected cameras
+	beeCompress::NvEncGlue glue1,glue2;
 	
 //Slots for the signals sent by Flea3CamThread Class
 public slots:

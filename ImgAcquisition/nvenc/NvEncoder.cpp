@@ -14,8 +14,11 @@
 #include "nvUtils.h"
 #include "NvEncoder.h"
 #include "nvFileIO.h"
+#if HAVE_UNISTD_H
 #include <unistd.h> //sleep
-
+#else
+#include <stdint.h>
+#endif
 #define BITSTREAM_BUFFER_SIZE 2 * 1024 * 1024
 
 void convertYUVpitchtoNV12( unsigned char *yuv_luma, unsigned char *yuv_cb, unsigned char *yuv_cr,
@@ -500,6 +503,7 @@ _NV_ENC_PARAMS_RC_MODE getRcmode(int rcmode){
 	case 5: return NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP;
 	case 6: return NV_ENC_PARAMS_RC_2_PASS_VBR;
 	}
+	return NV_ENC_PARAMS_RC_CONSTQP;
 }
 GUID getGUID(int id){
 	switch(id){
@@ -513,13 +517,14 @@ GUID getGUID(int id){
 	case 7: return NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID;
 	case 8: return NV_ENC_PRESET_LOSSLESS_HP_GUID;
 	}
+	return NV_ENC_PRESET_DEFAULT_GUID;
 }
 
 int flycapImgTo420(uint8_t *yuvInput, FlyCapture2::Image* img){
 	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
 
-	unsigned long long time, time2;
-	int bytesRead;
+	//unsigned long long time, time2;
+	int bytesRead=0;
 	unsigned char *prtM = img->GetData();
 	unsigned int rows,cols,stride;
 	FlyCapture2::PixelFormat pixFmt;
@@ -533,10 +538,10 @@ int flycapImgTo420(uint8_t *yuvInput, FlyCapture2::Image* img){
 	//int x,y;
 
 	//Being lazy pays: 58.22ms (don't set all channels - Cb and Cr are a waste of time)
-	int x=0,y=0;
+	unsigned int x=0,y=0;
 	for (y = 0; y < rows; y++) {
 		for (x = 0; x < cols; x++) {
-			yuvInput[y * cols + x] = 0.895 * (*prtM) + 16;
+			yuvInput[y * cols + x] = (uint8_t)(0.895 * (*prtM) + 16);
 			prtM++;
 			bytesRead++;
 		}
@@ -693,14 +698,14 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 
 		FlyCapture2::Image* img;
 		while((img=buffer->back()) == NULL){
-			usleep(333*1000);
+			//usleep(333*1000);
 		}
 		numBytesRead = flycapImgTo420(yuv[0],img);
-		printf("Encoding frame with %d bytes of data\n",numBytesRead);
+		//printf("Encoding frame with %d bytes of data\n",numBytesRead);
 		//NvQueryPerformanceCounter(&lEnd1);
 		//NvQueryPerformanceFrequency(&lFreq1);
 		//double elapsedTime1 = (double)(lEnd1 - lStart1);
-		//printf("Loaded frame in %6.2fms\n", (elapsedTime1*1000.0)/lFreq1);
+		printf("Loaded frame %d \n", frm);
 
 		if (numBytesRead == 0)
 			break;

@@ -2,12 +2,10 @@
 #include <iostream>
 #include <QtGui/QKeyEvent>
 #include <QDebug>
-#include "NvEncGlue.h"
-#include "settings/Settings.h"
 
 using namespace FlyCapture2;
 using namespace std;
-beeCompress::NvEncGlue glue1,glue2;
+
 
 //constructor
 //definition of ImgAcquisitionApp, it configures the threads, connects them including the signals(input) to be read and the slots (output)
@@ -15,8 +13,6 @@ beeCompress::NvEncGlue glue1,glue2;
 ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 : QCoreApplication(argc, argv) //
 {
-	SettingsIAC::setConf("configImAcq.json");
-	SettingsIAC *set = SettingsIAC::getInstance();
 
 	printBuildInfo();
 	int numCameras = 0;
@@ -26,27 +22,34 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 		exit(2);
 	}
 
+	//one connect for each combination signal-slot
 	for (int i=0; i<numCameras; i++)
-		//one connect for each combination signal-slot
 		connect(&threads[i],	SIGNAL(logMessage(int, QString)),
 				this,			SLOT(logMessage(int, QString)));
 
 	cout << "Connected " << numCameras << " cameras." << endl;
 
 	//the threads are initialized as a private variable of the class ImgAcquisitionApp
-	if(numCameras>=1) threads[0].initialize( 0, &(glue1._Ring1) );
-	if(numCameras>=2) threads[1].initialize( 1, &(glue1._Ring2) );
-	if(numCameras>=3) threads[2].initialize( 2, &(glue2._Ring1) );
-	if(numCameras>=4) threads[3].initialize( 3, &(glue2._Ring2) );
+	if(numCameras>=1) threads[0].initialize( 0, (glue1._Ring1) );
+	if(numCameras>=2) threads[1].initialize( 1, (glue1._Ring2) );
+	if(numCameras>=3) threads[2].initialize( 2, (glue2._Ring1) );
+	if(numCameras>=4) threads[3].initialize( 3, (glue2._Ring2) );
+
+	//Map the ringbuffers to camera id's
+	glue1._CamRing1=0;
+	glue1._CamRing2=1;
+	glue2._CamRing1=2;
+	glue2._CamRing2=3;
 
 	cout << "Initialized " << numCameras << " cameras." << endl;
 
+	//execute run() function, spawns cam readers
 	for (int i=0; i<numCameras; i++)
-		//execute run() function
 		threads[i].start();
 
 	cout << "Started " << numCameras << " camera threads." << endl;
 
+	//Start encoder threads
 	glue1.start();
 	if(numCameras>=3) glue2.start();
 
