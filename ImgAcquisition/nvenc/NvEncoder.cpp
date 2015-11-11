@@ -157,7 +157,7 @@ NVENCSTATUS CNvEncoder::InitCuda(uint32_t deviceID)
 	return NV_ENC_SUCCESS;
 }
 
-#if defined(NV_WINDOWS)
+#if defined(NV_WINDOWS1)
 NVENCSTATUS CNvEncoder::InitD3D9(uint32_t deviceID)
 {
 	D3DPRESENT_PARAMETERS d3dpp;
@@ -381,7 +381,7 @@ NVENCSTATUS CNvEncoder::Deinitialize(uint32_t devicetype)
 	{
 		switch (devicetype)
 		{
-#if defined(NV_WINDOWS)
+#if defined(NV_WINDOWS1)
 		case NV_ENC_DX9:
 			((IDirect3DDevice9*)(m_pDevice))->Release();
 			break;
@@ -594,7 +594,7 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 
 	switch (encodeConfig.deviceType)
 	{
-#if defined(NV_WINDOWS)
+#if defined(NV_WINDOWS1)
 	case NV_ENC_DX9:
 		InitD3D9(encodeConfig.deviceID);
 		break;
