@@ -111,6 +111,7 @@ endif()
 
 
 add_subdirectory(ImgAcquisition)
+add_subdirectory(halidePreCompile)
 
 
 

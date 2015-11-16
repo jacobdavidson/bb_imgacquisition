@@ -159,12 +159,12 @@ bool Flea3CamThread::initCamera()
 	// Modify the maximum number of frames to be buffered and send it back to the camera
 	BufferFrame.numBuffers = 20;
 	BufferFrame.grabMode = BUFFER_FRAMES;
-	/*
-	TODO: Re-enable this, if it happens to work some day
+
+	//TODO: Re-enable this, if it happens to work some day
 	// Exits if the configuration is not supported
 	if ( !checkReturnCode( _Camera.SetConfiguration(&BufferFrame) ) )
 		return false;
-	 */
+
 	/////////////////// ENDS PROCESS WITH FC2Config  ////////////////////////////////
 
 	/////////////////// ALL THE PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
@@ -242,7 +242,7 @@ bool Flea3CamThread::initCamera()
 
 	shutter.onOff				= true; 
 	shutter.autoManualMode		= false;
-	shutter.absValue			= 40;
+	shutter.absValue			= 120; //40 for original
 
 	if ( !checkReturnCode( _Camera.SetProperty(&shutter) ) )
 		return false;
@@ -278,7 +278,7 @@ bool Flea3CamThread::initCamera()
 
 	gain.onOff				= true;
 	gain.autoManualMode		= false;
-	gain.absValue			= 0;
+	gain.absValue			= 20; //Original 0
 
 	if ( !checkReturnCode( _Camera.SetProperty(&gain) ) )
 		return false;

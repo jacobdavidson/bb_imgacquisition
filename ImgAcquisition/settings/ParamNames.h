@@ -4,8 +4,6 @@
 
 namespace CONFIGPARAM {
 static const std::string CONFIGURATION_FILE = "./configImAcq.json";
-//static const std::string GEOMETRY_FILE      = "./geometry.cfg";
-//static const std::string STATE_FILE         = "./state.cfg";
 }
 
 namespace IMACQUISITION {

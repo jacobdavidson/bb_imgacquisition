@@ -31,14 +31,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 
 	//the threads are initialized as a private variable of the class ImgAcquisitionApp
 	if(numCameras>=1) threads[0].initialize( 0, (glue1._Ring1) );
-	if(numCameras>=2) threads[1].initialize( 1, (glue1._Ring2) );
-	if(numCameras>=3) threads[2].initialize( 2, (glue2._Ring1) );
+	if(numCameras>=2) threads[1].initialize( 1, (glue2._Ring1) );
+	if(numCameras>=3) threads[2].initialize( 2, (glue1._Ring2) );
 	if(numCameras>=4) threads[3].initialize( 3, (glue2._Ring2) );
 
 	//Map the ringbuffers to camera id's
 	glue1._CamRing1=0;
-	glue1._CamRing2=1;
-	glue2._CamRing1=2;
+	glue1._CamRing2=3;
+	glue2._CamRing1=1;
 	glue2._CamRing2=3;
 
 	cout << "Initialized " << numCameras << " cameras." << endl;
@@ -51,7 +51,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 
 	//Start encoder threads
 	glue1.start();
-	if(numCameras>=3) glue2.start();
+	if(numCameras>=2) glue2.start();
 
 	cout << "Started the encoder threads." << endl;
 }

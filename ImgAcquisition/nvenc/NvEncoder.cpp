@@ -19,6 +19,11 @@
 #else
 #include <stdint.h>
 #endif
+#include "../settings/Settings.h"
+
+#include "halideYuv420Conv.h"
+#include "Halide.h"
+
 #define BITSTREAM_BUFFER_SIZE 2 * 1024 * 1024
 
 void convertYUVpitchtoNV12( unsigned char *yuv_luma, unsigned char *yuv_cb, unsigned char *yuv_cr,
@@ -443,56 +448,6 @@ NVENCSTATUS loadframe(uint8_t *yuvInput[3], HANDLE hInputYUVFile, uint32_t frmId
 	return NV_ENC_SUCCESS;
 }
 
-void PrintHelp()
-{
-	printf("Usage : NvEncoder \n"
-			"-i <string>                  Specify input yuv420 file\n"
-			"-o <string>                  Specify output bitstream file\n"
-			"-size <int int>              Specify input resolution <width height>\n"
-			"\n### Optional parameters ###\n"
-			"-codec <integer>             Specify the codec \n"
-			"                                 0: H264\n"
-			"                                 1: HEVC\n"
-			"-preset <string>             Specify the preset for encoder settings\n"
-			"                                 hq : nvenc HQ \n"
-			"                                 hp : nvenc HP \n"
-			"                                 lowLatencyHP : nvenc low latency HP \n"
-			"                                 lowLatencyHQ : nvenc low latency HQ \n"
-			"                                 lossless : nvenc Lossless HP \n"
-			"-startf <integer>            Specify start index for encoding. Default is 0\n"
-			"-endf <integer>              Specify end index for encoding. Default is end of file\n"
-			"-fps <integer>               Specify encoding frame rate\n"
-			"-goplength <integer>         Specify gop length\n"
-			"-numB <integer>              Specify number of B frames\n"
-			"-bitrate <integer>           Specify the encoding average bitrate\n"
-			"-vbvMaxBitrate <integer>     Specify the vbv max bitrate\n"
-			"-vbvSize <integer>           Specify the encoding vbv/hrd buffer size\n"
-			"-rcmode <integer>            Specify the rate control mode\n"
-			"                                 0:  Constant QP\n"
-			"                                 1:  Single pass VBR\n"
-			"                                 2:  Single pass CBR\n"
-			"                                 4:  Single pass VBR minQP\n"
-			"                                 8:  Two pass frame quality\n"
-			"                                 16: Two pass frame size cap\n"
-			"                                 32: Two pass VBR\n"
-			"-qp <integer>                Specify qp for Constant QP mode\n"
-			"-picStruct <integer>         Specify the picture structure\n"
-			"                                 1:  Progressive frame\n"
-			"                                 2:  Field encoding top field first\n"
-			"                                 3:  Field encoding bottom field first\n"
-			"-devicetype <integer>        Specify devicetype used for encoding\n"
-			"                                 0:  DX9\n"
-			"                                 1:  DX11\n"
-			"                                 2:  Cuda\n"
-			"                                 3:  DX10\n"
-			"-yuv444 <integer>             Specify the input YUV format\n"
-			"                                 0: YUV 420\n"
-			"                                 1: YUV 444\n"
-			"-deviceID <integer>           Specify the GPU device on which encoding will take place\n"
-			"-help                         Prints Help Information\n\n"
-	);
-}
-
 _NV_ENC_PARAMS_RC_MODE getRcmode(int rcmode){
 	switch(rcmode){
 	case 0: return NV_ENC_PARAMS_RC_CONSTQP;
@@ -520,24 +475,17 @@ GUID getGUID(int id){
 	return NV_ENC_PRESET_DEFAULT_GUID;
 }
 
-int flycapImgTo420(uint8_t *yuvInput, FlyCapture2::Image* img){
+int matTo420NoHalide(uint8_t *yuvInput, FlyCapture2::Image* img){
 	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
 
-	//unsigned long long time, time2;
 	int bytesRead=0;
 	unsigned char *prtM = img->GetData();
 	unsigned int rows,cols,stride;
 	FlyCapture2::PixelFormat pixFmt;
 	FlyCapture2::BayerTileFormat bayerFormat;
-	//std::cout << "pixFmt: "<<pixFmt<<std::endl;
 	img->GetDimensions(&rows,&cols,&stride,&pixFmt,&bayerFormat);
 
-	//auto end = std::chrono::high_resolution_clock::now();
-	//time = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
-	//std::cout << time << std::endl;
-	//int x,y;
-
-	//Being lazy pays: 58.22ms (don't set all channels - Cb and Cr are a waste of time)
+	//Being lazy pays: conversion in 58.22ms (don't set all channels - Cb and Cr are a waste of time)
 	unsigned int x=0,y=0;
 	for (y = 0; y < rows; y++) {
 		for (x = 0; x < cols; x++) {
@@ -550,7 +498,38 @@ int flycapImgTo420(uint8_t *yuvInput, FlyCapture2::Image* img){
 	return bytesRead;
 }
 
-int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *elapsedTimeP, double *avgtimeP, beeCompress::MutexRingbuffer *buffer, FILE *f, int totalFrames)
+int matTo420(uint8_t *outputImage, FlyCapture2::Image* inputImage){
+	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
+
+	unsigned long long time, time2;
+	int bytesRead;
+	unsigned char *prtM = inputImage->GetData();
+	unsigned int rows,cols,stride;
+	FlyCapture2::PixelFormat pixFmt;
+	FlyCapture2::BayerTileFormat bayerFormat;
+	inputImage->GetDimensions(&rows,&cols,&stride,&pixFmt,&bayerFormat);
+
+	//Precompiled code gets run in 17.88ms. BAM!
+	buffer_t input_buf = {0}, output_buf = {0};
+
+	// The host pointers point to the start of the image data:
+	input_buf.host  = prtM;
+	output_buf.host = outputImage;
+	//See the halide tutorial how to set these.
+	input_buf.stride[0] = output_buf.stride[0] = 1;
+	input_buf.stride[1] = output_buf.stride[1] = stride;
+	input_buf.extent[0] = output_buf.extent[0] = cols;
+	input_buf.extent[1] = output_buf.extent[1] = rows;
+	input_buf.elem_size = output_buf.elem_size = 1;
+
+	//do it
+	int error = halideYuv420Conv(&input_buf, &output_buf);
+	bytesRead=rows*cols*3; //fool the system. We never read/written or set Cb and Cr
+
+	return bytesRead;
+}
+
+int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *elapsedTimeP, double *avgtimeP, beeCompress::MutexRingbuffer *buffer, FILE *f, int totalFrames, int fps, int width, int height)
 {
 	HANDLE hInput;
 	uint32_t numBytesRead = 0;
@@ -565,13 +544,19 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 
 	memset(&encodeConfig, 0, sizeof(EncodeConfig));
 
+	//This is important. If these are higher than
+	//4096 it may crash the entire system.
+	if(width > 4096 || height > 4096){
+		return -1;
+	}
+
 	encodeConfig.endFrameIdx = INT_MAX;
 	encodeConfig.bitrate = bitrate;
 	encodeConfig.rcMode = getRcmode(rcmode);
 	encodeConfig.gopLength = NVENC_INFINITE_GOPLENGTH;
 	encodeConfig.deviceType = NV_ENC_CUDA;
 	encodeConfig.codec = NV_ENC_HEVC;
-	encodeConfig.fps = 3;
+	encodeConfig.fps = fps;
 	encodeConfig.qp = qp;
 	encodeConfig.presetGUID = getGUID(preset);
 	encodeConfig.pictureStruct = NV_ENC_PIC_STRUCT_FRAME;
@@ -580,12 +565,12 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 	nvStatus = NV_ENC_SUCCESS;//m_pNvHWEncoder->ParseArguments(&encodeConfig, argc, argv);
 	if (nvStatus != NV_ENC_SUCCESS)
 	{
-		PrintHelp();
+		//PrintHelp();
 		return 1;
 	}
 
-	encodeConfig.width = 1200;
-	encodeConfig.height = 800;
+	encodeConfig.width = width;
+	encodeConfig.height = height;
 	//il->getIndexRange(&(encodeConfig.startFrameIdx), &(encodeConfig.endFrameIdx));
 
 	encodeConfig.fOutput = f; //fopen(encodeConfig.outputFileName, "wb");
@@ -620,45 +605,6 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 	if (nvStatus != NV_ENC_SUCCESS)
 		return -1;
 
-	// encodeConfig.presetGUID = m_pNvHWEncoder->GetPresetGUID(encodeConfig.encoderPreset, encodeConfig.codec);
-/*
-	printf("Encoding input           : \"%s\"\n", encodeConfig.inputFileName);
-	printf("         output          : \"%s\"\n", encodeConfig.outputFileName);
-	printf("         codec           : \"%s\"\n", encodeConfig.codec == NV_ENC_HEVC ? "HEVC" : "H264");
-	printf("         size            : %dx%d\n", encodeConfig.width, encodeConfig.height);
-	printf("         bitrate         : %d bits/sec\n", encodeConfig.bitrate);
-	printf("         vbvMaxBitrate   : %d bits/sec\n", encodeConfig.vbvMaxBitrate);
-	printf("         vbvSize         : %d bits\n", encodeConfig.vbvSize);
-	printf("         fps             : %d frames/sec\n", encodeConfig.fps);
-	printf("         rcMode          : %s\n", encodeConfig.rcMode == NV_ENC_PARAMS_RC_CONSTQP ? "CONSTQP" :
-			encodeConfig.rcMode == NV_ENC_PARAMS_RC_VBR ? "VBR" :
-					encodeConfig.rcMode == NV_ENC_PARAMS_RC_CBR ? "CBR" :
-							encodeConfig.rcMode == NV_ENC_PARAMS_RC_VBR_MINQP ? "VBR MINQP" :
-									encodeConfig.rcMode == NV_ENC_PARAMS_RC_2_PASS_QUALITY ? "TWO_PASS_QUALITY" :
-											encodeConfig.rcMode == NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP ? "TWO_PASS_FRAMESIZE_CAP" :
-													encodeConfig.rcMode == NV_ENC_PARAMS_RC_2_PASS_VBR ? "TWO_PASS_VBR" : "UNKNOWN");
-	if (encodeConfig.gopLength == NVENC_INFINITE_GOPLENGTH)
-		printf("         goplength       : INFINITE GOP \n");
-	else
-		printf("         goplength       : %d \n", encodeConfig.gopLength);
-	printf("         B frames        : %d \n", encodeConfig.numB);
-	printf("         QP              : %d \n", encodeConfig.qp);
-	printf("       Input Format      : %s\n", encodeConfig.isYuv444 ? "YUV 444" : "YUV 420");
-	printf("         preset          : %s\n", (encodeConfig.presetGUID == NV_ENC_PRESET_LOW_LATENCY_HQ_GUID) ? "LOW_LATENCY_HQ" :
-			(encodeConfig.presetGUID == NV_ENC_PRESET_LOW_LATENCY_HP_GUID) ? "LOW_LATENCY_HP" :
-					(encodeConfig.presetGUID == NV_ENC_PRESET_HQ_GUID) ? "HQ_PRESET" :
-							(encodeConfig.presetGUID == NV_ENC_PRESET_HP_GUID) ? "HP_PRESET" :
-									(encodeConfig.presetGUID == NV_ENC_PRESET_LOSSLESS_HP_GUID) ? "LOSSLESS_HP" : "LOW_LATENCY_DEFAULT");
-	printf("  Picture Structure      : %s\n", (encodeConfig.pictureStruct == NV_ENC_PIC_STRUCT_FRAME) ? "Frame Mode" :
-			(encodeConfig.pictureStruct == NV_ENC_PIC_STRUCT_FIELD_TOP_BOTTOM) ? "Top Field first" :
-					(encodeConfig.pictureStruct == NV_ENC_PIC_STRUCT_FIELD_BOTTOM_TOP) ? "Bottom Field first" : "INVALID");
-	printf("         devicetype      : %s\n",   encodeConfig.deviceType == NV_ENC_DX9 ? "DX9" :
-			encodeConfig.deviceType == NV_ENC_DX10 ? "DX10" :
-					encodeConfig.deviceType == NV_ENC_DX11 ? "DX11" :
-							encodeConfig.deviceType == NV_ENC_CUDA ? "CUDA" : "INVALID");
-
-	printf("\n");
-*/
 	nvStatus = m_pNvHWEncoder->CreateEncoder(&encodeConfig);
 	if (nvStatus != NV_ENC_SUCCESS)
 		return 1;
@@ -691,21 +637,15 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 	for (int frm = 0; frm < totalFrames; frm++)
 	{
 		numBytesRead = 0;
-		//loadframe(yuv, hInput, frm, encodeConfig.width, encodeConfig.height, numBytesRead, encodeConfig.isYuv444);
-		//std::cout << "loading frame "<<frm << std::endl;
-		//unsigned long long lStart1, lEnd1, lFreq1;
-		//NvQueryPerformanceCounter(&lStart1);
 
 		FlyCapture2::Image* img;
 		while((img=buffer->back()) == NULL){
+			//TODO: Some smart waiting
 			//usleep(333*1000);
 		}
-		numBytesRead = flycapImgTo420(yuv[0],img);
-		//printf("Encoding frame with %d bytes of data\n",numBytesRead);
-		//NvQueryPerformanceCounter(&lEnd1);
-		//NvQueryPerformanceFrequency(&lFreq1);
-		//double elapsedTime1 = (double)(lEnd1 - lStart1);
-		printf("Loaded frame %d \n", frm);
+		numBytesRead = matTo420(yuv[0],img);
+		//numBytesRead = matTo420NoHalide(yuv[0],img);
+		if(frm%50==0)printf("Loaded frame %d \n", frm);
 
 		if (numBytesRead == 0)
 			break;
