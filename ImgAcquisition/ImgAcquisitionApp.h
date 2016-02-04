@@ -2,6 +2,7 @@
 #define IMGACQUISITIONAPP_H
 
 #include <QCoreApplication>
+#include <QtGui/QKeyEvent>
 #include "Flea3CamThread.h"
 #include "NvEncGlue.h"
 using namespace FlyCapture2;

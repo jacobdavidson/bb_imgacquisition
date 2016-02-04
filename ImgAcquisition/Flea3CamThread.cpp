@@ -13,6 +13,13 @@
 #include <stdint.h>
 #endif
 #include "settings/Settings.h"
+#include "settings/utility.h"
+#include "imageAnalysis.h"
+
+#include "halideYuv420Conv.h"
+#include "Halide.h"
+#include <time.h>
+#include <sys/time.h>
 
 //Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread()
@@ -27,7 +34,7 @@ Flea3CamThread::~Flea3CamThread()
 }
 
 //this function reads the data input vector 
-bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexRingbuffer * pBuffer)
+bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer)
 {
 	_Buffer 					= pBuffer;
 	_ID							= id;	
@@ -177,7 +184,7 @@ bool Flea3CamThread::initCamera()
 	if (EmbeddedInfo.timestamp.available == true)
 	{
 		// if possible activates timestamp
-		EmbeddedInfo.timestamp.onOff = true;				
+		EmbeddedInfo.timestamp.onOff = true;
 	}
 	else
 	{
@@ -223,8 +230,8 @@ bool Flea3CamThread::initCamera()
 	if ( !checkReturnCode( _Camera.GetProperty(&exposure) ) )
 		return false;
 
-	exposure.onOff				= false;
-	exposure.autoManualMode		= true;
+	exposure.onOff				= true;  //false
+	exposure.autoManualMode		= false; //true!
 
 	if ( !checkReturnCode( _Camera.SetProperty(&exposure) ) )
 		return false;
@@ -319,6 +326,85 @@ bool Flea3CamThread::startCapture()
 	return checkReturnCode( _Camera.StartCapture() );
 }
 
+int flycapTo420NoHalide(uint8_t *yuvInput, FlyCapture2::Image* img){
+	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
+
+	int bytesRead=0;
+	unsigned char *prtM = img->GetData();
+	unsigned int rows,cols,stride;
+	FlyCapture2::PixelFormat pixFmt;
+	FlyCapture2::BayerTileFormat bayerFormat;
+	img->GetDimensions(&rows,&cols,&stride,&pixFmt,&bayerFormat);
+
+	//Being lazy pays: conversion in 58.22ms (don't set all channels - Cb and Cr are a waste of time)
+	unsigned int x=0,y=0;
+	for (y = 0; y < rows; y++) {
+		for (x = 0; x < cols; x++) {
+			yuvInput[y * cols + x] = (uint8_t)(0.895 * (*prtM) + 16);
+			prtM++;
+			bytesRead++;
+		}
+	}
+
+	return bytesRead;
+}
+
+int flycapTo420(uint8_t *outputImage, FlyCapture2::Image* inputImage){
+	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
+
+	unsigned long long time, time2;
+	int bytesRead;
+	unsigned char *prtM = inputImage->GetData();
+	unsigned int rows,cols,stride;
+	FlyCapture2::PixelFormat pixFmt;
+	FlyCapture2::BayerTileFormat bayerFormat;
+	inputImage->GetDimensions(&rows,&cols,&stride,&pixFmt,&bayerFormat);
+
+	//Precompiled code gets run in 17.88ms. BAM!
+	buffer_t input_buf = {0}, output_buf = {0};
+
+	// The host pointers point to the start of the image data:
+	input_buf.host  = prtM;
+	output_buf.host = outputImage;
+	//See the halide tutorial how to set these.
+	input_buf.stride[0] = output_buf.stride[0] = 1;
+	input_buf.stride[1] = output_buf.stride[1] = stride;
+	input_buf.extent[0] = output_buf.extent[0] = cols;
+	input_buf.extent[1] = output_buf.extent[1] = rows;
+	input_buf.elem_size = output_buf.elem_size = 1;
+
+	//do it
+	int error = halideYuv420Conv(&input_buf, &output_buf);
+	bytesRead=rows*cols*3; //fool the system. We never read/written or set Cb and Cr
+
+	return bytesRead;
+}
+
+int counter = 0;
+void analyzeImage(FlyCapture2::Image *cimg, cv::Mat *ref){
+	beeCompress::imageAnalysis 	ia;
+
+	//Create CV Matrix and make it use the flycap image ptr
+	unsigned char *prtM = cimg->GetData();
+	unsigned int rows,cols,stride;
+	FlyCapture2::PixelFormat pixFmt;
+	FlyCapture2::BayerTileFormat bayerFormat;
+	cimg->GetDimensions(&rows,&cols,&stride,&pixFmt,&bayerFormat);
+	cv::Mat mat(rows,cols,cv::DataType<uint8_t>::type);
+	mat.data = prtM;
+
+	//Analyze image quality
+	double smd = ia.sumModulusDifference(&mat);
+	double variance = ia.getVariance(mat);
+	double contrast = ia.avgHistDifference(*ref,mat);
+	double noise = ia.noiseEstimate(mat);
+	printf("%f,\t%f,\t%f,\t%f,\t%f\n",smd,variance,contrast,noise);
+	counter++;
+	char buf[256];
+	sprintf(buf,"Frame_%04d.jpeg",counter);
+	imwrite(buf,mat);
+}
+
 //this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
@@ -326,55 +412,101 @@ void Flea3CamThread::run()
 	time_t rawtime;
 	char			timeresult[15];
 	char			logfilepathFull[256];
-	SettingsIAC 	*set = SettingsIAC::getInstance();
-	std::string 	logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+	SettingsIAC 	*set 	= SettingsIAC::getInstance();
+	std::string 	logdir 	= set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+	int 			vwidth	= set->getValueOfParam<int>(IMACQUISITION::VIDEO_WIDTH);
+	int 			vheight	= set->getValueOfParam<int>(IMACQUISITION::VIDEO_HEIGHT);
 
 	timeresult[14] = 0;
 	/////////////////////////////////////////////
 
-	BusManager				busMgr;
-	PGRGuid					guid;
+	BusManager		busMgr;
+	PGRGuid			guid;
 	////////////////////////////////////////////
 	int				cont = 0;
+	//Timestamp housekeeping
+	struct timeval 	tv;
+	struct timezone tz;
+	int 			cs;
+	long int 		startTime;
 
+	FILE* fp = fopen("refIm.jpg", "r");
+	cv::Mat ref;
+	if (fp) {
+		ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
+		fclose(fp);
+	} else {
+		std::cout << "Error: not found reference image refIm.jpg."<<std::endl;
+	}
+
+	gettimeofday(&tv, &tz);
+	startTime = tv.tv_sec; //Note: using this method the start might be shifted by <1sec
+	//The first frame usually contains weird metadata. So we grab it and discard it.
+	{
+		FlyCapture2::Image cimg;
+		_Camera.RetrieveBuffer(&cimg);
+		_Camera.RetrieveBuffer(&cimg);
+		_TimeStamp = cimg.GetTimeStamp();
+		cs = _TimeStamp.cycleSeconds;
+	}
 
 	while (1)
 	{
-		FlyCapture2::Image* cimg = _Buffer->front();
+		FlyCapture2::Image cimg;
 
-		_Camera.RetrieveBuffer(cimg);
-		//_ImInfo = cimg->GetMetadata();
-		//_FrameNumber = _ImInfo.embeddedFrameCounter;
-		//_TimeStamp = cimg->GetTimeStamp();
+		//Retrieve image and metadata
+		_Camera.RetrieveBuffer(&cimg);
+		_ImInfo = cimg.GetMetadata();
+		_FrameNumber = _ImInfo.embeddedFrameCounter;
+		_TimeStamp = cimg.GetTimeStamp();
 
-		_Buffer->push();
+		//Add the looping seconds to the accumulator
+		if(_TimeStamp.cycleSeconds>cs){
+			startTime += _TimeStamp.cycleSeconds-cs;
+		}
+		else if(_TimeStamp.cycleSeconds<cs){
+			startTime += 128-cs+_TimeStamp.cycleSeconds;
+		}
+		cs = _TimeStamp.cycleSeconds;
 
-		//TODO Fix, use camera time, not own
-		time (&rawtime);
-		timeinfo = localtime (&rawtime);
-		//timeinfo = localtime(&secs);  //converts the time in seconds to local time
-		// string with local time info
-		sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d%",
-				timeinfo -> tm_year + 1900,
-				timeinfo -> tm_mon  + 1,
-				timeinfo -> tm_mday,
-				timeinfo -> tm_hour,
-				timeinfo -> tm_min,
-				timeinfo -> tm_sec);
+		//assemble timestamp
+		timeinfo = localtime(&startTime);
+		//sprintf isn't able to add trailing zeros, only leading...
+		int num = _TimeStamp.cycleCount;
+		while(num < 100000) num *= 10;
+		sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%d",
+						timeinfo -> tm_year + 1900,
+						timeinfo -> tm_mon  + 1,
+						timeinfo -> tm_mday,
+						timeinfo -> tm_hour,
+						timeinfo -> tm_min,
+						timeinfo -> tm_sec,
+						num);
 
-		//localCounter(oldTime, timeinfo -> tm_sec);
+		//Do some debug output
+		//std::cout << _TimeStamp.cycleCount << " - " << _TimeStamp.cycleSeconds << " - " << _TimeStamp.cycleOffset  << " - " << startTime << std::endl;
 
+		//Prepare and put he image into the buffer
+		std::string currentTimestamp(timeresult); //might use getTimestamp() ?
+		beeCompress::ImageBuffer *buf = new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp);
+		int numBytesRead = flycapTo420(buf->data,&cimg);
+		_Buffer->push(*buf);
+
+		//Analyze image properties
+		//analyzeImage(&cimg, &ref);
+
+		//Do some logging
 		sprintf(logfilepathFull, logdir.c_str(),_ID);
 		generateLog(logfilepathFull,timeresult);
-
-		//Do this every second
-			_Camera.StopCapture();
-			_Camera.Disconnect();
-			// Gets the PGRGuid from the camera
-			busMgr.GetCameraFromIndex( _ID, &guid );
-			// Connect to camera
-			_Camera.Connect(&guid);
-			_Camera.StartCapture();
+/*
+		//Do this every second?
+		_Camera.StopCapture();
+		_Camera.Disconnect();
+		// Gets the PGRGuid from the camera
+		busMgr.GetCameraFromIndex( _ID, &guid );
+		// Connect to camera
+		_Camera.Connect(&guid);
+		_Camera.StartCapture();*/
 
 
 	}	

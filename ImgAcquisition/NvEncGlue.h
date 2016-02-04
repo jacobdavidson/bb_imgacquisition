@@ -9,7 +9,9 @@
 #define NVENCGLUE_H_
 
 #include "FlyCapture2.h"
-#include "MutexRingbuffer.h"
+//#include "MutexRingbuffer.h"
+#include "Buffer/MutexBuffer.h"
+#include "Buffer/MutexLinkedList.h"
 #include <QThread>
 
 namespace beeCompress {
@@ -38,22 +40,22 @@ public:
 	/**
 	 * @brief _Ring1 The first ringbuffer to encode
 	 */
-	MutexRingbuffer *_Ring1;
+	MutexLinkedList *_Buffer1;
 
 	/**
 	 * @brief _CamRing1 Cam number associated with the first ringbuffer
 	 */
-	int _CamRing1;
+	int _CamBuffer1;
 
 	/**
 	 * @brief _Ring2 The second ringbuffer to encode
 	 */
-	MutexRingbuffer *_Ring2;
+	MutexLinkedList *_Buffer2;
 
 	/**
 	 * @brief _CamRing2 Cam number associated with the second ringbuffer
 	 */
-	int _CamRing2;
+	int _CamBuffer2;
 
 	/**
 	 * @brief Creates a new encoder glue. Initializes ringbuffers.

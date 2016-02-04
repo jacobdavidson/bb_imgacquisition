@@ -475,61 +475,7 @@ GUID getGUID(int id){
 	return NV_ENC_PRESET_DEFAULT_GUID;
 }
 
-int matTo420NoHalide(uint8_t *yuvInput, FlyCapture2::Image* img){
-	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
-
-	int bytesRead=0;
-	unsigned char *prtM = img->GetData();
-	unsigned int rows,cols,stride;
-	FlyCapture2::PixelFormat pixFmt;
-	FlyCapture2::BayerTileFormat bayerFormat;
-	img->GetDimensions(&rows,&cols,&stride,&pixFmt,&bayerFormat);
-
-	//Being lazy pays: conversion in 58.22ms (don't set all channels - Cb and Cr are a waste of time)
-	unsigned int x=0,y=0;
-	for (y = 0; y < rows; y++) {
-		for (x = 0; x < cols; x++) {
-			yuvInput[y * cols + x] = (uint8_t)(0.895 * (*prtM) + 16);
-			prtM++;
-			bytesRead++;
-		}
-	}
-
-	return bytesRead;
-}
-
-int matTo420(uint8_t *outputImage, FlyCapture2::Image* inputImage){
-	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
-
-	unsigned long long time, time2;
-	int bytesRead;
-	unsigned char *prtM = inputImage->GetData();
-	unsigned int rows,cols,stride;
-	FlyCapture2::PixelFormat pixFmt;
-	FlyCapture2::BayerTileFormat bayerFormat;
-	inputImage->GetDimensions(&rows,&cols,&stride,&pixFmt,&bayerFormat);
-
-	//Precompiled code gets run in 17.88ms. BAM!
-	buffer_t input_buf = {0}, output_buf = {0};
-
-	// The host pointers point to the start of the image data:
-	input_buf.host  = prtM;
-	output_buf.host = outputImage;
-	//See the halide tutorial how to set these.
-	input_buf.stride[0] = output_buf.stride[0] = 1;
-	input_buf.stride[1] = output_buf.stride[1] = stride;
-	input_buf.extent[0] = output_buf.extent[0] = cols;
-	input_buf.extent[1] = output_buf.extent[1] = rows;
-	input_buf.elem_size = output_buf.elem_size = 1;
-
-	//do it
-	int error = halideYuv420Conv(&input_buf, &output_buf);
-	bytesRead=rows*cols*3; //fool the system. We never read/written or set Cb and Cr
-
-	return bytesRead;
-}
-
-int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *elapsedTimeP, double *avgtimeP, beeCompress::MutexRingbuffer *buffer, FILE *f, int totalFrames, int fps, int width, int height)
+int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *elapsedTimeP, double *avgtimeP, beeCompress::MutexBuffer *buffer, beeCompress::writeHandler *wh, int totalFrames, int fps, int width, int height)
 {
 	HANDLE hInput;
 	uint32_t numBytesRead = 0;
@@ -573,7 +519,7 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 	encodeConfig.height = height;
 	//il->getIndexRange(&(encodeConfig.startFrameIdx), &(encodeConfig.endFrameIdx));
 
-	encodeConfig.fOutput = f; //fopen(encodeConfig.outputFileName, "wb");
+	encodeConfig.fOutput = wh->video; //fopen(encodeConfig.outputFileName, "wb");
 
 	hInput = 0; /*nvOpenFile(encodeConfig.inputFileName);*/
 
@@ -628,6 +574,7 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 		yuv[0] = new uint8_t[encodeConfig.width*encodeConfig.height];
 		yuv[1] = new uint8_t[encodeConfig.width*encodeConfig.height / 4];
 		yuv[2] = new uint8_t[encodeConfig.width*encodeConfig.height / 4];
+		//memset(yuv[0],128, encodeConfig.width*encodeConfig.height);
 		memset(yuv[1],128, encodeConfig.width*encodeConfig.height / 4);
 		memset(yuv[2],128, encodeConfig.width*encodeConfig.height / 4);
 	}
@@ -638,21 +585,29 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 	{
 		numBytesRead = 0;
 
-		FlyCapture2::Image* img;
-		while((img=buffer->back()) == NULL){
+		//Wait until there is a new image available
+		while(buffer->size() <= 0){
 			//TODO: Some smart waiting
-			//usleep(333*1000);
+			usleep(100*1000);
 		}
-		numBytesRead = matTo420(yuv[0],img);
-		//numBytesRead = matTo420NoHalide(yuv[0],img);
+		beeCompress::ImageBuffer img = buffer->pop();
+		numBytesRead = img.width * img.height;
+		//numBytesRead = 999;
+
+		//Debug output TODO: remove?
 		if(frm%50==0)printf("Loaded frame %d \n", frm);
 
+		//This should not happen
 		if (numBytesRead == 0)
 			break;
 
+
 		EncodeFrameConfig stEncodeFrame;
 		memset(&stEncodeFrame, 0, sizeof(stEncodeFrame));
-		stEncodeFrame.yuv[0] = yuv[0];
+
+		//Fill data structure for the encoder
+		stEncodeFrame.yuv[0] = img.data;
+		//stEncodeFrame.yuv[0] = yuv[0];
 		stEncodeFrame.yuv[1] = yuv[1];
 		stEncodeFrame.yuv[2] = yuv[2];
 
@@ -662,8 +617,15 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 		stEncodeFrame.width = encodeConfig.width;
 		stEncodeFrame.height = encodeConfig.height;
 
+		//Invoke the encoder
 		EncodeFrame(&stEncodeFrame, false, encodeConfig.width, encodeConfig.height);
 		numFramesEncoded++;
+
+		//Log the progress to the writeHandler
+		wh->log(img.timestamp);
+
+		//Free memory. The destructor does not do this!
+		free(img.data);
 	}
 
 	nvStatus = EncodeFrame(NULL, true, encodeConfig.width, encodeConfig.height);

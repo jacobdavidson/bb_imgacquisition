@@ -13,6 +13,7 @@ add_definitions( -DBOOST_ALL_NO_LIB )
 find_package(Qt5Core REQUIRED) #  PATHS "C:\\Qt\\Qt5.4.1\\5.4\\msvc2013_64_opengl"
 set(Boost_USE_STATIC_LIBS ON)
 find_package( Boost REQUIRED system filesystem program_options)
+find_package( OpenCV REQUIRED)
 find_package(CUDA REQUIRED COMPONENTS cuda cudart)
  
 # project dependecies

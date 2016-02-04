@@ -6,6 +6,7 @@ set(LIBS
     ${CUDA_LIBRARIES} 
     ${Qt5Core_LIBRARIES} 
     ${Boost_LIBRARIES}
+    ${OpenCV_LIBRARIES}
 		)
 
 set(CMAKE_INCLUDE_CURRENT_DIR OFF)
@@ -13,6 +14,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 
 message("CUDA_LIBRARIES is ${CUDA_LIBRARIES}")
 message("Boost_LIBRARIES is ${Boost_LIBRARIES}")
+message("OpenCV_LIBRARIES is ${OpenCV_LIBRARIES}")
 message("Qt5Core_LIBRARIES is ${Qt5Core_LIBRARIES}")
 
 #########################

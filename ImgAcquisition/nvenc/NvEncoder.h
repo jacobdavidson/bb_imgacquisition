@@ -18,7 +18,8 @@
 #endif
 
 #include "NvHWEncoder.h"
-#include "../MutexRingbuffer.h"
+#include "../Buffer/MutexBuffer.h"
+#include "../writeHandler.h"
 
 #define MAX_ENCODE_QUEUE 32
 
@@ -150,7 +151,7 @@ public:
      * @return 				The encoded file size or -1 in case of an error.
      */
     int                                                  EncodeMain(int rcmode, int preset, int qp, int bitrate, double *elapsedTimeP, double *avgtimeP,
-    																beeCompress::MutexRingbuffer *buffer, FILE *f, int totalFrames,
+    																beeCompress::MutexBuffer *buffer, beeCompress::writeHandler *wh, int totalFrames,
     																int fps, int width, int height);
 
 protected:
