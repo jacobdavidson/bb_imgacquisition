@@ -18,6 +18,7 @@ static const std::string BUFFERSIZE				= "IMACQUISITION.BUFFERSIZE";
 static const std::string FPS 					= "IMACQUISITION.FPS";
 static const std::string LOGDIR 				= "IMACQUISITION.LOGDIR";
 static const std::string IMDIR 					= "IMACQUISITION.IMDIR";
+static const std::string IMDIRPREVIEW 			= "IMACQUISITION.IMDIRPREVIEW";
 }
 
 

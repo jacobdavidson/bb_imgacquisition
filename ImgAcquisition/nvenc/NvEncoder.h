@@ -93,6 +93,18 @@ typedef struct _EncodeFrameConfig
     uint32_t height;
 }EncodeFrameConfig;
 
+typedef struct _EncoderQualityConfig
+{
+	int rcmode;
+	int preset;
+	int qp;
+	int bitrate;
+	int totalFrames;
+	int width;
+	int height;
+	int fps;
+}EncoderQualityConfig;
+
 typedef enum 
 {
     NV_ENC_DX9 = 0,
@@ -150,9 +162,8 @@ public:
      * 						Please note that NvEnc only supports up to 4096x4096.
      * @return 				The encoded file size or -1 in case of an error.
      */
-    int                                                  EncodeMain(int rcmode, int preset, int qp, int bitrate, double *elapsedTimeP, double *avgtimeP,
-    																beeCompress::MutexBuffer *buffer, beeCompress::writeHandler *wh, int totalFrames,
-    																int fps, int width, int height);
+    int                                                  EncodeMain(double *elapsedTimeP, double *avgtimeP,beeCompress::MutexBuffer *buffer, beeCompress::MutexBuffer *bufferPrev,
+    																beeCompress::writeHandler *wh, EncoderQualityConfig encCfg);
 
 protected:
     CNvHWEncoder                                        *m_pNvHWEncoder;

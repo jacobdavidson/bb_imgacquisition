@@ -1,6 +1,8 @@
 #include "ImgAcquisitionApp.h"
+#include "settings/Settings.h"
 #include <iostream>
 #include <QDebug>
+#include <unistd.h> //sleep
 
 using namespace FlyCapture2;
 using namespace std;
@@ -34,7 +36,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	if(numCameras>=3) threads[2].initialize( 2, (glue1._Buffer2) );
 	if(numCameras>=4) threads[3].initialize( 3, (glue2._Buffer2) );
 
-	//Map the ringbuffers to camera id's
+	//Map the buffers to camera id's
 	glue1._CamBuffer1=0;
 	glue1._CamBuffer2=1;
 	glue2._CamBuffer1=2;
@@ -53,7 +55,34 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	if(numCameras>=2) glue2.start();
 
 	cout << "Started the encoder threads." << endl;
+
+	/***** Check memory usage *****/
+	//Grab video dimensions from settings
+	SettingsIAC *set = SettingsIAC::getInstance();
+	long long unsigned int prevDim = set->getValueOfParam<int>(IMACQUISITION::VIDEO_WIDTH)/2
+									* set->getValueOfParam<int>(IMACQUISITION::VIDEO_HEIGHT)/2;
+	long long unsigned int hqDim = set->getValueOfParam<int>(IMACQUISITION::VIDEO_WIDTH)
+								   * set->getValueOfParam<int>(IMACQUISITION::VIDEO_HEIGHT);
+
+	//Grab current memory usage of each buffer every 10 seconds and calculate total usage
+	while(1){
+		long long unsigned int usage[8];
+		long long unsigned int scale = 1024*1024;
+		usage[0] = (glue1._Buffer1->size() * hqDim)  / scale;
+		usage[1] = (glue1._Buffer2->size() * hqDim) / scale;
+		usage[2] = (glue1._Buffer1_preview->size() * prevDim) / scale;
+		usage[3] = (glue1._Buffer2_preview->size() * prevDim) / scale;
+		usage[4] = (glue2._Buffer1->size() * hqDim) / scale;
+		usage[5] = (glue2._Buffer2->size() * hqDim) / scale;
+		usage[6] = (glue2._Buffer1_preview->size() * prevDim) / scale;
+		usage[7] = (glue2._Buffer2_preview->size() * prevDim) / scale;
+		long long unsigned int total = 0;
+		for (int i=0; i<8; i++) total += usage[i];
+		std::cout << "Currently using memory: "<< total<< " MB" << std::endl;
+		usleep(10000*1000);
+	}
 }
+
 //destructor
 ImgAcquisitionApp::~ImgAcquisitionApp()
 {

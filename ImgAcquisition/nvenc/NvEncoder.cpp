@@ -70,15 +70,15 @@ CNvEncoder::CNvEncoder()
 	m_pNvHWEncoder = new CNvHWEncoder;
 	m_pDevice = NULL;
 #if defined (NV_WINDOWS)
-    		m_pD3D = NULL;
+	m_pD3D = NULL;
 #endif
-    		m_cuContext = NULL;
+	m_cuContext = NULL;
 
-    		m_uEncodeBufferCount = 0;
-    		memset(&m_stEncoderInput, 0, sizeof(m_stEncoderInput));
-    		memset(&m_stEOSOutputBfr, 0, sizeof(m_stEOSOutputBfr));
+	m_uEncodeBufferCount = 0;
+	memset(&m_stEncoderInput, 0, sizeof(m_stEncoderInput));
+	memset(&m_stEOSOutputBfr, 0, sizeof(m_stEOSOutputBfr));
 
-    		memset(&m_stEncodeBuffer, 0, sizeof(m_stEncodeBuffer));
+	memset(&m_stEncodeBuffer, 0, sizeof(m_stEncodeBuffer));
 }
 
 CNvEncoder::~CNvEncoder()
@@ -296,12 +296,12 @@ NVENCSTATUS CNvEncoder::AllocateIOBuffers(uint32_t uInputWidth, uint32_t uInputH
 		m_stEncodeBuffer[i].stOutputBfr.dwBitstreamBufferSize = BITSTREAM_BUFFER_SIZE;
 
 #if defined (NV_WINDOWS)
-        		nvStatus = m_pNvHWEncoder->NvEncRegisterAsyncEvent(&m_stEncodeBuffer[i].stOutputBfr.hOutputEvent);
-        		if (nvStatus != NV_ENC_SUCCESS)
-        			return nvStatus;
-        		m_stEncodeBuffer[i].stOutputBfr.bWaitOnEvent = true;
+		nvStatus = m_pNvHWEncoder->NvEncRegisterAsyncEvent(&m_stEncodeBuffer[i].stOutputBfr.hOutputEvent);
+		if (nvStatus != NV_ENC_SUCCESS)
+			return nvStatus;
+		m_stEncodeBuffer[i].stOutputBfr.bWaitOnEvent = true;
 #else
-        		m_stEncodeBuffer[i].stOutputBfr.hOutputEvent = NULL;
+		m_stEncodeBuffer[i].stOutputBfr.hOutputEvent = NULL;
 #endif
 	}
 
@@ -364,14 +364,14 @@ NVENCSTATUS CNvEncoder::FlushEncoder()
 	}
 
 #if defined(NV_WINDOWS)
-    		if (WaitForSingleObject(m_stEOSOutputBfr.hOutputEvent, 500) != WAIT_OBJECT_0)
-    		{
-    			assert(0);
-    			nvStatus = NV_ENC_ERR_GENERIC;
-    		}
+	if (WaitForSingleObject(m_stEOSOutputBfr.hOutputEvent, 500) != WAIT_OBJECT_0)
+	{
+		assert(0);
+		nvStatus = NV_ENC_ERR_GENERIC;
+	}
 #endif
 
-    		return nvStatus;
+	return nvStatus;
 }
 
 NVENCSTATUS CNvEncoder::Deinitialize(uint32_t devicetype)
@@ -475,7 +475,8 @@ GUID getGUID(int id){
 	return NV_ENC_PRESET_DEFAULT_GUID;
 }
 
-int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *elapsedTimeP, double *avgtimeP, beeCompress::MutexBuffer *buffer, beeCompress::writeHandler *wh, int totalFrames, int fps, int width, int height)
+int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::MutexBuffer *buffer,
+		beeCompress::MutexBuffer *bufferPrev, beeCompress::writeHandler *wh, EncoderQualityConfig encCfg)
 {
 	HANDLE hInput;
 	uint32_t numBytesRead = 0;
@@ -492,34 +493,26 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 
 	//This is important. If these are higher than
 	//4096 it may crash the entire system.
-	if(width > 4096 || height > 4096){
+	if(encCfg.width > 4096 || encCfg.height > 4096){
 		return -1;
 	}
 
-	encodeConfig.endFrameIdx = INT_MAX;
-	encodeConfig.bitrate = bitrate;
-	encodeConfig.rcMode = getRcmode(rcmode);
-	encodeConfig.gopLength = NVENC_INFINITE_GOPLENGTH;
-	encodeConfig.deviceType = NV_ENC_CUDA;
-	encodeConfig.codec = NV_ENC_HEVC;
-	encodeConfig.fps = fps;
-	encodeConfig.qp = qp;
-	encodeConfig.presetGUID = getGUID(preset);
-	encodeConfig.pictureStruct = NV_ENC_PIC_STRUCT_FRAME;
-	encodeConfig.isYuv444 = 0;
+	encodeConfig.endFrameIdx 	= INT_MAX;
+	encodeConfig.bitrate 		= encCfg.bitrate;
+	encodeConfig.rcMode 		= getRcmode(encCfg.rcmode);
+	encodeConfig.gopLength 		= NVENC_INFINITE_GOPLENGTH;
+	encodeConfig.deviceType 	= NV_ENC_CUDA;
+	encodeConfig.codec 			= NV_ENC_HEVC;
+	encodeConfig.fps 			= encCfg.fps;
+	encodeConfig.qp 			= encCfg.qp;
+	encodeConfig.presetGUID 	= getGUID(encCfg.preset);
+	encodeConfig.pictureStruct 	= NV_ENC_PIC_STRUCT_FRAME;
+	encodeConfig.isYuv444 		= 0;
 
-	nvStatus = NV_ENC_SUCCESS;//m_pNvHWEncoder->ParseArguments(&encodeConfig, argc, argv);
-	if (nvStatus != NV_ENC_SUCCESS)
-	{
-		//PrintHelp();
-		return 1;
-	}
+	encodeConfig.width = encCfg.width;
+	encodeConfig.height = encCfg.height;
 
-	encodeConfig.width = width;
-	encodeConfig.height = height;
-	//il->getIndexRange(&(encodeConfig.startFrameIdx), &(encodeConfig.endFrameIdx));
-
-	encodeConfig.fOutput = wh->video; //fopen(encodeConfig.outputFileName, "wb");
+	encodeConfig.fOutput = wh->video;
 
 	hInput = 0; /*nvOpenFile(encodeConfig.inputFileName);*/
 
@@ -581,7 +574,7 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 	NvQueryPerformanceCounter(&lStart);
 
 	// for (int frm = encodeConfig.startFrameIdx; frm <= encodeConfig.endFrameIdx; frm++)
-	for (int frm = 0; frm < totalFrames; frm++)
+	for (int frm = 0; frm < encCfg.totalFrames; frm++)
 	{
 		numBytesRead = 0;
 
@@ -623,6 +616,18 @@ int CNvEncoder::EncodeMain(int rcmode, int preset, int qp, int bitrate, double *
 
 		//Log the progress to the writeHandler
 		wh->log(img.timestamp);
+
+		if(bufferPrev!=NULL){
+			beeCompress::ImageBuffer *newImage = new beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img.camid,img.timestamp);
+			//TODO: Put this in a function and do smart scaling
+			unsigned int x=0,y=0;
+			for (y = 0; y < encodeConfig.height; y+=2) {
+				for (x = 0; x < encodeConfig.width; x+=2) {
+					newImage->data[y/2 * encodeConfig.width/2 + x/2] = img.data[y * encodeConfig.width + x];
+				}
+			}
+			bufferPrev->push(*newImage);
+		}
 
 		//Free memory. The destructor does not do this!
 		free(img.data);

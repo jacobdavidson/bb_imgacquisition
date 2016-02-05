@@ -38,9 +38,10 @@ class NvEncGlue : public QThread{
 public:
 
 	/**
-	 * @brief _Ring1 The first ringbuffer to encode
+	 * @brief _Buffer1 The first buffer to encode
 	 */
 	MutexLinkedList *_Buffer1;
+	MutexLinkedList *_Buffer1_preview;
 
 	/**
 	 * @brief _CamRing1 Cam number associated with the first ringbuffer
@@ -48,9 +49,10 @@ public:
 	int _CamBuffer1;
 
 	/**
-	 * @brief _Ring2 The second ringbuffer to encode
+	 * @brief _Buffer2 The second buffer to encode
 	 */
 	MutexLinkedList *_Buffer2;
+	MutexLinkedList *_Buffer2_preview;
 
 	/**
 	 * @brief _CamRing2 Cam number associated with the second ringbuffer
