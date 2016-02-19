@@ -8,14 +8,16 @@
 #include "writeHandler.h"
 #include "settings/utility.h"
 #include <sstream>
+#include <boost/filesystem.hpp>
 
 namespace beeCompress {
 
-writeHandler::writeHandler(std::string imdir, int currentCam) {
+writeHandler::writeHandler(std::string imdir, int currentCam, std::string edir) {
 	basename = imdir;
 
 	//For file writing
 	char 		filepath[512];
+	char 		exdirFilepath[512];
 	camId = currentCam;
 
 	//Create assemble file name and create a file handle to pass the encoder.
@@ -23,6 +25,9 @@ writeHandler::writeHandler(std::string imdir, int currentCam) {
 
 	sprintf(filepath, basename.c_str(),
 			camId,camId,timestamp.c_str(),camId,timestamp.c_str(),0);
+	sprintf(exdirFilepath, edir.c_str(),
+			camId,0);
+	exchangedir = exdirFilepath;
 
 	std::string tmp = filepath;
 	lockfile = tmp + ".lck";
@@ -62,6 +67,10 @@ writeHandler::~writeHandler() {
 	std::string tmp = filepath;
 	std::string newvideofile = tmp + ".avi";
 	std::string newframesfile = tmp + ".txt";
+	boost::filesystem::path video(newvideofile);
+	newvideofile = exchangedir+video.filename().string();
+	boost::filesystem::path frames(newframesfile);
+	newframesfile = exchangedir+frames.filename().string();
 
 	rename(videofile.c_str(),newvideofile.c_str());
 	rename(framesfile.c_str(),newframesfile.c_str());

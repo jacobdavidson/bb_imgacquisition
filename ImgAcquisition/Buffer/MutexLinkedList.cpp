@@ -19,22 +19,28 @@ MutexLinkedList::~MutexLinkedList() {
 }
 
 
-void MutexLinkedList::push(ImageBuffer imbuffer){
+void MutexLinkedList::push(std::shared_ptr<ImageBuffer> imbuffer){
 	_Access.lock();
-	images.push_back(imbuffer);
+	//std::cout << "PUSH1"<<std::endl;
+	images.push_back(std::move(imbuffer));
+
+	//std::cout << "PUSH2"<<std::endl;
 	_Access.unlock();
 }
 
-ImageBuffer MutexLinkedList::pop(){
+std::shared_ptr<beeCompress::ImageBuffer> MutexLinkedList::pop(){
 	_Access.lock();
 	if(images.size()>0){
-		ImageBuffer ret(images.front());
+		//std::cout << "POP1"<<std::endl;
+		std::shared_ptr<ImageBuffer> img = std::move(images.front());
+		//std::cout << "POP2"<<std::endl;
 		images.pop_front();
+		//std::cout << "POP3"<<std::endl;
 		_Access.unlock();
-		return ret;
+		return img;
 	}
 	_Access.unlock();
-	ImageBuffer dummy(0,0,0,"");
+	std::shared_ptr<ImageBuffer> dummy(new beeCompress::ImageBuffer(0,0,0,""));
 	return dummy;
 }
 

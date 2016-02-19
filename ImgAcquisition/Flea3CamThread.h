@@ -4,7 +4,14 @@
 #include <QThread>
 #include "FlyCapture2.h"
 #include "Buffer/MutexBuffer.h"
+#include <mutex>
 using namespace FlyCapture2;
+
+struct CalibrationInfo{
+	bool doCalibration;
+	double calibrationData[4][4];
+	std::mutex dataAccess;
+};
 
 //inherits from Qthread
 class Flea3CamThread : public QThread
@@ -14,9 +21,10 @@ class Flea3CamThread : public QThread
 public:
 	Flea3CamThread(); //constructor
 	~Flea3CamThread(); //destructor
-	bool				initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer); //here goes the camera ID (from 0 to 3)
+	bool				initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer, CalibrationInfo *calib); //here goes the camera ID (from 0 to 3)
 	bool				initialized;
-	unsigned int		_ID; //private variable
+	unsigned int		_ID;
+	CalibrationInfo		*_Calibration;
 
 private:
 	bool				initCamera();
@@ -30,7 +38,7 @@ private:
 	void				generateLog(QString path, QString message); // function to generate log file
 	void				localCounter(unsigned int oldTime, unsigned int newTime); // 
 		
-	JPEGOption			_jpegConf; //compression parameters
+	//JPEGOption			_jpegConf; //compression parameters
 
 	Camera				_Camera; //objects that points to the camera
 	Image				_Image; //object to catch the image temporally 

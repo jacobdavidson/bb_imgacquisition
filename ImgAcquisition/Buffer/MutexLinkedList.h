@@ -10,6 +10,7 @@
 
 #include "MutexBuffer.h"
 #include <list>
+#include <memory>
 
 namespace beeCompress {
 
@@ -22,16 +23,16 @@ class MutexLinkedList: public MutexBuffer {
 
 public:
 
-	std::list<ImageBuffer> images;
+	std::list<std::shared_ptr<ImageBuffer>> images;
 
 	/**
 	 * @brief _Access Mutex to modify the ringbuffer.
 	 */
 	std::mutex _Access;
 
-	virtual void push(ImageBuffer imbuffer);
+	virtual void push(std::shared_ptr<ImageBuffer> imbuffer);//std::shared_ptr<ImageBuffer>
 
-	virtual ImageBuffer pop();
+	virtual std::shared_ptr<beeCompress::ImageBuffer> pop();
 
 	virtual int size(){
 		int tsize = 0;

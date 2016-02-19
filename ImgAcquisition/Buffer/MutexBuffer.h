@@ -10,6 +10,7 @@
 
 #include <mutex>
 #include <string>
+#include <memory>
 
 namespace beeCompress {
 
@@ -27,7 +28,7 @@ public:
 		width = w;
 		camid = cid;
 		if (w>0 && h>0){
-			data = (uint8_t*) malloc (w*h);
+			data = new uint8_t[w*h];
 			//TODO malloc data ok?
 		}
 	}
@@ -41,7 +42,7 @@ public:
 	}
 
 	~ImageBuffer(){
-		//free(data);
+		delete(data);
 	}
 };
 
@@ -49,9 +50,9 @@ public:
 class MutexBuffer {
 public:
 
-	virtual void push(ImageBuffer imbuffer) = 0;
+	virtual void push(std::shared_ptr<ImageBuffer> imbuffer) = 0;
 
-	virtual ImageBuffer pop() = 0;
+	virtual std::shared_ptr<beeCompress::ImageBuffer> pop() = 0;
 
 	virtual int size() = 0;
 

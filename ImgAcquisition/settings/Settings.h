@@ -13,6 +13,20 @@
 
 #include <fstream>
 
+typedef struct _EncoderQualityConfig
+{
+	int camid;
+	int isPreview;
+	int rcmode;
+	int preset;
+	int qp;
+	int bitrate;
+	int totalFrames;
+	int width;
+	int height;
+	int fps;
+}EncoderQualityConfig;
+
 namespace {
 template<typename Test, template<typename...> class Ref>
 struct is_specialization : std::false_type {};
@@ -37,17 +51,17 @@ private:
 		std::ifstream conf(confFile.c_str());
 		if (conf.good())
 		{
-	        boost::property_tree::read_json(confFile, _ptree);
+			boost::property_tree::read_json(confFile, _ptree);
 		}else{
 			_ptree = getDefaultParams();
-		    boost::property_tree::write_json(confFile, _ptree);
-		    std::cout << "**********************************"<<std::endl;
-		    std::cout << "* Created default configuration. *"<<std::endl;
-		    std::cout << "* Please adjust the config or    *"<<std::endl;
-		    std::cout << "* and run again. You might also  *"<<std::endl;
-		    std::cout << "* just stick with the defaults.  *"<<std::endl;
-		    std::cout << "**********************************"<<std::endl;
-		    exit(0);
+			boost::property_tree::write_json(confFile, _ptree);
+			std::cout << "**********************************"<<std::endl;
+			std::cout << "* Created default configuration. *"<<std::endl;
+			std::cout << "* Please adjust the config or    *"<<std::endl;
+			std::cout << "* and run again. You might also  *"<<std::endl;
+			std::cout << "* just stick with the defaults.  *"<<std::endl;
+			std::cout << "**********************************"<<std::endl;
+			exit(0);
 		}
 	}
 
@@ -164,7 +178,11 @@ public:
 		}
 	}
 
+	EncoderQualityConfig getBufferConf(int camid, int preview);
+
 private:
+
+	EncoderQualityConfig setFromNode(boost::property_tree::ptree node);
 
 	static const boost::property_tree::ptree getDefaultParams();
 

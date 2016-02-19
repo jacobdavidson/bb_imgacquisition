@@ -24,11 +24,12 @@ public:
 	std::string basename;
 	std::string firstTimestamp;
 	std::string lastTimestamp;
+	std::string exchangedir;
 
 	int 		camId;
 
 	void log(std::string timestamp);
-	writeHandler(std::string imdir, int currentCam);
+	writeHandler(std::string imdir, int currentCam, std::string exchangedir);
 	virtual ~writeHandler();
 };
 

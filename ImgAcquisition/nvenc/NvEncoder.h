@@ -20,6 +20,7 @@
 #include "NvHWEncoder.h"
 #include "../Buffer/MutexBuffer.h"
 #include "../writeHandler.h"
+#include "../settings/Settings.h"
 
 #define MAX_ENCODE_QUEUE 32
 
@@ -93,18 +94,6 @@ typedef struct _EncodeFrameConfig
     uint32_t height;
 }EncodeFrameConfig;
 
-typedef struct _EncoderQualityConfig
-{
-	int rcmode;
-	int preset;
-	int qp;
-	int bitrate;
-	int totalFrames;
-	int width;
-	int height;
-	int fps;
-}EncoderQualityConfig;
-
 typedef enum 
 {
     NV_ENC_DX9 = 0,
@@ -163,7 +152,7 @@ public:
      * @return 				The encoded file size or -1 in case of an error.
      */
     int                                                  EncodeMain(double *elapsedTimeP, double *avgtimeP,beeCompress::MutexBuffer *buffer, beeCompress::MutexBuffer *bufferPrev,
-    																beeCompress::writeHandler *wh, EncoderQualityConfig encCfg);
+    																beeCompress::writeHandler *wh, EncoderQualityConfig encCfg, EncoderQualityConfig encPrevCfg);
 
 protected:
     CNvHWEncoder                                        *m_pNvHWEncoder;

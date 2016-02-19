@@ -34,12 +34,14 @@ Flea3CamThread::~Flea3CamThread()
 }
 
 //this function reads the data input vector 
-bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer)
+bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer, CalibrationInfo *calib)
 {
 	_Buffer 					= pBuffer;
 	_ID							= id;	
-	_jpegConf.quality			= 90;
-	_jpegConf.progressive		= false;
+	_Calibration				= calib;
+	//_jpegConf.quality			= 90;
+	//_jpegConf.progressive		= false;
+
 
 	if ( initCamera() ){
 		std::cout << "Starting capture on camera "<< id << std::endl;
@@ -56,7 +58,8 @@ bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuf
 bool Flea3CamThread::initCamera()
 {
 
-	SettingsIAC 	*set = SettingsIAC::getInstance();
+	SettingsIAC* 			set = SettingsIAC::getInstance();
+	EncoderQualityConfig 	cfg = set->getBufferConf(_ID,0);
 
 	// SET VIDEO MODE HERE!!!
 	Format7Info				fmt7Info;
@@ -64,15 +67,16 @@ bool Flea3CamThread::initCamera()
 	const Mode				fmt7Mode		= MODE_10;
 	const PixelFormat		fmt7PixFmt		= PIXEL_FORMAT_RAW8;		
 
-	const float				frameRate		= set->getValueOfParam<int>(IMACQUISITION::FPS);
+
+	const float				frameRate		= cfg.fps;
 
 	Format7ImageSettings	fmt7ImageSettings;
 
 	fmt7ImageSettings.mode					= fmt7Mode;
 	fmt7ImageSettings.offsetX				= 0;
 	fmt7ImageSettings.offsetY				= 0;
-	fmt7ImageSettings.width					= set->getValueOfParam<int>(IMACQUISITION::VIDEO_WIDTH);
-	fmt7ImageSettings.height				= set->getValueOfParam<int>(IMACQUISITION::VIDEO_HEIGHT);
+	fmt7ImageSettings.width					= cfg.width;
+	fmt7ImageSettings.height				= cfg.height;
 	fmt7ImageSettings.pixelFormat			= fmt7PixFmt;	
 
 	Format7PacketInfo		fmt7PacketInfo;
@@ -164,7 +168,7 @@ bool Flea3CamThread::initCamera()
 	if ( !checkReturnCode( _Camera.GetConfiguration(&BufferFrame) ) )
 		return false;
 	// Modify the maximum number of frames to be buffered and send it back to the camera
-	BufferFrame.numBuffers = 20;
+	BufferFrame.numBuffers = 0; //20
 	BufferFrame.grabMode = BUFFER_FRAMES;
 
 	//TODO: Re-enable this, if it happens to work some day
@@ -249,7 +253,7 @@ bool Flea3CamThread::initCamera()
 
 	shutter.onOff				= true; 
 	shutter.autoManualMode		= false;
-	shutter.absValue			= 120; //40 for original
+	shutter.absValue			= 40; //40 for original
 
 	if ( !checkReturnCode( _Camera.SetProperty(&shutter) ) )
 		return false;
@@ -285,7 +289,7 @@ bool Flea3CamThread::initCamera()
 
 	gain.onOff				= true;
 	gain.autoManualMode		= false;
-	gain.absValue			= 20; //Original 0
+	gain.absValue			= 0; //Original 0
 
 	if ( !checkReturnCode( _Camera.SetProperty(&gain) ) )
 		return false;
@@ -380,8 +384,8 @@ int flycapTo420(uint8_t *outputImage, FlyCapture2::Image* inputImage){
 	return bytesRead;
 }
 
-int counter = 0;
-void analyzeImage(FlyCapture2::Image *cimg, cv::Mat *ref){
+//int counter = 0;
+void analyzeImage(int camid, FlyCapture2::Image *cimg, cv::Mat *ref, CalibrationInfo *c){
 	beeCompress::imageAnalysis 	ia;
 
 	//Create CV Matrix and make it use the flycap image ptr
@@ -398,26 +402,34 @@ void analyzeImage(FlyCapture2::Image *cimg, cv::Mat *ref){
 	double variance = ia.getVariance(mat);
 	double contrast = ia.avgHistDifference(*ref,mat);
 	double noise = ia.noiseEstimate(mat);
-	printf("%f,\t%f,\t%f,\t%f,\t%f\n",smd,variance,contrast,noise);
-	counter++;
-	char buf[256];
-	sprintf(buf,"Frame_%04d.jpeg",counter);
-	imwrite(buf,mat);
+
+	//Write results to mutex datastructure
+	c->dataAccess.lock();
+	c->calibrationData[camid][0] = smd;
+	c->calibrationData[camid][1] = variance;
+	c->calibrationData[camid][2] = contrast;
+	c->calibrationData[camid][3] = noise;
+	c->dataAccess.unlock();
+
+	//printf("Cam %d: %f,\t%f,\t%f,\t%f,\t%f\n",camid,smd,variance,contrast,noise);
 }
 
 //this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
-	struct			tm * timeinfo;
-	time_t rawtime;
-	char			timeresult[15];
-	char			logfilepathFull[256];
-	SettingsIAC 	*set 	= SettingsIAC::getInstance();
-	std::string 	logdir 	= set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
-	int 			vwidth	= set->getValueOfParam<int>(IMACQUISITION::VIDEO_WIDTH);
-	int 			vheight	= set->getValueOfParam<int>(IMACQUISITION::VIDEO_HEIGHT);
+	struct tm* 				timeinfo;
+	time_t 					rawtime;
+	char					timeresult[15];
+	char					logfilepathFull[256];
 
-	timeresult[14] = 0;
+	SettingsIAC*			set 	= SettingsIAC::getInstance();
+	EncoderQualityConfig 	cfg		= set->getBufferConf(_ID,0);
+	std::string 			logdir 	= set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+
+	int 					vwidth	= cfg.width;//set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_WIDTH);
+	int 					vheight	= cfg.width;//set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_HEIGHT);
+	timeresult[14] 					= 0;
+
 	/////////////////////////////////////////////
 
 	BusManager		busMgr;
@@ -429,6 +441,7 @@ void Flea3CamThread::run()
 	struct timezone tz;
 	int 			cs;
 	long int 		startTime;
+	int 			loopCount = 0;
 
 	FILE* fp = fopen("refIm.jpg", "r");
 	cv::Mat ref;
@@ -455,7 +468,10 @@ void Flea3CamThread::run()
 		FlyCapture2::Image cimg;
 
 		//Retrieve image and metadata
-		_Camera.RetrieveBuffer(&cimg);
+		Error e = _Camera.RetrieveBuffer(&cimg);
+		if(e.GetType() != PGRERROR_OK){
+			std::cout << "Error acquiring image: " << e.GetType() << std::endl;
+		}
 		_ImInfo = cimg.GetMetadata();
 		_FrameNumber = _ImInfo.embeddedFrameCounter;
 		_TimeStamp = cimg.GetTimeStamp();
@@ -473,33 +489,41 @@ void Flea3CamThread::run()
 		timeinfo = localtime(&startTime);
 		//sprintf isn't able to add trailing zeros, only leading...
 		int num = _TimeStamp.cycleCount;
+		if (num<1) num = 1; //TODO: This is sometimes 0 for cam 0 (e.g. on init error)
 		while(num < 100000) num *= 10;
 		sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%d",
-						timeinfo -> tm_year + 1900,
-						timeinfo -> tm_mon  + 1,
-						timeinfo -> tm_mday,
-						timeinfo -> tm_hour,
-						timeinfo -> tm_min,
-						timeinfo -> tm_sec,
-						num);
+				timeinfo -> tm_year + 1900,
+				timeinfo -> tm_mon  + 1,
+				timeinfo -> tm_mday,
+				timeinfo -> tm_hour,
+				timeinfo -> tm_min,
+				timeinfo -> tm_sec,
+				num);
 
 		//Do some debug output
-		//std::cout << _TimeStamp.cycleCount << " - " << _TimeStamp.cycleSeconds << " - " << _TimeStamp.cycleOffset  << " - " << startTime << std::endl;
+		//std::cout << _TimeStamp.cycleCount << " - " << _TimeStamp.cycleSeconds << " - " << _TimeStamp.cycleOffset  << " - " << startTime << std::endl;,
 
 		//Prepare and put he image into the buffer
 		std::string currentTimestamp(timeresult); //might use getTimestamp() ?
-		beeCompress::ImageBuffer *buf = new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp);
-		int numBytesRead = flycapTo420(buf->data,&cimg);
-		_Buffer->push(*buf);
 
-		//Analyze image properties
-		//analyzeImage(&cimg, &ref);
+		//Not in calibration mode. Move image to buffer for further procession
+		if (!_Calibration->doCalibration){
+			std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));// = new std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));
+			int numBytesRead = flycapTo420(buf.get()->data,&cimg);
+			_Buffer->push(buf);
+		}
+		//Calibrating cameras only
+		else if (loopCount%3 == 0){
+			//Analyze image properties
+			analyzeImage(_ID, &cimg, &ref, _Calibration);
+		}
 
 		//Do some logging
 		sprintf(logfilepathFull, logdir.c_str(),_ID);
 		generateLog(logfilepathFull,timeresult);
-/*
-		//Do this every second?
+
+		/*
+		//This was om the old code, done every second. Just why?
 		_Camera.StopCapture();
 		_Camera.Disconnect();
 		// Gets the PGRGuid from the camera
@@ -508,7 +532,7 @@ void Flea3CamThread::run()
 		_Camera.Connect(&guid);
 		_Camera.StartCapture();*/
 
-
+		loopCount++;
 	}	
 
 	_Camera.StopCapture();

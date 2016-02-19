@@ -23,6 +23,8 @@
 
 #include "halideYuv420Conv.h"
 #include "Halide.h"
+#include <memory>
+#include <opencv2/opencv.hpp>
 
 #define BITSTREAM_BUFFER_SIZE 2 * 1024 * 1024
 
@@ -476,7 +478,7 @@ GUID getGUID(int id){
 }
 
 int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::MutexBuffer *buffer,
-		beeCompress::MutexBuffer *bufferPrev, beeCompress::writeHandler *wh, EncoderQualityConfig encCfg)
+		beeCompress::MutexBuffer *bufferPrev, beeCompress::writeHandler *wh, EncoderQualityConfig encCfg, EncoderQualityConfig encPrevCfg)
 {
 	HANDLE hInput;
 	uint32_t numBytesRead = 0;
@@ -583,8 +585,10 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 			//TODO: Some smart waiting
 			usleep(100*1000);
 		}
-		beeCompress::ImageBuffer img = buffer->pop();
-		numBytesRead = img.width * img.height;
+		std::shared_ptr<beeCompress::ImageBuffer> imgptr = buffer->pop();
+		beeCompress::ImageBuffer *img = imgptr.get();
+		numBytesRead = img->width * img->height;
+		//std::cout <<"ASDF "<<img->width <<" ASDF " <<img->height<<std::endl;
 		//numBytesRead = 999;
 
 		//Debug output TODO: remove?
@@ -599,7 +603,7 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 		memset(&stEncodeFrame, 0, sizeof(stEncodeFrame));
 
 		//Fill data structure for the encoder
-		stEncodeFrame.yuv[0] = img.data;
+		stEncodeFrame.yuv[0] = img->data;
 		//stEncodeFrame.yuv[0] = yuv[0];
 		stEncodeFrame.yuv[1] = yuv[1];
 		stEncodeFrame.yuv[2] = yuv[2];
@@ -615,22 +619,45 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 		numFramesEncoded++;
 
 		//Log the progress to the writeHandler
-		wh->log(img.timestamp);
+		wh->log(img->timestamp);
 
 		if(bufferPrev!=NULL){
-			beeCompress::ImageBuffer *newImage = new beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img.camid,img.timestamp);
+			//beeCompress::ImageBuffer *newImage = new beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp);
+
+			/*std::shared_ptr<beeCompress::ImageBuffer> newImage = std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp));
 			//TODO: Put this in a function and do smart scaling
 			unsigned int x=0,y=0;
 			for (y = 0; y < encodeConfig.height; y+=2) {
 				for (x = 0; x < encodeConfig.width; x+=2) {
-					newImage->data[y/2 * encodeConfig.width/2 + x/2] = img.data[y * encodeConfig.width + x];
+					newImage->data[y/2 * encodeConfig.width/2 + x/2] = img->data[y * encodeConfig.width + x];
+				}
+			}*/
+
+			cv::Mat imageWithData = cv::Mat(encodeConfig.width * encodeConfig.height, 1, 0 /*CV_8U*/, img->data).clone();
+			cv::Mat reshapedImage = imageWithData.reshape(1, encodeConfig.height);
+			cv::Size size(encPrevCfg.width,encPrevCfg.height);//the dst image size,e.g.100x100
+			cv::Mat dst;//dst image
+			cv::resize(reshapedImage,dst,size);//resize image
+			std::shared_ptr<beeCompress::ImageBuffer> newImage =
+					std::shared_ptr<beeCompress::ImageBuffer>(
+							new beeCompress::ImageBuffer(encPrevCfg.width,encPrevCfg.height,img->camid,img->timestamp));
+
+			int x=0,y=0;
+			for (y = 0; y < encPrevCfg.height; y+=1) {
+				for (x = 0; x < encPrevCfg.width; x+=1) {
+					newImage->data[y * encPrevCfg.width + x] = dst.at<uint8_t>(y,x);
 				}
 			}
-			bufferPrev->push(*newImage);
+
+			bufferPrev->push(newImage);
 		}
 
+		//std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));// = new std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));
+		//int numBytesRead = flycapTo420(buf.get()->data,&cimg);
+		//_Buffer->push(buf);
+
 		//Free memory. The destructor does not do this!
-		free(img.data);
+		//free(img.data);
 	}
 
 	nvStatus = EncodeFrame(NULL, true, encodeConfig.width, encodeConfig.height);
