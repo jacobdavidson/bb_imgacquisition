@@ -21,25 +21,25 @@ MutexLinkedList::~MutexLinkedList() {
 
 void MutexLinkedList::push(std::shared_ptr<ImageBuffer> imbuffer){
 	_Access.lock();
-	//std::cout << "PUSH1"<<std::endl;
+
 	images.push_back(std::move(imbuffer));
 
-	//std::cout << "PUSH2"<<std::endl;
 	_Access.unlock();
+	waiting.notify();
 }
 
 std::shared_ptr<beeCompress::ImageBuffer> MutexLinkedList::pop(){
+	waiting.wait();
 	_Access.lock();
 	if(images.size()>0){
-		//std::cout << "POP1"<<std::endl;
 		std::shared_ptr<ImageBuffer> img = std::move(images.front());
-		//std::cout << "POP2"<<std::endl;
 		images.pop_front();
-		//std::cout << "POP3"<<std::endl;
 		_Access.unlock();
 		return img;
 	}
 	_Access.unlock();
+
+	std::cout << "Warning: pop used on an empty buffer"<<std::endl;
 	std::shared_ptr<ImageBuffer> dummy(new beeCompress::ImageBuffer(0,0,0,""));
 	return dummy;
 }

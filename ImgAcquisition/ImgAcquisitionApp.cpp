@@ -105,6 +105,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 : QCoreApplication(argc, argv) //
 {
 	int numCameras = 0;
+	int camsStarted = 0;
 	CalibrationInfo calib;
 	calib.doCalibration = false;			// When calibrating cameras only
 
@@ -125,21 +126,21 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	numCameras = checkCameras(); 	// when the number of cameras is insufficient it should interrupt the program
 
 	if(numCameras<1){
-		exit(2);
+		std::exit(2);
 	}
 
 	//one connect for each combination signal-slot
-	for (int i=0; i<numCameras; i++)
+	for (int i=0; i<4; i++)
 		connect(&threads[i],	SIGNAL(logMessage(int, QString)),
 				this,			SLOT(logMessage(int, QString)));
 
 	cout << "Connected " << numCameras << " cameras." << endl;
 
 	//the threads are initialized as a private variable of the class ImgAcquisitionApp
-	if(numCameras>=1) threads[0].initialize( 0, (glue1._Buffer1), &calib );
-	if(numCameras>=2) threads[1].initialize( 1, (glue2._Buffer1), &calib );
-	if(numCameras>=3) threads[2].initialize( 2, (glue1._Buffer2), &calib );
-	if(numCameras>=4) threads[3].initialize( 3, (glue2._Buffer2), &calib );
+	threads[0].initialize( 0, (glue1._Buffer1), &calib );
+	threads[1].initialize( 1, (glue2._Buffer1), &calib );
+	threads[2].initialize( 2, (glue1._Buffer2), &calib );
+	threads[3].initialize( 3, (glue2._Buffer2), &calib );
 
 	//Map the buffers to camera id's
 	glue1._CamBuffer1=0;
@@ -150,14 +151,20 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	cout << "Initialized " << numCameras << " cameras." << endl;
 
 	//execute run() function, spawns cam readers
-	for (int i=0; i<numCameras; i++)
-		threads[i].start();
+	for (int i=0; i<4; i++){
+		if (threads[i]._initialized){
+			threads[i].start();
+			camsStarted ++;
+		}
+	}
 
-	cout << "Started " << numCameras << " camera threads." << endl;
+	cout << "Started " << camsStarted << " camera threads." << endl;
 
 	//Start encoder threads
+	//The if(numCameras>=2) is not required here. If only one camera is present,
+	//the other glue thread will sleep most of the time.
 	glue1.start();
-	if(numCameras>=2) glue2.start();
+	glue2.start();
 
 	cout << "Started the encoder threads." << endl;
 
@@ -181,9 +188,9 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	//Grab video dimensions from settings
 	SettingsIAC *set = SettingsIAC::getInstance();
 	/*long long unsigned int prevDim = set->getValueOfParam<int>(IMACQUISITION::LD::VIDEO_WIDTH)
-			* set->getValueOfParam<int>(IMACQUISITION::LD::VIDEO_HEIGHT);
+	 * set->getValueOfParam<int>(IMACQUISITION::LD::VIDEO_HEIGHT);
 	long long unsigned int hqDim = set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_WIDTH)
-			* set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_HEIGHT);
+	 * set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_HEIGHT);
 
 	//Grab current memory usage of each buffer every 10 seconds and calculate total usage
 	while(1){
@@ -232,6 +239,15 @@ int ImgAcquisitionApp::checkCameras()
 	error = cc_busMgr.GetNumOfCameras(&numCameras);
 	if (error != PGRERROR_OK)
 		return -1;
+
+	//Find hardware ID to serial number
+	for (int i = 0; i < 4; i++){
+		unsigned int serial;
+		Error error = cc_busMgr.GetCameraSerialNumberFromIndex( i, &serial );
+		if (error == PGRERROR_OK){
+			qDebug() << "Detected cam with serial: " << serial;
+		}
+	}
 
 	qDebug() << "Number of cameras detected: " << numCameras << endl << endl;
 

@@ -477,6 +477,50 @@ GUID getGUID(int id){
 	return NV_ENC_PRESET_DEFAULT_GUID;
 }
 
+std::shared_ptr<beeCompress::ImageBuffer> scaleImage(beeCompress::ImageBuffer *img, EncodeConfig encodeConfig, EncoderQualityConfig encPrevCfg){
+	//beeCompress::ImageBuffer *newImage = new beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp);
+	std::shared_ptr<beeCompress::ImageBuffer> newImage =
+			std::shared_ptr<beeCompress::ImageBuffer>(
+					new beeCompress::ImageBuffer(encPrevCfg.width,encPrevCfg.height,img->camid,img->timestamp));
+
+	/*std::shared_ptr<beeCompress::ImageBuffer> newImage = std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp));
+				//TODO: Put this in a function and do smart scaling
+	 */
+	if(encPrevCfg.width == encPrevCfg.width/2 && encPrevCfg.height == encPrevCfg.height/2){
+		unsigned int x=0,y=0;
+		for (y = 0; y < encodeConfig.height; y+=2) {
+			for (x = 0; x < encodeConfig.width; x+=2) {
+				newImage->data[y/2 * encodeConfig.width/2 + x/2] = img->data[y * encodeConfig.width + x];
+			}
+		}
+	}
+	else if(encPrevCfg.width == encPrevCfg.width/4 && encPrevCfg.height == encPrevCfg.height/4){
+		unsigned int x=0,y=0;
+		for (y = 0; y < encodeConfig.height; y+=4) {
+			for (x = 0; x < encodeConfig.width; x+=4) {
+				newImage->data[y/4 * encodeConfig.width/4 + x/4] = img->data[y * encodeConfig.width + x];
+			}
+		}
+	}
+	else{
+
+		cv::Mat imageWithData = cv::Mat(encodeConfig.width * encodeConfig.height, 1, 0 /*CV_8U*/, img->data).clone();
+		cv::Mat reshapedImage = imageWithData.reshape(1, encodeConfig.height);
+		cv::Size size(encPrevCfg.width,encPrevCfg.height);//the dst image size,e.g.100x100
+		cv::Mat dst;//dst image
+		cv::resize(reshapedImage,dst,size);//resize image
+
+		int x=0,y=0;
+		for (y = 0; y < encPrevCfg.height; y+=1) {
+			for (x = 0; x < encPrevCfg.width; x+=1) {
+				newImage->data[y * encPrevCfg.width + x] = dst.at<uint8_t>(y,x);
+			}
+		}
+	}
+
+	return newImage;
+}
+
 int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::MutexBuffer *buffer,
 		beeCompress::MutexBuffer *bufferPrev, beeCompress::writeHandler *wh, EncoderQualityConfig encCfg, EncoderQualityConfig encPrevCfg)
 {
@@ -581,10 +625,10 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 		numBytesRead = 0;
 
 		//Wait until there is a new image available
-		while(buffer->size() <= 0){
+		//while(buffer->size() <= 0){
 			//TODO: Some smart waiting
-			usleep(100*1000);
-		}
+		//	usleep(100*1000);
+		//}
 		std::shared_ptr<beeCompress::ImageBuffer> imgptr = buffer->pop();
 		beeCompress::ImageBuffer *img = imgptr.get();
 		numBytesRead = img->width * img->height;
@@ -622,33 +666,8 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 		wh->log(img->timestamp);
 
 		if(bufferPrev!=NULL){
-			//beeCompress::ImageBuffer *newImage = new beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp);
 
-			/*std::shared_ptr<beeCompress::ImageBuffer> newImage = std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp));
-			//TODO: Put this in a function and do smart scaling
-			unsigned int x=0,y=0;
-			for (y = 0; y < encodeConfig.height; y+=2) {
-				for (x = 0; x < encodeConfig.width; x+=2) {
-					newImage->data[y/2 * encodeConfig.width/2 + x/2] = img->data[y * encodeConfig.width + x];
-				}
-			}*/
-
-			cv::Mat imageWithData = cv::Mat(encodeConfig.width * encodeConfig.height, 1, 0 /*CV_8U*/, img->data).clone();
-			cv::Mat reshapedImage = imageWithData.reshape(1, encodeConfig.height);
-			cv::Size size(encPrevCfg.width,encPrevCfg.height);//the dst image size,e.g.100x100
-			cv::Mat dst;//dst image
-			cv::resize(reshapedImage,dst,size);//resize image
-			std::shared_ptr<beeCompress::ImageBuffer> newImage =
-					std::shared_ptr<beeCompress::ImageBuffer>(
-							new beeCompress::ImageBuffer(encPrevCfg.width,encPrevCfg.height,img->camid,img->timestamp));
-
-			int x=0,y=0;
-			for (y = 0; y < encPrevCfg.height; y+=1) {
-				for (x = 0; x < encPrevCfg.width; x+=1) {
-					newImage->data[y * encPrevCfg.width + x] = dst.at<uint8_t>(y,x);
-				}
-			}
-
+			std::shared_ptr<beeCompress::ImageBuffer> newImage = scaleImage(img, encodeConfig, encPrevCfg);
 			bufferPrev->push(newImage);
 		}
 

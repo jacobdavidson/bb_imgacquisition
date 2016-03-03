@@ -57,6 +57,12 @@ void NvEncGlue::run(){
 		//std::cout << "Sizes:" << c1 << " - " << c2 << " - " << c1p << " - " << c2p << std::endl;
 
 		long long unsigned int maxSize = max(max(max(c1,c2),c1p),c2p);
+
+		if (maxSize == 0){
+			usleep(500);
+			continue;
+		}
+
 		if(c1>=maxSize){
 			currentCamBuffer 		= _Buffer1;
 			currentPreviewBuffer 	= _Buffer1_preview;

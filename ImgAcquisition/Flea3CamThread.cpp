@@ -24,7 +24,7 @@
 //Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread()
 {
-	initialized = false;	
+	_initialized = false;
 }
 
 //Flea3CamThread constructor
@@ -38,21 +38,22 @@ bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuf
 {
 	_Buffer 					= pBuffer;
 	_ID							= id;	
+	_HWID						= -1;
 	_Calibration				= calib;
-	//_jpegConf.quality			= 90;
-	//_jpegConf.progressive		= false;
+	_initialized				= false;
 
 
 	if ( initCamera() ){
 		std::cout << "Starting capture on camera "<< id << std::endl;
-		initialized = startCapture();
+		_initialized = startCapture();
 		std::cout << "Done starting capture." << std::endl;
 	}
 	else{
 		std::cerr << "Error on camera init "<< id << std::endl;
+		return false;
 	}
 
-	return initialized;
+	return _initialized;
 }
 
 bool Flea3CamThread::initCamera()
@@ -67,8 +68,6 @@ bool Flea3CamThread::initCamera()
 	const Mode				fmt7Mode		= MODE_10;
 	const PixelFormat		fmt7PixFmt		= PIXEL_FORMAT_RAW8;		
 
-
-	const float				frameRate		= cfg.fps;
 
 	Format7ImageSettings	fmt7ImageSettings;
 
@@ -116,14 +115,27 @@ bool Flea3CamThread::initCamera()
 	Error					error;
 
 
-	// Gets the Camera serial number
-	if ( !checkReturnCode( busMgr.GetCameraSerialNumberFromIndex( _ID, &snum ) ) )
+	//Find hardware ID to serial number
+	for (int i = 0; i < 4; i++){
+		unsigned int serial;
+		Error error = busMgr.GetCameraSerialNumberFromIndex( i, &serial );
+		if (error == PGRERROR_OK && serial == cfg.serial){
+			_HWID = i;
+		}
+	}
+
+	if (_HWID == -1)
 		return false;
 
-	sendLogMessage (3, "Camera " + QString::number(_ID) + " Serial Number: " + QString::number(snum));	// serial number is printed
+	// Gets the Camera serial number
+	if ( !checkReturnCode( busMgr.GetCameraSerialNumberFromIndex( _HWID, &snum ) ) )
+		return false;
+
+	sendLogMessage (3, "Camera " + QString::number(_HWID) + "(HWID) " + QString::number(_ID) +
+			"(SWID) Serial Number: " + QString::number(snum));	// serial number is printed
 
 	// Gets the PGRGuid from the camera		
-	if ( !checkReturnCode( busMgr.GetCameraFromIndex( _ID, &guid ) ) )
+	if ( !checkReturnCode( busMgr.GetCameraFromIndex( _HWID, &guid ) ) )
 		return false;	
 
 	// Connect to camera
@@ -168,7 +180,7 @@ bool Flea3CamThread::initCamera()
 	if ( !checkReturnCode( _Camera.GetConfiguration(&BufferFrame) ) )
 		return false;
 	// Modify the maximum number of frames to be buffered and send it back to the camera
-	BufferFrame.numBuffers = 0; //20
+	BufferFrame.numBuffers = cfg.hwbuffersize; //default is 20
 	BufferFrame.grabMode = BUFFER_FRAMES;
 
 	//TODO: Re-enable this, if it happens to work some day
@@ -212,13 +224,13 @@ bool Flea3CamThread::initCamera()
 
 	/////////////////// ALL THE PROCESS WITH PROPERTIES  ////////////////////////////////
 
-	//-------------------- BRIGHTNESS STARTS -----------------------------------			
+	//-------------------- BRIGHTNESS STARTS 		-----------------------------------
 	if ( !checkReturnCode( _Camera.GetProperty(&brightness) ) )
 		return false;
 
-	brightness.onOff				= true;
-	brightness.autoManualMode		= false;
-	brightness.absValue				= 0;
+	brightness.onOff			= cfg.brightnessonoff;		//default is true
+	brightness.autoManualMode	= cfg.brightnessauto;		//default is false
+	brightness.absValue			= cfg.brightness;			//default is 0
 
 	if ( !checkReturnCode( _Camera.SetProperty(&brightness) ) )
 		return false;
@@ -228,14 +240,14 @@ bool Flea3CamThread::initCamera()
 
 	sendLogMessage(3, "Brightness Parameter is: " + QString().sprintf("%s and %.2f", brightness.onOff ? "On":"Off", brightness.absValue ));
 
-	//-------------------- BROGHTNESS ENDS -----------------------------------
+	//-------------------- BROGHTNESS ENDS 			-----------------------------------
 
-	//-------------------- EXPOSURE STARTS -----------------------------------			
+	//-------------------- EXPOSURE STARTS 			-----------------------------------
 	if ( !checkReturnCode( _Camera.GetProperty(&exposure) ) )
 		return false;
 
-	exposure.onOff				= true;  //false
-	exposure.autoManualMode		= false; //true!
+	exposure.onOff				= cfg.exposureonoff;		//default is false
+	exposure.autoManualMode		= cfg.exposureauto; 		//default is true
 
 	if ( !checkReturnCode( _Camera.SetProperty(&exposure) ) )
 		return false;
@@ -247,13 +259,13 @@ bool Flea3CamThread::initCamera()
 
 	//-------------------- EXPOSURE ENDS -----------------------------------
 
-	//-------------------- SHUTTER STARTS -----------------------------------	
+	//-------------------- SHUTTER STARTS 			-----------------------------------
 	if ( !checkReturnCode( _Camera.GetProperty(&shutter) ) )
 		return false;
 
-	shutter.onOff				= true; 
-	shutter.autoManualMode		= false;
-	shutter.absValue			= 40; //40 for original
+	shutter.onOff				= cfg.shutteronoff; 		//default is true
+	shutter.autoManualMode		= cfg.shutterauto;			//default is false
+	shutter.absValue			= cfg.shutter; 				//default is 40
 
 	if ( !checkReturnCode( _Camera.SetProperty(&shutter) ) )
 		return false;
@@ -262,16 +274,16 @@ bool Flea3CamThread::initCamera()
 		return false;
 
 	sendLogMessage(3, "New shutter parameter is: " + QString().sprintf("%s and %.2f ms", shutter.autoManualMode ? "Auto":"Manual", shutter.absValue ));	
-	//-------------------- SHUTTER ENDS -----------------------------------
+	//-------------------- SHUTTER ENDS 			-----------------------------------
 
-	//-------------------- FRAME RATE STARTS -----------------------------------		
+	//-------------------- FRAME RATE STARTS 		-----------------------------------
 	if ( !checkReturnCode( _Camera.GetProperty(&frmRate) ) )
 		return false;
 
 	frmRate.absControl			= true;
 	frmRate.onOff				= true;
 	frmRate.autoManualMode		= false;
-	frmRate.absValue			= frameRate;
+	frmRate.absValue			= cfg.fps;
 
 	if ( !checkReturnCode( _Camera.SetProperty(&frmRate) ) )
 		return false;
@@ -281,15 +293,15 @@ bool Flea3CamThread::initCamera()
 
 	sendLogMessage(3, "New frame rate is " + QString().sprintf("%.2f", frmRate.absValue ) + " fps" );
 
-	//-------------------- FRAME RATE ENDS -----------------------------------
+	//-------------------- FRAME RATE ENDS 			-----------------------------------
 
-	//-------------------- GAIN STARTS -----------------------------------
+	//-------------------- GAIN STARTS 				-----------------------------------
 	if ( !checkReturnCode( _Camera.GetProperty(&gain) ) )
 		return false;
 
-	gain.onOff				= true;
-	gain.autoManualMode		= false;
-	gain.absValue			= 0; //Original 0
+	gain.onOff				= cfg.gainonoff; 	//default is true
+	gain.autoManualMode		= cfg.gainauto; 	//default is false
+	gain.absValue			= cfg.gain; 		//default is 0
 
 	if ( !checkReturnCode( _Camera.SetProperty(&gain) ) )
 		return false;
@@ -298,13 +310,13 @@ bool Flea3CamThread::initCamera()
 		return false;
 
 	sendLogMessage(3, "New gain parameter is: " + QString().sprintf("%s", gain.autoManualMode ? "Auto":"Manual" ) );	
-	//-------------------- GAIN ENDS -----------------------------------
+	//-------------------- GAIN ENDS 				-----------------------------------
 
-	//-------------------- WHITE BALANCE STARTS -----------------------------------		
+	//-------------------- WHITE BALANCE STARTS 	-----------------------------------
 	if ( !checkReturnCode( _Camera.GetProperty(&wBalance) ) )
 		return false;
 
-	wBalance.onOff				= false;
+	wBalance.onOff			= cfg.whitebalance;	//default is false
 
 	if ( !checkReturnCode( _Camera.SetProperty(&wBalance) ) )
 		return false;
@@ -313,7 +325,27 @@ bool Flea3CamThread::initCamera()
 		return false;
 
 	sendLogMessage(3, "New White Balance parameter is: " + QString().sprintf("%s", wBalance.onOff ? "On":"Off" ) );	
-	//-------------------- WHITE BALANCE ENDS -----------------------------------
+	//-------------------- WHITE BALANCE ENDS 		-----------------------------------
+
+	//-------------------- TRIGGER MODE STARTS 		-----------------------------------
+
+	// Get current trigger settings
+	TriggerMode triggerMode;
+	if ( !checkReturnCode( _Camera.GetTriggerMode( &triggerMode ) ) )
+		return false;
+
+	// Set camera to trigger mode 0
+	triggerMode.onOff = cfg.hwtrigger;
+	triggerMode.mode = 0;
+	triggerMode.parameter = 0;
+
+	// Triggering the camera externally using source 0.
+	triggerMode.source = 0;
+
+	if ( !checkReturnCode( _Camera.SetTriggerMode( &triggerMode ) ) )
+		return false;
+
+	//-------------------- TRIGGER MODE ENDS 		-----------------------------------
 
 	/////////////////// ALL THE PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
 	//Saves the configuration to memory channel 2
@@ -426,8 +458,8 @@ void Flea3CamThread::run()
 	EncoderQualityConfig 	cfg		= set->getBufferConf(_ID,0);
 	std::string 			logdir 	= set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
 
-	int 					vwidth	= cfg.width;//set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_WIDTH);
-	int 					vheight	= cfg.width;//set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_HEIGHT);
+	int 					vwidth	= cfg.width;
+	int 					vheight	= cfg.width;
 	timeresult[14] 					= 0;
 
 	/////////////////////////////////////////////

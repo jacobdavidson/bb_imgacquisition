@@ -22,8 +22,10 @@ public:
 	Flea3CamThread(); //constructor
 	~Flea3CamThread(); //destructor
 	bool				initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer, CalibrationInfo *calib); //here goes the camera ID (from 0 to 3)
-	bool				initialized;
+	bool				_initialized;
 	unsigned int		_ID;
+	unsigned int		_HWID;
+	unsigned int		_Serial;
 	CalibrationInfo		*_Calibration;
 
 private:

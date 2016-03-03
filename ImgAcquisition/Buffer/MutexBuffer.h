@@ -11,6 +11,7 @@
 #include <mutex>
 #include <string>
 #include <memory>
+#include "Semaphore.h"
 
 namespace beeCompress {
 
@@ -49,6 +50,7 @@ public:
 /* LIFO Queue */
 class MutexBuffer {
 public:
+	Semaphore waiting;
 
 	virtual void push(std::shared_ptr<ImageBuffer> imbuffer) = 0;
 

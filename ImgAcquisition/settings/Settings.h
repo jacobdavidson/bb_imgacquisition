@@ -17,6 +17,8 @@ typedef struct _EncoderQualityConfig
 {
 	int camid;
 	int isPreview;
+	int serial;
+	int enabled;
 	int rcmode;
 	int preset;
 	int qp;
@@ -25,7 +27,26 @@ typedef struct _EncoderQualityConfig
 	int width;
 	int height;
 	int fps;
+	int offsetx;
+	int offsety;
+	int hwbuffersize;
+	int brightness;
+	int brightnessonoff;
+	int brightnessauto;
+	int exposureonoff;
+	int exposureauto;
+	int shutter;
+	int shutteronoff;
+	int shutterauto;
+	int gain;
+	int gainonoff;
+	int gainauto;
+	int whitebalance;
+	int hwtrigger;
+	int hwtriggerparam;
+	int hwtriggersrc;
 }EncoderQualityConfig;
+
 
 namespace {
 template<typename Test, template<typename...> class Ref>
