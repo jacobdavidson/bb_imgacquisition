@@ -626,7 +626,6 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 
 		//Wait until there is a new image available
 		//while(buffer->size() <= 0){
-			//TODO: Some smart waiting
 		//	usleep(100*1000);
 		//}
 		std::shared_ptr<beeCompress::ImageBuffer> imgptr = buffer->pop();

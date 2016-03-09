@@ -13,12 +13,12 @@
 namespace beeCompress {
 
 writeHandler::writeHandler(std::string imdir, int currentCam, std::string edir) {
-	basename = imdir;
+	basename 	= imdir;
+	camId 		= currentCam;
 
 	//For file writing
 	char 		filepath[512];
 	char 		exdirFilepath[512];
-	camId = currentCam;
 
 	//Create assemble file name and create a file handle to pass the encoder.
 	std::string timestamp = getTimestamp();
@@ -27,17 +27,17 @@ writeHandler::writeHandler(std::string imdir, int currentCam, std::string edir) 
 			camId,camId,timestamp.c_str(),camId,timestamp.c_str(),0);
 	sprintf(exdirFilepath, edir.c_str(),
 			camId,0);
-	exchangedir = exdirFilepath;
 
 	std::string tmp = filepath;
-	lockfile = tmp + ".lck";
-	videofile = tmp + ".avi";
-	framesfile = tmp + ".txt";
+	exchangedir 	= exdirFilepath;
+	lockfile 		= tmp + ".lck";
+	videofile 		= tmp + ".avi";
+	framesfile 		= tmp + ".txt";
 
 	//Open for writing
-	lock	=	fopen(lockfile.c_str(),"wb");
-	video	=	fopen(videofile.c_str(),"wb");
-	frames	=	fopen(framesfile.c_str(),"wb");
+	lock			=	fopen(lockfile.c_str(),"wb");
+	video			=	fopen(videofile.c_str(),"wb");
+	frames			=	fopen(framesfile.c_str(),"wb");
 }
 
 void writeHandler::log(std::string timestamp){

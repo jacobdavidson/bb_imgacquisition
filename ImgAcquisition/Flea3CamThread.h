@@ -21,7 +21,8 @@ class Flea3CamThread : public QThread
 public:
 	Flea3CamThread(); //constructor
 	~Flea3CamThread(); //destructor
-	bool				initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer, CalibrationInfo *calib); //here goes the camera ID (from 0 to 3)
+	bool				initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer,
+			beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib); //here goes the camera ID (from 0 to 3)
 	bool				_initialized;
 	unsigned int		_ID;
 	unsigned int		_HWID;
@@ -51,6 +52,7 @@ private:
 	unsigned int		_LocalCounter; //to enumerate each image in a second
 
 	beeCompress::MutexBuffer *_Buffer;
+	beeCompress::MutexBuffer *_AnalysisBuffer;
 	
 protected:
 	void run(); //this is the function that will be iterated indefinitely

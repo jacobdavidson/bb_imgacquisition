@@ -1,29 +1,61 @@
 /*
- * imageAnalysis.cpp
+ * ImageAnalysis.cpp
  *
  *  Created on: Feb 2, 2016
  *      Author: hauke
  */
 
-#include "imageAnalysis.h"
+#include "ImageAnalysis.h"
 #include <math.h>       /* cos */
 #include <vector>
 #include <algorithm>
+#include <iostream>
 #define PI 3.14159265
 
 namespace beeCompress {
 using namespace cv;
 
-imageAnalysis::imageAnalysis() {
-	// TODO Auto-generated constructor stub
-
+ImageAnalysis::ImageAnalysis(std::string p_logfile) {
+	_Logfile = p_logfile;
+	_Buffer = new beeCompress::MutexLinkedList();
 }
 
-imageAnalysis::~imageAnalysis() {
+ImageAnalysis::~ImageAnalysis() {
 	// TODO Auto-generated destructor stub
 }
 
-void imageAnalysis::getContrastRatio(Mat &image){
+void ImageAnalysis::run() {
+	cv::Mat ref;
+	char 	outstr[512];
+	FILE*	outfile = fopen(_Logfile.c_str(),"wb");
+	FILE* 	fp 		= fopen("refIm.jpg", "r");
+	if (fp) {
+		ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
+		fclose(fp);
+	} else {
+		std::cout << "Error: not found reference image refIm.jpg."<<std::endl;
+	}
+
+	while(true){
+		std::shared_ptr<beeCompress::ImageBuffer> imgptr = _Buffer->pop();
+		beeCompress::ImageBuffer *img = imgptr.get();
+		cv::Mat mat(img->height,img->width,cv::DataType<uint8_t>::type);
+		mat.data = img->data;
+		double smd = sumModulusDifference(&mat);
+		double variance = getVariance(mat);
+		double contrast = avgHistDifference(ref,mat);
+		double noise = noiseEstimate(mat);
+		sprintf(outstr,"Cam %d: %f,\t%f,\t%f,\t%f,\t%f\n",img->camid,smd,variance,contrast,noise);
+		fwrite(outstr,sizeof(char), strlen(outstr),outfile);
+		fflush(outfile);
+		std::cout << "ASDFASDF"<<std::endl;
+	}
+
+	//Well, just in case...
+	fclose(outfile);
+}
+
+void ImageAnalysis::getContrastRatio(Mat &image){
 	uint8_t min = 255;
 	uint8_t max = 0;
 	for( int y = 0; y < image.rows; y++ ){
@@ -37,7 +69,7 @@ void imageAnalysis::getContrastRatio(Mat &image){
 	//printf("%d  %d, ratio: %f\n",max,min,ratio);
 }
 
-double imageAnalysis::getVariance(Mat &image){
+double ImageAnalysis::getVariance(Mat &image){
 	//http://www.lfb.rwth-aachen.de/bibtexupload/pdf/GRO10a.pdf
 	Mat out(image.size(),cv::DataType<double>::type);
 	Mat squared(image.size(),cv::DataType<double>::type);
@@ -57,7 +89,7 @@ double imageAnalysis::getVariance(Mat &image){
 	return var;
 }
 
-double imageAnalysis::sumModulusDifference(Mat *image){
+double ImageAnalysis::sumModulusDifference(Mat *image){
 	//http://www.lfb.rwth-aachen.de/bibtexupload/pdf/GRO10a.pdf
 	double smd = 0.0;
 	Mat in(image->size(),cv::DataType<double>::type);
@@ -88,7 +120,7 @@ double imageAnalysis::sumModulusDifference(Mat *image){
 	return smd;
 }
 
-double imageAnalysis::DCT(double k1, double k2, int m, int n, Mat &image){
+double ImageAnalysis::DCT(double k1, double k2, int m, int n, Mat &image){
 	double sum = 0.0;
 	for (double i=0 ; i < 8; i++){
 		for (double j=0 ; j < 8; j++){
@@ -98,11 +130,11 @@ double imageAnalysis::DCT(double k1, double k2, int m, int n, Mat &image){
 	return sum;
 }
 
-double imageAnalysis::SSF(double d){
+double ImageAnalysis::SSF(double d){
 	return (pow(d, 0.269) * (-3.533+3.533*d) * exp(-0.548*d));
 }
 
-double imageAnalysis::STilde(int m, int n,Mat &image){
+double ImageAnalysis::STilde(int m, int n,Mat &image){
 	double sum = 0.0;
 	double Bn_ijOneOne = image.at<double>(m+1, n+1);
 	for (int d=0 ; d < 8; d++){
@@ -112,7 +144,7 @@ double imageAnalysis::STilde(int m, int n,Mat &image){
 	return sum;
 }
 
-double imageAnalysis::S_PSM(Mat *image){
+double ImageAnalysis::S_PSM(Mat *image){
 	Mat in(image->size(),cv::DataType<double>::type);
 	image->assignTo(in,CV_64F);
 
@@ -128,7 +160,7 @@ double imageAnalysis::S_PSM(Mat *image){
 	return frac * sum;
 }
 
-cv::Mat imageAnalysis::getHist(cv::Mat *M){
+cv::Mat ImageAnalysis::getHist(cv::Mat *M){
 
 	  /// Establish the number of bins
 	  int histSize = 256;
@@ -158,7 +190,7 @@ cv::Mat imageAnalysis::getHist(cv::Mat *M){
 	  return grey_hist;
 }
 
-double imageAnalysis::avgHistDifference(Mat reference, Mat measure){
+double ImageAnalysis::avgHistDifference(Mat reference, Mat measure){
 	Mat ideal = getHist(&reference);
 	Mat noisy = getHist(&measure);
 	Mat dif(noisy.size(),cv::DataType<double>::type);
@@ -168,7 +200,7 @@ double imageAnalysis::avgHistDifference(Mat reference, Mat measure){
 	return total;
 }
 
-double imageAnalysis::noiseEstimate(Mat image){
+double ImageAnalysis::noiseEstimate(Mat image){
 	Mat blur(image.size(),cv::DataType<double>::type);
 	Mat dif(image.size(),cv::DataType<double>::type);
 	cv::medianBlur(image,blur,5);

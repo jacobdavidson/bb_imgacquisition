@@ -14,7 +14,7 @@
 #endif
 #include "settings/Settings.h"
 #include "settings/utility.h"
-#include "imageAnalysis.h"
+#include "ImageAnalysis.h"
 
 #include "halideYuv420Conv.h"
 #include "Halide.h"
@@ -34,8 +34,10 @@ Flea3CamThread::~Flea3CamThread()
 }
 
 //this function reads the data input vector 
-bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer, CalibrationInfo *calib)
+bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer,
+		beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib)
 {
+	_AnalysisBuffer				= pAnalysisBuffer;
 	_Buffer 					= pBuffer;
 	_ID							= id;	
 	_HWID						= -1;
@@ -418,7 +420,7 @@ int flycapTo420(uint8_t *outputImage, FlyCapture2::Image* inputImage){
 
 //int counter = 0;
 void analyzeImage(int camid, FlyCapture2::Image *cimg, cv::Mat *ref, CalibrationInfo *c){
-	beeCompress::imageAnalysis 	ia;
+	beeCompress::ImageAnalysis 	ia("");
 
 	//Create CV Matrix and make it use the flycap image ptr
 	unsigned char *prtM = cimg->GetData();
@@ -543,9 +545,13 @@ void Flea3CamThread::run()
 			std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));// = new std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));
 			int numBytesRead = flycapTo420(buf.get()->data,&cimg);
 			_Buffer->push(buf);
+
+			//For every 50'th picture, create image statistics
+			if(loopCount % 50 == 0)
+				_AnalysisBuffer->push(buf);
 		}
 		//Calibrating cameras only
-		else if (loopCount%3 == 0){
+		else if (loopCount % 3 == 0){
 			//Analyze image properties
 			analyzeImage(_ID, &cimg, &ref, _Calibration);
 		}

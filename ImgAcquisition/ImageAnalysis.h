@@ -1,21 +1,34 @@
 /*
- * imageAnalysis.h
+ * ImageAnalysis.h
  *
  *  Created on: Feb 2, 2016
  *      Author: hauke
  */
 
-#ifndef IMAGEANALYSIS_H_
-#define IMAGEANALYSIS_H_
+#ifndef ImageAnalysis_H_
+#define ImageAnalysis_H_
 #include <opencv2/opencv.hpp>
+#include <QThread>
+#include "Buffer/MutexBuffer.h"
+#include "Buffer/MutexLinkedList.h"
 
 namespace beeCompress {
 
 
-class imageAnalysis {
+class ImageAnalysis : public QThread
+{
+	Q_OBJECT   //generates the MOC
+
+	std::string _Logfile;
+
 public:
-	imageAnalysis();
-	virtual ~imageAnalysis();
+
+	MutexLinkedList *_Buffer;
+
+	ImageAnalysis(std::string logfile);
+	virtual ~ImageAnalysis();
+
+	void run();
 
 	void getContrastRatio(cv::Mat &image);
 
@@ -38,4 +51,4 @@ public:
 
 } /* namespace beeCompress */
 
-#endif /* IMAGEANALYSIS_H_ */
+#endif /* ImageAnalysis_H_ */

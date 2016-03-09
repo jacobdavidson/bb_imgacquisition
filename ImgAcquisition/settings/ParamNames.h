@@ -45,6 +45,7 @@ namespace IMACQUISITION {
 static const std::string BUFFER						= "IMACQUISITION.BUFFER";
 
 static const std::string DO_PREVIEWS 				= "IMACQUISITION.DO_PREVIEWS";
+static const std::string ANALYSISFILE				= "IMACQUISITION.ANALYSISFILE";
 static const std::string LOGDIR 					= "IMACQUISITION.LOGDIR";
 static const std::string IMDIR 						= "IMACQUISITION.IMDIR";
 static const std::string IMDIRPREVIEW 				= "IMACQUISITION.IMDIRPREVIEW";

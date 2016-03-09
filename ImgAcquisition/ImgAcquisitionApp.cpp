@@ -104,10 +104,12 @@ void ImgAcquisitionApp::resolveLocks(){
 ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 : QCoreApplication(argc, argv) //
 {
-	int numCameras = 0;
-	int camsStarted = 0;
 	CalibrationInfo calib;
-	calib.doCalibration = false;			// When calibrating cameras only
+	int numCameras 			= 0;
+	int camsStarted 		= 0;
+	SettingsIAC *set 		= SettingsIAC::getInstance();
+	calib.doCalibration 	= false;			// When calibrating cameras only
+	analysis 				= new beeCompress::ImageAnalysis(set->getValueOfParam<std::string>(IMACQUISITION::ANALYSISFILE));
 
 	if (argc>1 && strncmp(argv[1],"--help", 6) == 0){
 		std::cout << "Usage: ./bb_imageacquision <Options>" << std::endl <<
@@ -137,10 +139,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	cout << "Connected " << numCameras << " cameras." << endl;
 
 	//the threads are initialized as a private variable of the class ImgAcquisitionApp
-	threads[0].initialize( 0, (glue1._Buffer1), &calib );
-	threads[1].initialize( 1, (glue2._Buffer1), &calib );
-	threads[2].initialize( 2, (glue1._Buffer2), &calib );
-	threads[3].initialize( 3, (glue2._Buffer2), &calib );
+	threads[0].initialize( 0, (glue1._Buffer1), analysis->_Buffer, &calib );
+	threads[1].initialize( 1, (glue2._Buffer1), analysis->_Buffer,&calib );
+	threads[2].initialize( 2, (glue1._Buffer2), analysis->_Buffer,&calib );
+	threads[3].initialize( 3, (glue2._Buffer2), analysis->_Buffer,&calib );
 
 	//Map the buffers to camera id's
 	glue1._CamBuffer1=0;
@@ -168,6 +170,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 
 	cout << "Started the encoder threads." << endl;
 
+	//While normal recording, start analysis thread to
+	//log image statistics
+	if (!calib.doCalibration){
+		analysis->start();
+		std::cout << "Started analysis thread." << endl;
+	}
+
+	//Do output for calibration process
 	while(calib.doCalibration){
 		system("clear");
 		cout << "*************************************" << std::endl<<
@@ -184,31 +194,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 		usleep(500*1000);
 	}
 
-	/***** Check memory usage *****/
-	//Grab video dimensions from settings
-	SettingsIAC *set = SettingsIAC::getInstance();
-	/*long long unsigned int prevDim = set->getValueOfParam<int>(IMACQUISITION::LD::VIDEO_WIDTH)
-	 * set->getValueOfParam<int>(IMACQUISITION::LD::VIDEO_HEIGHT);
-	long long unsigned int hqDim = set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_WIDTH)
-	 * set->getValueOfParam<int>(IMACQUISITION::HD::VIDEO_HEIGHT);
-
-	//Grab current memory usage of each buffer every 10 seconds and calculate total usage
-	while(1){
-		long long unsigned int usage[8];
-		long long unsigned int scale = 1024*1024;
-		usage[0] = (glue1._Buffer1->size() * hqDim)  / scale;
-		usage[1] = (glue1._Buffer2->size() * hqDim) / scale;
-		usage[2] = (glue1._Buffer1_preview->size() * prevDim) / scale;
-		usage[3] = (glue1._Buffer2_preview->size() * prevDim) / scale;
-		usage[4] = (glue2._Buffer1->size() * hqDim) / scale;
-		usage[5] = (glue2._Buffer2->size() * hqDim) / scale;
-		usage[6] = (glue2._Buffer1_preview->size() * prevDim) / scale;
-		usage[7] = (glue2._Buffer2_preview->size() * prevDim) / scale;
-		long long unsigned int total = 0;
-		for (int i=0; i<8; i++) total += usage[i];
-		std::cout << "Currently using memory: "<< total<< " MB" << std::endl;
-		usleep(10000*1000);
-	}*/
 }
 
 //destructor
