@@ -17,12 +17,13 @@
 #pragma warning(disable : 4996)
 #endif
 
-#include "NvHWEncoder.h"
+#include "../common/inc/NvHWEncoder.h"
 #include "../Buffer/MutexBuffer.h"
 #include "../writeHandler.h"
 #include "../settings/Settings.h"
 
 #define MAX_ENCODE_QUEUE 32
+#define FRAME_QUEUE 240
 
 #define SET_VER(configStruct, type) {configStruct.version = type##_VER;}
 
@@ -108,52 +109,30 @@ public:
     CNvEncoder();
     virtual ~CNvEncoder();
 
-    /**
-     * @brief Creates a video in HEVC format for passed configuration
-     *
-     * This function wraps up the entire encoding process on GPU.
-     * Encoding details are passed as parameters.
-     * The hardware slot is selected automatically. You may be able
-     * to encode two videos simultaneously, but no more.
-     * Warning: The encoder will wait (sleep!) on buffer underrun.
-     *
-     * @param rcmode		The rc (rate control) mode to use. <br>
-     * 						0 = Constant quantizer parameter (default)<br>
-     * 						1 = VBR mode<br>
-     * 						2 = CBR mode<br>
-     * 						3 = VBR mode using minimum quantizer parameter<br>
-     * 						4 = 2-pass quality<br>
-     * 						5 = 2-pass frame size cap<br>
-     * 						6 = 2-pass VBR
-     * @param preset		NvEncoder preset. <br>
-     * 						0 = Default<br>
-     * 						1 = High performance<br>
-     * 						2 = High quality<br>
-     * 						3 = BD<br>
-     * 						4 = Low latency default<br>
-     * 						5 = Low latency high quality<br>
-     * 						6 = Low latency high performance<br>
-     * 						7 = Lossless default<br>
-     * 						8 = Lossless high performance.<br>
-     * 						Please see NvEncoder documentation for what
-     * 						hardware is supporting lossless.
-     * @param qp			The quantizer parameter
-     * @param bitrate		Desired bitrate. Irrelevant for constant qp.
-     * @param elapsedTimeP	Output parameter. Returns used encoding time.
-     * @param avgtimeP		Output parameter. Returns used time per frame.
-     * @param buffer		Pointer to the ringbuffer which is used.
-     * @param f				Filehandle to write the raw encoded frames to.
-     * @param totalFrames	Total number of frames to encode.
-     * @param fps			Framerate of target video.
-     * @param width			Width of the input and output. No scaling is done.<br>
-     * 						Please note that NvEnc only supports up to 4096x4096.
-     * @param height		Height of the input and output. No scaling is done.<br>
-     * 						Please note that NvEnc only supports up to 4096x4096.
-     * @return 				The encoded file size or -1 in case of an error.
-     */
-    int                                                  EncodeMain(double *elapsedTimeP, double *avgtimeP,beeCompress::MutexBuffer *buffer, beeCompress::MutexBuffer *bufferPrev,
-    																beeCompress::writeHandler *wh, EncoderQualityConfig encCfg, EncoderQualityConfig encPrevCfg);
+	/**
+	* @brief Creates a video in HEVC format for passed configurations
+	*
+	* This function wraps up the entire encoding process on GPU.
+	* Encoding details are passed as parameters.
+	* The hardware slot is selected automatically. You may be able
+	* to encode two videos simultaneously, but no more.
+	* Warning: The encoder will wait (sleep!) on buffer underrun.
+	*
+	* 
+	* @param elapsedTimeP	Output parameter. Returns used encoding time.
+	* @param avgtimeP		Output parameter. Returns used time per frame.
+	* @param buffer			Pointer to the primary buffer which is used. When starting the encoder of a preview, buffer points to the preview buffer and bufferPrev to NULL.
+	* @param bufferPrev		Pointer to the secondary buffer which is used.
+	* @param wh 			Write handler which handles the output of the encoder.
+	* @param encCfg 		Configuration struct for the primary buffer.
+	* @param encPrevCfg 	Configuration struct for the secondary buffer.
+	* @return 				The encoded file size or -1 in case of an error.
+	*/
+	int                                                  EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::MutexBuffer *buffer, beeCompress::MutexBuffer *bufferPrev,
+		beeCompress::writeHandler *wh, EncoderQualityConfig encCfg, EncoderQualityConfig encPrevCfg);
 
+	//Init flag. Used for checking whether the encoder will be reconfigured or initialized
+	int init;
 protected:
     CNvHWEncoder                                        *m_pNvHWEncoder;
     uint32_t                                             m_uEncodeBufferCount;
@@ -180,6 +159,7 @@ protected:
     NVENCSTATUS                                          ReleaseIOBuffers();
     unsigned char*                                       LockInputBuffer(void * hInputSurface, uint32_t *pLockedPitch);
     NVENCSTATUS                                          FlushEncoder();
+    NVENCSTATUS                                          RunMotionEstimationOnly(MEOnlyConfig *pMEOnly, bool bFlush);
 };
 
 // NVEncodeAPI entry point

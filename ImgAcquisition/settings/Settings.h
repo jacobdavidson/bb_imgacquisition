@@ -13,6 +13,36 @@
 
 #include <fstream>
 
+   /*rcmode		The rc (rate control) mode to use. <br>
+	* 						0 = Constant quantizer parameter (default)<br>
+	* 						1 = VBR mode<br>
+	* 						2 = CBR mode<br>
+	* 						3 = VBR mode using minimum quantizer parameter<br>
+	* 						4 = 2-pass quality<br>
+	* 						5 = 2-pass frame size cap<br>
+	* 						6 = 2-pass VBR
+	* preset		NvEncoder preset. <br>
+	* 						0 = Default<br>
+	* 						1 = High performance<br>
+	* 						2 = High quality<br>
+	* 						3 = BD<br>
+	* 						4 = Low latency default<br>
+	* 						5 = Low latency high quality<br>
+	* 						6 = Low latency high performance<br>
+	* 						7 = Lossless default<br>
+	* 						8 = Lossless high performance.<br>
+	* 						Please see NvEncoder documentation for what
+	* 						hardware is supporting lossless.
+	* qp			The quantizer parameter
+	* bitrate		Desired bitrate. Irrelevant for constant qp.
+	* totalFrames	Total number of frames to encode.
+	* fps			Framerate of target video.
+	* width			Width of the input and output. No scaling is done.<br>
+	* 						Please note that NvEnc only supports up to 4096x4096.
+	* height		Height of the input and output. No scaling is done.<br>
+	* 						Please note that NvEnc only supports up to 4096x4096.
+	* TODO: More parameters
+	*/
 typedef struct _EncoderQualityConfig
 {
 	int camid;

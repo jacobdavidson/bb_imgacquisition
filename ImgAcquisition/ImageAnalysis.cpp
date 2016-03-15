@@ -10,6 +10,10 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#ifdef WIN32
+#include <windows.h>
+#include <stdint.h>
+#endif
 #define PI 3.14159265
 
 namespace beeCompress {
@@ -36,7 +40,7 @@ void ImageAnalysis::run() {
 		std::cout << "Error: not found reference image refIm.jpg."<<std::endl;
 	}
 
-	while(true){
+	while (true){
 		std::shared_ptr<beeCompress::ImageBuffer> imgptr = _Buffer->pop();
 		beeCompress::ImageBuffer *img = imgptr.get();
 		cv::Mat mat(img->height,img->width,cv::DataType<uint8_t>::type);
@@ -48,7 +52,6 @@ void ImageAnalysis::run() {
 		sprintf(outstr,"Cam %d: %f,\t%f,\t%f,\t%f,\t%f\n",img->camid,smd,variance,contrast,noise);
 		fwrite(outstr,sizeof(char), strlen(outstr),outfile);
 		fflush(outfile);
-		std::cout << "ASDFASDF"<<std::endl;
 	}
 
 	//Well, just in case...
@@ -97,8 +100,8 @@ double ImageAnalysis::sumModulusDifference(Mat *image){
 	Mat out2(image->size(),cv::DataType<double>::type);
 	Mat res(image->size(),cv::DataType<double>::type);
 	image->assignTo(in,CV_64F);
-	Mat vkernel = Mat::ones( 3, 1, CV_32F )/ (double)3.0;
-	Mat hkernel = Mat::ones( 1, 3, CV_32F )/ (double)3.0;
+	Mat vkernel = Mat::ones( 3, 1, CV_64F )/ (double)3.0;
+	Mat hkernel = Mat::ones( 1, 3, CV_64F )/ (double)3.0;
 
 	vkernel.at<double>(0, 0) = -1;
 	vkernel.at<double>(1, 0) = 1;

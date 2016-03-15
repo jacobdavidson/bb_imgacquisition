@@ -1,6 +1,9 @@
 #ifndef FLEA3CAMTHREAD_H
 #define FLEA3CAMTHREAD_H
 
+#ifdef WINDOWS
+#include <windows.h>
+#endif
 #include <QThread>
 #include "FlyCapture2.h"
 #include "Buffer/MutexBuffer.h"
