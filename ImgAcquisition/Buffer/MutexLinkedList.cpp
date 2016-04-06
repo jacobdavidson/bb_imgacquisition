@@ -18,21 +18,27 @@ MutexLinkedList::~MutexLinkedList() {
 	// Nothing to do here: Auto-generated destructor stub
 }
 
-
 void MutexLinkedList::push(std::shared_ptr<ImageBuffer> imbuffer){
 	_Access.lock();
 
-	images.push_back(std::move(imbuffer));
+	images.push_back(imbuffer);
+	unsigned long s = images.size();
+	unsigned long w = imbuffer->width;
+	unsigned long h = imbuffer->height;
+	if (s*w*h/1024/1024 > BUFFER_HARDLIMIT){
+		std::cout << "ERROR: Buffer exceeds hardlimit (" << BUFFER_HARDLIMIT << " MB). Exiting. " << std::endl;
+		std::exit(1);
+	}
 
 	_Access.unlock();
-	waiting.notify();
+	waiting.notify(); 
 }
 
 std::shared_ptr<beeCompress::ImageBuffer> MutexLinkedList::pop(){
 	waiting.wait();
 	_Access.lock();
 	if(images.size()>0){
-		std::shared_ptr<ImageBuffer> img = std::move(images.front());
+		std::shared_ptr<ImageBuffer> img = images.front();
 		images.pop_front();
 		_Access.unlock();
 		return img;

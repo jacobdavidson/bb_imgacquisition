@@ -6,7 +6,13 @@
 #include <stdio.h>
 #include <QDebug>
 #include <QDir>
-#include <unistd.h> //sleep
+#ifdef LINUX
+#include <unistd.h>
+#endif
+#ifdef WINDOWS
+#include <windows.h>
+#include <stdint.h>
+#endif
 
 using namespace FlyCapture2;
 using namespace std;
@@ -111,6 +117,9 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	calib.doCalibration 	= false;			// When calibrating cameras only
 	analysis 				= new beeCompress::ImageAnalysis(set->getValueOfParam<std::string>(IMACQUISITION::ANALYSISFILE));
 
+
+	std::cout << "Successfully parsed config!" << std::endl;
+
 	if (argc>1 && strncmp(argv[1],"--help", 6) == 0){
 		std::cout << "Usage: ./bb_imageacquision <Options>" << std::endl <<
 				"Valid options: "<< std::endl <<
@@ -140,6 +149,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 
 	//the threads are initialized as a private variable of the class ImgAcquisitionApp
 	threads[0].initialize( 0, (glue1._Buffer1), analysis->_Buffer, &calib );
+	cout << "ASDF" << endl;
 	threads[1].initialize( 1, (glue2._Buffer1), analysis->_Buffer,&calib );
 	threads[2].initialize( 2, (glue1._Buffer2), analysis->_Buffer,&calib );
 	threads[3].initialize( 3, (glue2._Buffer2), analysis->_Buffer,&calib );
@@ -178,8 +188,12 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	}
 
 	//Do output for calibration process
-	while(calib.doCalibration){
+	while (calib.doCalibration){
+#ifdef __linux__
 		system("clear");
+#else
+		system("cls");
+#endif
 		cout << "*************************************" << std::endl<<
 				"*** Doing camera calibration only ***" << std::endl<<
 				"*************************************" << std::endl;
@@ -191,9 +205,19 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 					calib.calibrationData[i][2],calib.calibrationData[i][3]);
 
 		calib.dataAccess.unlock();
-		usleep(500*1000);
+#ifdef __linux__
+	usleep(500*1000);
+#else
+    Sleep(500*1000);
+#endif
 	}
-
+	while (true){
+#ifdef __linux__
+		usleep(500 * 1000);
+#else
+		Sleep(500 * 1000);
+#endif
+	}
 }
 
 //destructor

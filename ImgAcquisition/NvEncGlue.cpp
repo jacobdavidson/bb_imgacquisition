@@ -22,6 +22,10 @@
 
 namespace beeCompress {
 
+unsigned int mymax(unsigned int a, unsigned int b){
+	return (a>b?a:b);
+}
+
 void NvEncGlue::run(){
 
 	SettingsIAC *set 		= SettingsIAC::getInstance();
@@ -43,7 +47,7 @@ void NvEncGlue::run(){
 
 	while(1){
 
-		//Select a buffer to work on
+		//Select a buffer to work on. Largest first.
 		long long unsigned int c1 = _Buffer1->size() * (long long unsigned int)(cfgC1.width * cfgC1.height);
 		long long unsigned int c2 = _Buffer2->size() * (long long unsigned int)(cfgC2.width * cfgC2.height);
 		long long unsigned int c1p = _Buffer1_preview->size() * (long long unsigned int)(cfgP1.width * cfgP1.height);
@@ -54,15 +58,15 @@ void NvEncGlue::run(){
 		EncoderQualityConfig encCfg;
 		EncoderQualityConfig encCfgPrev;
 
-		//std::cout << "Sizes:" << c1 << " - " << c2 << " - " << c1p << " - " << c2p << std::endl;
+		long long unsigned int maxSize = mymax(mymax(mymax(c1,c2),c1p),c2p);
 
-		long long unsigned int maxSize = max(max(max(c1,c2),c1p),c2p);
-
+		//If all are empty, check again later.
 		if (maxSize == 0){
 			usleep(500);
 			continue;
 		}
 
+		//Configure which buffer and configuration to use
 		if(c1>=maxSize){
 			currentCamBuffer 		= _Buffer1;
 			currentPreviewBuffer 	= _Buffer1_preview;
@@ -96,6 +100,7 @@ void NvEncGlue::run(){
 			std::cout << "Chosen: 4"<<std::endl;
 		}
 
+		//Configure output directories
 		std::string dir = imdir;
 		std::string exdir = exchangedir;
 		if (currentPreviewBuffer == NULL){
@@ -103,9 +108,13 @@ void NvEncGlue::run(){
 			exdir = exchangedirprev;
 		}
 		beeCompress::writeHandler wh(dir,currentCam,exdir);
-		//encode the frames in the buffer using given configuration
-		enc.EncodeMain(&elapsedTimeP, &avgtimeP, currentCamBuffer, currentPreviewBuffer, &wh, encCfg, encCfgPrev);
 
+		//encode the frames in the buffer using given configuration
+		std::cout << "Write handler initialized!" << std::endl;
+		int ret = enc.EncodeMain(&elapsedTimeP, &avgtimeP, currentCamBuffer, currentPreviewBuffer, &wh, encCfg, encCfgPrev);
+		if (ret != 0){
+			std::cout << "ENCODER ERROR: " << ret << std::endl;
+		}
 	}
 }
 
@@ -114,7 +123,6 @@ NvEncGlue::NvEncGlue() {
 	SettingsIAC *set 			= SettingsIAC::getInstance();
 
 	//Grab buffer size from json config and initialize buffers.
-	//int 		buffersize			= set->getValueOfParam<int>(IMACQUISITION::BUFFERSIZE);
 	_Buffer1 						= new beeCompress::MutexLinkedList();
 	_Buffer2 						= new beeCompress::MutexLinkedList();
 	_Buffer1_preview 				= new beeCompress::MutexLinkedList();
@@ -125,7 +133,7 @@ NvEncGlue::NvEncGlue() {
 }
 
 NvEncGlue::~NvEncGlue() {
-	// TODO Auto-generated destructor stub
+	// Auto-generated destructor stub
 }
 
 } /* namespace beeCompress */

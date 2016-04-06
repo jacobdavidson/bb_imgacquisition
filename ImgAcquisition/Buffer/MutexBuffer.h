@@ -13,6 +13,9 @@
 #include <memory>
 #include "Semaphore.h"
 
+//Hard limit in MB a buffer shall never exceed
+#define BUFFER_HARDLIMIT	5000
+
 namespace beeCompress {
 
 class ImageBuffer {

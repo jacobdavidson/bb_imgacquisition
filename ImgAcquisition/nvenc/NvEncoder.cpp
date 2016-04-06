@@ -21,8 +21,10 @@
 #endif
 #include "../settings/Settings.h"
 
+#if HALIDE
 #include "halideYuv420Conv.h"
 #include "Halide.h"
+#endif
 #include <memory>
 #include <opencv2/opencv.hpp>
 
@@ -164,7 +166,7 @@ NVENCSTATUS CNvEncoder::InitCuda(uint32_t deviceID)
 	return NV_ENC_SUCCESS;
 }
 
-#if defined(NV_WINDOWS1)
+#if defined(NV_WINDOWS)
 NVENCSTATUS CNvEncoder::InitD3D9(uint32_t deviceID)
 {
 	D3DPRESENT_PARAMETERS d3dpp;
@@ -388,7 +390,7 @@ NVENCSTATUS CNvEncoder::Deinitialize(uint32_t devicetype)
 	{
 		switch (devicetype)
 		{
-#if defined(NV_WINDOWS1)
+#if defined(NV_WINDOWS)
 		case NV_ENC_DX9:
 			((IDirect3DDevice9*)(m_pDevice))->Release();
 			break;
@@ -548,6 +550,9 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 	encodeConfig.rcMode 		= getRcmode(encCfg.rcmode);
 	encodeConfig.gopLength 		= NVENC_INFINITE_GOPLENGTH;
 	encodeConfig.deviceType 	= NV_ENC_CUDA;
+#if defined(NV_WINDOWS)
+	encodeConfig.deviceType         = NV_ENC_HEVC;
+#endif
 	encodeConfig.codec 			= NV_ENC_HEVC;
 	encodeConfig.fps 			= encCfg.fps;
 	encodeConfig.qp 			= encCfg.qp;
@@ -564,7 +569,7 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 
 	switch (encodeConfig.deviceType)
 	{
-#if defined(NV_WINDOWS1)
+#if defined(NV_WINDOWS)
 	case NV_ENC_DX9:
 		InitD3D9(encodeConfig.deviceID);
 		break;
@@ -624,15 +629,10 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 	{
 		numBytesRead = 0;
 
-		//Wait until there is a new image available
-		//while(buffer->size() <= 0){
-		//	usleep(100*1000);
-		//}
+		//Wait until there is a new image available (done by pop)
 		std::shared_ptr<beeCompress::ImageBuffer> imgptr = buffer->pop();
 		beeCompress::ImageBuffer *img = imgptr.get();
 		numBytesRead = img->width * img->height;
-		//std::cout <<"ASDF "<<img->width <<" ASDF " <<img->height<<std::endl;
-		//numBytesRead = 999;
 
 		//Debug output TODO: remove?
 		if(frm%50==0)printf("Loaded frame %d \n", frm);
@@ -640,7 +640,6 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 		//This should not happen
 		if (numBytesRead == 0)
 			break;
-
 
 		EncodeFrameConfig stEncodeFrame;
 		memset(&stEncodeFrame, 0, sizeof(stEncodeFrame));
@@ -669,10 +668,6 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 			std::shared_ptr<beeCompress::ImageBuffer> newImage = scaleImage(img, encodeConfig, encPrevCfg);
 			bufferPrev->push(newImage);
 		}
-
-		//std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));// = new std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));
-		//int numBytesRead = flycapTo420(buf.get()->data,&cimg);
-		//_Buffer->push(buf);
 
 		//Free memory. The destructor does not do this!
 		//free(img.data);

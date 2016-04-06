@@ -16,11 +16,6 @@ namespace beeCompress {
 
 class MutexLinkedList: public MutexBuffer {
 
-	//struct Node{
-	//	ImageBuffer* imb;
-	//	Node* next;
-	//};
-
 public:
 
 	std::list<std::shared_ptr<ImageBuffer>> images;

@@ -5,21 +5,26 @@
 
 #include <qdir.h>
 #include <qtextstream.h>
+#include <time.h>
 
 #include "FlyCapture2.h"
-#if HAVE_UNISTD_H
+#include "ImageAnalysis.h"
+#include "settings/Settings.h"
+#include "settings/utility.h"
+
+#if __linux__
 #include <unistd.h> //sleep
+#include <sys/time.h>
 #else
 #include <stdint.h>
 #endif
-#include "settings/Settings.h"
-#include "settings/utility.h"
-#include "ImageAnalysis.h"
 
-#include "halideYuv420Conv.h"
-#include "Halide.h"
-#include <time.h>
-#include <sys/time.h>
+#if HALIDE
+	#include "halideYuv420Conv.h"
+	#include "Halide.h"
+	//On Windows this might conflict with predefs
+	#undef user_error
+#endif
 
 //Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread()
@@ -390,8 +395,9 @@ int flycapTo420NoHalide(uint8_t *yuvInput, FlyCapture2::Image* img){
 int flycapTo420(uint8_t *outputImage, FlyCapture2::Image* inputImage){
 	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
 
-	unsigned long long time, time2;
 	int bytesRead;
+#if HALIDE
+	unsigned long long time, time2;
 	unsigned char *prtM = inputImage->GetData();
 	unsigned int rows,cols,stride;
 	FlyCapture2::PixelFormat pixFmt;
@@ -414,11 +420,13 @@ int flycapTo420(uint8_t *outputImage, FlyCapture2::Image* inputImage){
 	//do it
 	int error = halideYuv420Conv(&input_buf, &output_buf);
 	bytesRead=rows*cols*3; //fool the system. We never read/written or set Cb and Cr
+#else
+	return flycapTo420NoHalide(outputImage, inputImage);
+#endif
 
 	return bytesRead;
 }
 
-//int counter = 0;
 void analyzeImage(int camid, FlyCapture2::Image *cimg, cv::Mat *ref, CalibrationInfo *c){
 	beeCompress::ImageAnalysis 	ia("");
 
@@ -452,39 +460,35 @@ void analyzeImage(int camid, FlyCapture2::Image *cimg, cv::Mat *ref, Calibration
 void Flea3CamThread::run()
 {
 	struct tm* 				timeinfo;
-	time_t 					rawtime;
 	char					timeresult[15];
 	char					logfilepathFull[256];
 
-	SettingsIAC*			set 	= SettingsIAC::getInstance();
-	EncoderQualityConfig 	cfg		= set->getBufferConf(_ID,0);
-	std::string 			logdir 	= set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+	SettingsIAC*			set 		= SettingsIAC::getInstance();
+	EncoderQualityConfig 	cfg			= set->getBufferConf(_ID,0);
+	std::string 			logdir 		= set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
 
-	int 					vwidth	= cfg.width;
-	int 					vheight	= cfg.width;
-	timeresult[14] 					= 0;
+	int 					vwidth		= cfg.width;
+	int 					vheight		= cfg.width;
+	timeresult[14]						= 0;
+	int						cont		= 0;
+	int 					loopCount	= 0;
+	BusManager				busMgr;
+	PGRGuid					guid;
 
-	/////////////////////////////////////////////
+	////////////////////////WINDOWS/////////////////////
+	int						oldTime		= 0;
+	unsigned int			oldTimeUs	= 1000000;
+	unsigned int			difTimeStampUs;
+	////////////////////////////////////////////////////
 
-	BusManager		busMgr;
-	PGRGuid			guid;
-	////////////////////////////////////////////
-	int				cont = 0;
+	////////////////////////LINUX/////////////////////
+#ifdef __linux__
 	//Timestamp housekeeping
+	time_t 			rawtime;
 	struct timeval 	tv;
 	struct timezone tz;
 	int 			cs;
 	long int 		startTime;
-	int 			loopCount = 0;
-
-	FILE* fp = fopen("refIm.jpg", "r");
-	cv::Mat ref;
-	if (fp) {
-		ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
-		fclose(fp);
-	} else {
-		std::cout << "Error: not found reference image refIm.jpg."<<std::endl;
-	}
 
 	gettimeofday(&tv, &tz);
 	startTime = tv.tv_sec; //Note: using this method the start might be shifted by <1sec
@@ -495,6 +499,18 @@ void Flea3CamThread::run()
 		_Camera.RetrieveBuffer(&cimg);
 		_TimeStamp = cimg.GetTimeStamp();
 		cs = _TimeStamp.cycleSeconds;
+	}
+#endif
+	////////////////////////////////////////////////////
+
+	//Load a reference image for contrast analyzation
+	FILE* fp = fopen("refIm.jpg", "r");
+	cv::Mat ref;
+	if (fp) {
+		ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
+		fclose(fp);
+	} else {
+		std::cout << "Error: not found reference image refIm.jpg."<<std::endl;
 	}
 
 	while (1)
@@ -510,6 +526,10 @@ void Flea3CamThread::run()
 		_FrameNumber = _ImInfo.embeddedFrameCounter;
 		_TimeStamp = cimg.GetTimeStamp();
 
+#ifdef __linux__
+		/* On Linux (Flycap SDK Ubuntu 14.04), the timestamps can not be retrieved.
+			Thus calculate something equivalent, but less accurate.
+		*/
 		//Add the looping seconds to the accumulator
 		if(_TimeStamp.cycleSeconds>cs){
 			startTime += _TimeStamp.cycleSeconds-cs;
@@ -526,49 +546,66 @@ void Flea3CamThread::run()
 		if (num<1) num = 1; //TODO: This is sometimes 0 for cam 0 (e.g. on init error)
 		while(num < 100000) num *= 10;
 		sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%d",
-				timeinfo -> tm_year + 1900,
-				timeinfo -> tm_mon  + 1,
-				timeinfo -> tm_mday,
-				timeinfo -> tm_hour,
-				timeinfo -> tm_min,
-				timeinfo -> tm_sec,
-				num);
+			timeinfo->tm_year + 1900,
+			timeinfo->tm_mon + 1,
+			timeinfo->tm_mday,
+			timeinfo->tm_hour,
+			timeinfo->tm_min,
+			timeinfo->tm_sec,
 
-		//Do some debug output
-		//std::cout << _TimeStamp.cycleCount << " - " << _TimeStamp.cycleSeconds << " - " << _TimeStamp.cycleOffset  << " - " << startTime << std::endl;,
+			num);
+#else
+		//converts the time in seconds to local time
+		timeinfo = localtime(&_TimeStamp.seconds); 
 
-		//Prepare and put he image into the buffer
-		std::string currentTimestamp(timeresult); //might use getTimestamp() ?
+		// string with local time info
+		sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%.6d",
+			timeinfo->tm_year + 1900,
+			timeinfo->tm_mon + 1,
+			timeinfo->tm_mday,
+			timeinfo->tm_hour,
+			timeinfo->tm_min,
+			timeinfo->tm_sec,
+			_TimeStamp.microSeconds);
+
+		localCounter(oldTime, timeinfo->tm_sec);
+
+		//////////////////////////////////////////////
+		if (_TimeStamp.microSeconds > oldTimeUs)
+			difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs;
+		else
+			difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs + 1000000;
+
+		oldTimeUs = _TimeStamp.microSeconds;
+
+		///////////////////////////////////
+
+		oldTime = timeinfo->tm_sec;
+#endif
+		//Prepare and put the image into the buffer
+		std::string currentTimestamp(timeresult); 
 
 		//Not in calibration mode. Move image to buffer for further procession
 		if (!_Calibration->doCalibration){
-			std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));// = new std::shared_ptr<beeCompress::ImageBuffer>(new beeCompress::ImageBuffer(vwidth,vheight,_ID,currentTimestamp));
-			int numBytesRead = flycapTo420(buf.get()->data,&cimg);
+			std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>
+				(new beeCompress::ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
+			int numBytesRead = flycapTo420(buf.get()->data, &cimg);
 			_Buffer->push(buf);
 
-			//For every 50'th picture, create image statistics
-			if(loopCount % 50 == 0)
+			//For every 50th picture create image statistics
+			if (loopCount % 50 == 0)
 				_AnalysisBuffer->push(buf);
 		}
 		//Calibrating cameras only
 		else if (loopCount % 3 == 0){
+
 			//Analyze image properties
 			analyzeImage(_ID, &cimg, &ref, _Calibration);
 		}
 
 		//Do some logging
-		sprintf(logfilepathFull, logdir.c_str(),_ID);
-		generateLog(logfilepathFull,timeresult);
-
-		/*
-		//This was om the old code, done every second. Just why?
-		_Camera.StopCapture();
-		_Camera.Disconnect();
-		// Gets the PGRGuid from the camera
-		busMgr.GetCameraFromIndex( _ID, &guid );
-		// Connect to camera
-		_Camera.Connect(&guid);
-		_Camera.StartCapture();*/
+		sprintf(logfilepathFull, logdir.c_str(), _ID);
+		generateLog(logfilepathFull, timeresult);
 
 		loopCount++;
 	}	
