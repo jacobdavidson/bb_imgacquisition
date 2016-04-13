@@ -526,35 +526,6 @@ void Flea3CamThread::run()
 		_FrameNumber = _ImInfo.embeddedFrameCounter;
 		_TimeStamp = cimg.GetTimeStamp();
 
-#ifdef __linux__
-		/* On Linux (Flycap SDK Ubuntu 14.04), the timestamps can not be retrieved.
-			Thus calculate something equivalent, but less accurate.
-		*/
-		//Add the looping seconds to the accumulator
-		if(_TimeStamp.cycleSeconds>cs){
-			startTime += _TimeStamp.cycleSeconds-cs;
-		}
-		else if(_TimeStamp.cycleSeconds<cs){
-			startTime += 128-cs+_TimeStamp.cycleSeconds;
-		}
-		cs = _TimeStamp.cycleSeconds;
-
-		//assemble timestamp
-		timeinfo = localtime(&startTime);
-		//sprintf isn't able to add trailing zeros, only leading...
-		int num = _TimeStamp.cycleCount;
-		if (num<1) num = 1; //TODO: This is sometimes 0 for cam 0 (e.g. on init error)
-		while(num < 100000) num *= 10;
-		sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%d",
-			timeinfo->tm_year + 1900,
-			timeinfo->tm_mon + 1,
-			timeinfo->tm_mday,
-			timeinfo->tm_hour,
-			timeinfo->tm_min,
-			timeinfo->tm_sec,
-
-			num);
-#else
 		//converts the time in seconds to local time
 		timeinfo = localtime(&_TimeStamp.seconds); 
 
@@ -581,7 +552,7 @@ void Flea3CamThread::run()
 		///////////////////////////////////
 
 		oldTime = timeinfo->tm_sec;
-#endif
+
 		//Prepare and put the image into the buffer
 		std::string currentTimestamp(timeresult); 
 

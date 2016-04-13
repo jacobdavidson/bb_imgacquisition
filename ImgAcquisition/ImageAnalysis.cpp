@@ -31,7 +31,7 @@ ImageAnalysis::~ImageAnalysis() {
 void ImageAnalysis::run() {
 	cv::Mat ref;
 	char 	outstr[512];
-	FILE*	outfile = fopen(_Logfile.c_str(),"wb");
+	FILE*	outfile = fopen(_Logfile.c_str(),"ab");
 	FILE* 	fp 		= fopen("refIm.jpg", "r");
 	if (fp) {
 		ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
