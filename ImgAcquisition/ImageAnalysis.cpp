@@ -37,7 +37,7 @@ void ImageAnalysis::run() {
 		ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
 		fclose(fp);
 	} else {
-		std::cout << "Error: not found reference image refIm.jpg."<<std::endl;
+		std::cout << "Warning: not found reference image refIm.jpg."<<std::endl;
 	}
 
 	while (true){

@@ -112,8 +112,11 @@ void NvEncGlue::run(){
 		//encode the frames in the buffer using given configuration
 		std::cout << "Write handler initialized!" << std::endl;
 		int ret = enc.EncodeMain(&elapsedTimeP, &avgtimeP, currentCamBuffer, currentPreviewBuffer, &wh, encCfg, encCfgPrev);
-		if (ret != 0){
-			std::cout << "ENCODER ERROR: " << ret << std::endl;
+		if (ret <= 0){
+			std::cout << "ENCODER ERROR! " << std::endl;
+		}else{
+
+			std::cout << "Encoded " << ret/1024/1024 << " MB"<< std::endl;
 		}
 	}
 }

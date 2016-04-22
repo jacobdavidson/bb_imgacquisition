@@ -149,7 +149,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 
 	//the threads are initialized as a private variable of the class ImgAcquisitionApp
 	threads[0].initialize( 0, (glue1._Buffer1), analysis->_Buffer, &calib );
-	cout << "ASDF" << endl;
 	threads[1].initialize( 1, (glue2._Buffer1), analysis->_Buffer,&calib );
 	threads[2].initialize( 2, (glue1._Buffer2), analysis->_Buffer,&calib );
 	threads[3].initialize( 3, (glue2._Buffer2), analysis->_Buffer,&calib );
