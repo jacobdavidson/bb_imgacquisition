@@ -59,8 +59,8 @@ void ImgAcquisitionApp::resolveLockDir(std::string from, std::string to){
 			std::string srcvideofile 	= from + basename + "avi";
 			std::string srcframesfile 	= from + basename + "txt";
 			std::string dstBasename 	= figureBasename(srcframesfile);
-			std::string dstvideofile 	= to + dstBasename + "avi";
-			std::string dstframesfile 	= to + dstBasename + "txt";
+			std::string dstvideofile 	= to + dstBasename + ".avi";
+			std::string dstframesfile 	= to + dstBasename + ".txt";
 
 			//Some error happened figuring the filename
 			if (dstBasename == "-1") continue;
