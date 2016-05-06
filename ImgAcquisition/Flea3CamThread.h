@@ -7,6 +7,7 @@
 #include <QThread>
 #include "FlyCapture2.h"
 #include "Buffer/MutexBuffer.h"
+#include "Watchdog.h"
 #include <mutex>
 using namespace FlyCapture2;
 
@@ -25,12 +26,13 @@ public:
 	Flea3CamThread(); //constructor
 	~Flea3CamThread(); //destructor
 	bool				initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer,
-			beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib); //here goes the camera ID (from 0 to 3)
+			beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib, Watchdog *dog); //here goes the camera ID (from 0 to 3)
 	bool				_initialized;
 	unsigned int		_ID;
 	unsigned int		_HWID;
 	unsigned int		_Serial;
 	CalibrationInfo		*_Calibration;
+	Watchdog	 	*_Dog;
 
 private:
 	bool				initCamera();

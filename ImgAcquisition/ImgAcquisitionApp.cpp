@@ -1,6 +1,7 @@
 #include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
 #include "settings/ParamNames.h"
+#include "Watchdog.h"
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
@@ -111,11 +112,13 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 : QCoreApplication(argc, argv) //
 {
 	CalibrationInfo calib;
+	Watchdog dog;
 	int numCameras 			= 0;
 	int camsStarted 		= 0;
 	SettingsIAC *set 		= SettingsIAC::getInstance();
 	calib.doCalibration 	= false;			// When calibrating cameras only
-	analysis 				= new beeCompress::ImageAnalysis(set->getValueOfParam<std::string>(IMACQUISITION::ANALYSISFILE));
+	analysis 				= new beeCompress::ImageAnalysis(
+			set->getValueOfParam<std::string>(IMACQUISITION::ANALYSISFILE), &dog);
 
 
 	std::cout << "Successfully parsed config!" << std::endl;
@@ -148,10 +151,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	cout << "Connected " << numCameras << " cameras." << endl;
 
 	//the threads are initialized as a private variable of the class ImgAcquisitionApp
-	threads[0].initialize( 0, (glue1._Buffer1), analysis->_Buffer, &calib );
-	threads[1].initialize( 1, (glue2._Buffer1), analysis->_Buffer,&calib );
-	threads[2].initialize( 2, (glue1._Buffer2), analysis->_Buffer,&calib );
-	threads[3].initialize( 3, (glue2._Buffer2), analysis->_Buffer,&calib );
+	threads[0].initialize( 0, (glue1._Buffer1), analysis->_Buffer,&calib, &dog );
+	threads[1].initialize( 1, (glue2._Buffer1), analysis->_Buffer,&calib, &dog );
+	threads[2].initialize( 2, (glue1._Buffer2), analysis->_Buffer,&calib, &dog );
+	threads[3].initialize( 3, (glue2._Buffer2), analysis->_Buffer,&calib, &dog );
 
 	//Map the buffers to camera id's
 	glue1._CamBuffer1=0;
@@ -211,11 +214,13 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 #endif
 	}
 	while (true){
-#ifdef __linux__
-		usleep(500 * 1000);
-#else
-		Sleep(500 * 1000);
-#endif
+		dog.check();
+		#ifdef __linux__
+			usleep(500*1000);
+		#else
+			Sleep(500*1000);
+		#endif
+		
 	}
 }
 

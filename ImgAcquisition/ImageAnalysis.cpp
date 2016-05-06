@@ -19,9 +19,10 @@
 namespace beeCompress {
 using namespace cv;
 
-ImageAnalysis::ImageAnalysis(std::string p_logfile) {
+ImageAnalysis::ImageAnalysis(std::string p_logfile, Watchdog *p_dog) {
 	_Logfile = p_logfile;
 	_Buffer = new beeCompress::MutexLinkedList();
+	_Dog = p_dog;
 }
 
 ImageAnalysis::~ImageAnalysis() {
@@ -29,10 +30,11 @@ ImageAnalysis::~ImageAnalysis() {
 }
 
 void ImageAnalysis::run() {
-	cv::Mat ref;
-	char 	outstr[512];
-	FILE*	outfile = fopen(_Logfile.c_str(),"ab");
-	FILE* 	fp 		= fopen("refIm.jpg", "r");
+	cv::Mat 			ref;
+	char 				outstr[512];
+
+	FILE*				outfile = fopen(_Logfile.c_str(),"ab");
+	FILE* 				fp 		= fopen("refIm.jpg", "r");
 	if (fp) {
 		ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
 		fclose(fp);
@@ -41,6 +43,9 @@ void ImageAnalysis::run() {
 	}
 
 	while (true){
+		//Pulse(5) signals analysis thread is alive
+		_Dog->pulse(5);
+
 		std::shared_ptr<beeCompress::ImageBuffer> imgptr = _Buffer->pop();
 		beeCompress::ImageBuffer *img = imgptr.get();
 		cv::Mat mat(img->height,img->width,cv::DataType<uint8_t>::type);
@@ -49,7 +54,7 @@ void ImageAnalysis::run() {
 		double variance = getVariance(mat);
 		double contrast = avgHistDifference(ref,mat);
 		double noise = noiseEstimate(mat);
-		sprintf(outstr,"Cam_%d_%s: %f,\t%f,\t%f,\t%f,\t%f\n",img->camid,img->timestamp.c_str(),smd,variance,contrast,noise);
+		sprintf(outstr,"Cam %d: %f,\t%f,\t%f,\t%f,\t%f\n",img->camid,smd,variance,contrast,noise);
 		fwrite(outstr,sizeof(char), strlen(outstr),outfile);
 		fflush(outfile);
 	}

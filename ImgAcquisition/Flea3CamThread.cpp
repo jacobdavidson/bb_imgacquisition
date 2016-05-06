@@ -8,7 +8,8 @@
 #include <time.h>
 
 #include "FlyCapture2.h"
-#include "ImageAnalysis.h"
+#include "Watchdog.h"
+#include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
 #include "settings/utility.h"
 
@@ -40,7 +41,7 @@ Flea3CamThread::~Flea3CamThread()
 
 //this function reads the data input vector 
 bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer,
-		beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib)
+		beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib, Watchdog *dog)
 {
 	_AnalysisBuffer				= pAnalysisBuffer;
 	_Buffer 					= pBuffer;
@@ -48,7 +49,7 @@ bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuf
 	_HWID						= -1;
 	_Calibration				= calib;
 	_initialized				= false;
-
+	_Dog						= dog;
 
 	if ( initCamera() ){
 		std::cout << "Starting capture on camera "<< id << std::endl;
@@ -428,7 +429,7 @@ int flycapTo420(uint8_t *outputImage, FlyCapture2::Image* inputImage){
 }
 
 void analyzeImage(int camid, FlyCapture2::Image *cimg, cv::Mat *ref, CalibrationInfo *c){
-	beeCompress::ImageAnalysis 	ia("");
+	beeCompress::ImageAnalysis 	ia("",NULL);
 
 	//Create CV Matrix and make it use the flycap image ptr
 	unsigned char *prtM = cimg->GetData();
@@ -512,9 +513,11 @@ void Flea3CamThread::run()
 	} else {
 		std::cout << "Warning: not found reference image refIm.jpg."<<std::endl;
 	}
+	_Dog->pulse(_ID);
 
 	while (1)
 	{
+		_Dog->pulse(_ID);
 		FlyCapture2::Image cimg;
 
 		//Retrieve image and metadata

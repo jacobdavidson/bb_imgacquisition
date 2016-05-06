@@ -11,6 +11,7 @@
 #include <QThread>
 #include "Buffer/MutexBuffer.h"
 #include "Buffer/MutexLinkedList.h"
+#include "Watchdog.h"
 
 namespace beeCompress {
 
@@ -20,12 +21,13 @@ class ImageAnalysis : public QThread
 	Q_OBJECT   //generates the MOC
 
 	std::string _Logfile;
+	Watchdog *_Dog;
 
 public:
 
 	MutexLinkedList *_Buffer;
 
-	ImageAnalysis(std::string logfile);
+	ImageAnalysis(std::string logfile, Watchdog *dog);
 	virtual ~ImageAnalysis();
 
 	void run();
