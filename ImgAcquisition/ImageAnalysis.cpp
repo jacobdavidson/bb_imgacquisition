@@ -54,7 +54,7 @@ void ImageAnalysis::run() {
 		double variance = getVariance(mat);
 		double contrast = avgHistDifference(ref,mat);
 		double noise = noiseEstimate(mat);
-		sprintf(outstr,"Cam %d: %f,\t%f,\t%f,\t%f,\t%f\n",img->camid,smd,variance,contrast,noise);
+		sprintf(outstr,"Cam_%d_%s: %f,\t%f,\t%f,\t%f,\t%f\n",img->camid,img->timestamp.c_str(),smd,variance,contrast,noise);
 		fwrite(outstr,sizeof(char), strlen(outstr),outfile);
 		fflush(outfile);
 	}
