@@ -26,13 +26,13 @@ public:
 	Flea3CamThread(); //constructor
 	~Flea3CamThread(); //destructor
 	bool				initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer,
-			beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib, Watchdog *dog); //here goes the camera ID (from 0 to 3)
+								beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib, Watchdog *dog); //here goes the camera ID (from 0 to 3)
 	bool				_initialized;
 	unsigned int		_ID;
 	unsigned int		_HWID;
 	unsigned int		_Serial;
 	CalibrationInfo		*_Calibration;
-	Watchdog	 	*_Dog;
+	Watchdog	 		*_Dog;
 
 private:
 	bool				initCamera();
@@ -42,9 +42,10 @@ private:
 	bool				checkReturnCode			(Error error);
 	void				sendLogMessage			(int logLevel, QString message);
 
-	void				cleanFolder(QString path, QString message); // function to clean the folder and avoid to run out of memory
-	void				generateLog(QString path, QString message); // function to generate log file
-	void				localCounter(unsigned int oldTime, unsigned int newTime); // 
+	void				cleanFolder				(QString path, QString message); // function to clean the folder and avoid to run out of memory
+	void				generateLog				(QString path, QString message); // function to generate log file
+	void				localCounter			(unsigned int oldTime, unsigned int newTime); //
+	void 				logCriticalError		(Error e);
 		
 	//JPEGOption			_jpegConf; //compression parameters
 
@@ -57,7 +58,7 @@ private:
 	unsigned int		_LocalCounter; //to enumerate each image in a second
 
 	beeCompress::MutexBuffer *_Buffer;
-	beeCompress::MutexBuffer *_AnalysisBuffer;
+	beeCompress::MutexBuffer *_SharedMemBuffer;
 	
 protected:
 	void run(); //this is the function that will be iterated indefinitely

@@ -117,8 +117,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	int camsStarted 		= 0;
 	SettingsIAC *set 		= SettingsIAC::getInstance();
 	calib.doCalibration 	= false;			// When calibrating cameras only
-	analysis 				= new beeCompress::ImageAnalysis(
-			set->getValueOfParam<std::string>(IMACQUISITION::ANALYSISFILE), &dog);
+	//Do not do image analysis on regular recordings
+	//analysis 				= new beeCompress::ImageAnalysis(
+	//		set->getValueOfParam<std::string>(IMACQUISITION::ANALYSISFILE), &dog);
+	smthread = new beeCompress::SharedMemory();
 
 
 	std::cout << "Successfully parsed config!" << std::endl;
@@ -151,10 +153,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	cout << "Connected " << numCameras << " cameras." << endl;
 
 	//the threads are initialized as a private variable of the class ImgAcquisitionApp
-	threads[0].initialize( 0, (glue1._Buffer1), analysis->_Buffer,&calib, &dog );
-	threads[1].initialize( 1, (glue2._Buffer1), analysis->_Buffer,&calib, &dog );
-	threads[2].initialize( 2, (glue1._Buffer2), analysis->_Buffer,&calib, &dog );
-	threads[3].initialize( 3, (glue2._Buffer2), analysis->_Buffer,&calib, &dog );
+	threads[0].initialize( 0, (glue1._Buffer1), smthread->_Buffer,&calib, &dog );
+	threads[1].initialize( 1, (glue2._Buffer1), smthread->_Buffer,&calib, &dog );
+	threads[2].initialize( 2, (glue1._Buffer2), smthread->_Buffer,&calib, &dog );
+	threads[3].initialize( 3, (glue2._Buffer2), smthread->_Buffer,&calib, &dog );
 
 	//Map the buffers to camera id's
 	glue1._CamBuffer1=0;
@@ -185,8 +187,8 @@ ImgAcquisitionApp::ImgAcquisitionApp(int & argc, char ** argv)
 	//While normal recording, start analysis thread to
 	//log image statistics
 	if (!calib.doCalibration){
-		analysis->start();
-		std::cout << "Started analysis thread." << endl;
+		smthread->start();
+		std::cout << "Started shared memory thread." << endl;
 	}
 
 	//Do output for calibration process
@@ -253,6 +255,9 @@ int ImgAcquisitionApp::checkCameras()
 	if (error != PGRERROR_OK)
 		return -1;
 
+	qDebug() << "Number of cameras detected: " << numCameras << endl << endl;
+
+
 	//Find hardware ID to serial number
 	for (int i = 0; i < 4; i++){
 		unsigned int serial;
@@ -261,8 +266,6 @@ int ImgAcquisitionApp::checkCameras()
 			qDebug() << "Detected cam with serial: " << serial;
 		}
 	}
-
-	qDebug() << "Number of cameras detected: " << numCameras << endl << endl;
 
 	if ( numCameras < 1 )
 	{

@@ -17,7 +17,9 @@
 #include "settings/Settings.h"
 //The order is important!
 #include "NvEncGlue.h"
+#ifndef USE_ENCODER
 #include "nvenc/NvEncoder.h"
+#endif
 #include "writeHandler.h"
 
 namespace beeCompress {
@@ -28,6 +30,7 @@ unsigned int mymax(unsigned int a, unsigned int b){
 
 void NvEncGlue::run(){
 
+#ifndef USE_ENCODER
 	SettingsIAC *set 		= SettingsIAC::getInstance();
 
 	std::string imdir 			= set->getValueOfParam<std::string>(IMACQUISITION::IMDIR);
@@ -46,7 +49,6 @@ void NvEncGlue::run(){
 	EncoderQualityConfig 	cfgP2 = set->getBufferConf(_CamBuffer2,1);
 
 	while(1){
-
 		//Select a buffer to work on. Largest first.
 		long long unsigned int c1 = _Buffer1->size() * (long long unsigned int)(cfgC1.width * cfgC1.height);
 		long long unsigned int c2 = _Buffer2->size() * (long long unsigned int)(cfgC2.width * cfgC2.height);
@@ -119,6 +121,11 @@ void NvEncGlue::run(){
 			std::cout << "Encoded " << ret/1024/1024 << " MB"<< std::endl;
 		}
 	}
+#else
+	while(true){
+		usleep(500);
+	}
+#endif
 }
 
 NvEncGlue::NvEncGlue() {

@@ -523,6 +523,58 @@ std::shared_ptr<beeCompress::ImageBuffer> scaleImage(beeCompress::ImageBuffer *i
 	return newImage;
 }
 
+int rawTo420NoHalide(uint8_t *outputImage, uint8_t* inputImage, int rows, int cols){
+	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
+
+	int bytesRead=0;
+	unsigned char *prtM = inputImage;
+	unsigned int stride=1;
+
+	//Being lazy pays: conversion in 58.22ms (don't set all channels - Cb and Cr are a waste of time)
+	unsigned int x=0,y=0;
+	for (y = 0; y < rows; y++) {
+		for (x = 0; x < cols; x++) {
+			outputImage[y * cols + x] = (uint8_t)(0.895 * (*prtM) + 16);
+			prtM++;
+			bytesRead++;
+		}
+	}
+
+	return bytesRead;
+}
+
+int rawTo420(uint8_t *outputImage, uint8_t* inputImage, int rows, int cols){
+	/*  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg */
+
+	int bytesRead;
+#if HALIDE
+	unsigned long long time, time2;
+	unsigned char *prtM = inputImage;
+	unsigned int stride=1;
+
+	//Precompiled code gets run in 17.88ms. BAM!
+	buffer_t input_buf = {0}, output_buf = {0};
+
+	// The host pointers point to the start of the image data:
+	input_buf.host  = prtM;
+	output_buf.host = outputImage;
+	//See the halide tutorial how to set these.
+	input_buf.stride[0] = output_buf.stride[0] = 1;
+	input_buf.stride[1] = output_buf.stride[1] = stride;
+	input_buf.extent[0] = output_buf.extent[0] = cols;
+	input_buf.extent[1] = output_buf.extent[1] = rows;
+	input_buf.elem_size = output_buf.elem_size = 1;
+
+	//do it
+	int error = halideYuv420Conv(&input_buf, &output_buf);
+	bytesRead=rows*cols*3; //fool the system. We never read/written or set Cb and Cr
+#else
+	return rawTo420NoHalide(outputImage, inputImage, rows, cols);
+#endif
+
+	return bytesRead;
+}
+
 int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::MutexBuffer *buffer,
 		beeCompress::MutexBuffer *bufferPrev, beeCompress::writeHandler *wh, EncoderQualityConfig encCfg, EncoderQualityConfig encPrevCfg)
 {
@@ -622,9 +674,11 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 		memset(yuv[1],128, encodeConfig.width*encodeConfig.height / 4);
 		memset(yuv[2],128, encodeConfig.width*encodeConfig.height / 4);
 	}
+	//To never ever write in used memory. Maybe unnecessary
+	uint8_t *tmp = new uint8_t[encodeConfig.width*encodeConfig.height];
+
 	NvQueryPerformanceCounter(&lStart);
 
-	// for (int frm = encodeConfig.startFrameIdx; frm <= encodeConfig.endFrameIdx; frm++)
 	for (int frm = 0; frm < encCfg.totalFrames; frm++)
 	{
 		numBytesRead = 0;
@@ -645,7 +699,9 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 		memset(&stEncodeFrame, 0, sizeof(stEncodeFrame));
 
 		//Fill data structure for the encoder
-		stEncodeFrame.yuv[0] = img->data;
+		rawTo420NoHalide(tmp, img->data, encodeConfig.height, encodeConfig.width);
+		stEncodeFrame.yuv[0] = tmp;
+		//memcpy(stEncodeFrame.yuv[0], img->data, encodeConfig.height*encodeConfig.width);
 		//stEncodeFrame.yuv[0] = yuv[0];
 		stEncodeFrame.yuv[1] = yuv[1];
 		stEncodeFrame.yuv[2] = yuv[2];
@@ -669,8 +725,6 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP, beeCompress::
 			bufferPrev->push(newImage);
 		}
 
-		//Free memory. The destructor does not do this!
-		//free(img.data);
 	}
 
 	nvStatus = EncodeFrame(NULL, true, encodeConfig.width, encodeConfig.height);

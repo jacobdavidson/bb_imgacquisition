@@ -27,10 +27,10 @@ public:
 	uint8_t *data;
 
 	ImageBuffer(int w, int h, int cid, std::string t){
-		timestamp = t;
-		height = h;
-		width = w;
-		camid = cid;
+		timestamp 	= t;
+		height 		= h;
+		width 		= w;
+		camid 		= cid;
 		if (w>0 && h>0){
 			data = new uint8_t[w*h];
 			//TODO malloc data ok?
@@ -38,11 +38,11 @@ public:
 	}
 
 	ImageBuffer(const beeCompress::ImageBuffer &b){
-		timestamp = b.timestamp;
-		height = b.height;
-		width = b.width;
-		camid = b.camid;
-		data = b.data;
+		timestamp 	= b.timestamp;
+		height 		= b.height;
+		width 		= b.width;
+		camid 		= b.camid;
+		data 		= b.data;
 	}
 
 	~ImageBuffer(){

@@ -14,7 +14,11 @@ find_package(Qt5Core REQUIRED) #  PATHS "C:\\Qt\\Qt5.4.1\\5.4\\msvc2013_64_openg
 set(Boost_USE_STATIC_LIBS ON)
 find_package( Boost REQUIRED system filesystem program_options)
 find_package( OpenCV REQUIRED)
-find_package(CUDA REQUIRED COMPONENTS cuda cudart)
+IF (DEFINED NO_ENCODER)
+    SET(USECUDA "false")
+ELSE()
+	find_package(CUDA REQUIRED COMPONENTS cuda cudart)
+ENDIF()
  
 # project dependecies
 

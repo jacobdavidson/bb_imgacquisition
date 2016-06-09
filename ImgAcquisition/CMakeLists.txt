@@ -51,7 +51,7 @@ SET_TARGET_PROPERTIES(halideYuv420Conv PROPERTIES  LINKER_LANGUAGE C )
 #########################
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
 	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ )
-	set(LIBS -L/usr/local/lib ${LIBS} pthread dl flycapture cuda Halide )
+	set(LIBS -L/usr/local/lib ${LIBS} pthread dl flycapture cuda Halide rt )
 	
 	message("Configuring for linux...")
 else()
@@ -77,6 +77,15 @@ include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${CUDA_INCLUDE_DIRS} )
 message("Configuring ImageAcquisition...")
 set(EXE_NAME bb_ImageAcquistion)
 file(GLOB_RECURSE ImgAcquisitionSrc RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.c *.h *.hpp)
+
+IF (DEFINED NO_ENCODER)
+    file(GLOB_RECURSE ImgAcquisitionSrcExcludeCuda RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} nvenc/*)
+	LIST(REMOVE_ITEM ImgAcquisitionSrc ${ImgAcquisitionSrcExcludeCuda})
+	add_definitions(-DUSE_ENCODER)
+ENDIF()
+
+
+message("Sources are ${ImgAcquisitionSrc}")
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc} )
 #Add the halide project as a dependency
 add_dependencies(${EXE_NAME} halideYuvConvPrec)

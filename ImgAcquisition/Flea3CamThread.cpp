@@ -9,9 +9,18 @@
 
 #include "FlyCapture2.h"
 #include "Watchdog.h"
-#include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
 #include "settings/utility.h"
+#include "ImageAnalysis.h"
+#include <sstream>
+
+#include <ctime> //TODO: Remove this
+
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+#define SHM_SIZE 4000*3000//1024*1024*14  /* make it a 14MB shared memory segment */
 
 #if __linux__
 #include <unistd.h> //sleep
@@ -21,11 +30,15 @@
 #endif
 
 #if HALIDE
-	#include "halideYuv420Conv.h"
-	#include "Halide.h"
-	//On Windows this might conflict with predefs
-	#undef user_error
+#include "halideYuv420Conv.h"
+#include "Halide.h"
+//On Windows this might conflict with predefs
+#undef user_error
 #endif
+
+
+#include <opencv2/opencv.hpp>
+using namespace cv;
 
 //Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread()
@@ -41,9 +54,9 @@ Flea3CamThread::~Flea3CamThread()
 
 //this function reads the data input vector 
 bool Flea3CamThread::initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer,
-		beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib, Watchdog *dog)
+		beeCompress::MutexBuffer * pSharedMemBuffer, CalibrationInfo *calib, Watchdog *dog)
 {
-	_AnalysisBuffer				= pAnalysisBuffer;
+	_SharedMemBuffer			= pSharedMemBuffer;
 	_Buffer 					= pBuffer;
 	_ID							= id;	
 	_HWID						= -1;
@@ -469,7 +482,7 @@ void Flea3CamThread::run()
 	std::string 			logdir 		= set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
 
 	int 					vwidth		= cfg.width;
-	int 					vheight		= cfg.width;
+	int 					vheight		= cfg.height;
 	timeresult[14]						= 0;
 	int						cont		= 0;
 	int 					loopCount	= 0;
@@ -480,6 +493,12 @@ void Flea3CamThread::run()
 	int						oldTime		= 0;
 	unsigned int			oldTimeUs	= 1000000;
 	unsigned int			difTimeStampUs;
+	////////////////////////////////////////////////////
+
+	////////////////////////Logging and timekeeping/////
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
+	sprintf(logfilepathFull, logdir.c_str(), _ID);
 	////////////////////////////////////////////////////
 
 	////////////////////////LINUX/////////////////////
@@ -505,26 +524,47 @@ void Flea3CamThread::run()
 	////////////////////////////////////////////////////
 
 	//Load a reference image for contrast analyzation
-	FILE* fp = fopen("refIm.jpg", "r");
 	cv::Mat ref;
-	if (fp) {
-		ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
-		fclose(fp);
-	} else {
-		std::cout << "Warning: not found reference image refIm.jpg."<<std::endl;
+	if(_Calibration->doCalibration){
+		FILE* fp = fopen("refIm.jpg", "r");
+		if (fp) {
+			ref = cv::imread( "refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE );
+			fclose(fp);
+		} else {
+			std::cout << "Warning: not found reference image refIm.jpg."<<std::endl;
 	}
-	_Dog->pulse(_ID);
+	}
+	//_Dog->pulse(_ID);
+
 
 	while (1)
 	{
 		_Dog->pulse(_ID);
 		FlyCapture2::Image cimg;
 
+		std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
 		//Retrieve image and metadata
 		Error e = _Camera.RetrieveBuffer(&cimg);
-		if(e.GetType() != PGRERROR_OK){
-			std::cout << "Error acquiring image: " << e.GetType() << std::endl;
+		std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+		//Check if processing a frame took longer than 0.4 seconds. If so, log the event.
+		int duration = std::chrono::duration_cast<std::chrono::microseconds>(begin-end).count();
+		if (duration > 333333){
+			std::cout << "Warning: Processing time too long:  " << duration << "\n";
+			QString str("Warning: Processing time too long: " );
+			str.append(std::to_string(_ID).c_str());
+			generateLog(logfilepathFull, str);
 		}
+
+		//In case an error occurs, simply log it and restart the application.
+		//Sometimes fetching images starts to fail and cameras need to be re-initialized.
+		//However, this will solve the issue in the general case
+		if(e.GetType() != PGRERROR_OK){
+			logCriticalError(e);
+			std::exit(1);
+		}
+
+		//Grab metadata and timestamps from the images
 		_ImInfo = cimg.GetMetadata();
 		_FrameNumber = _ImInfo.embeddedFrameCounter;
 		_TimeStamp = cimg.GetTimeStamp();
@@ -534,17 +574,18 @@ void Flea3CamThread::run()
 
 		// string with local time info
 		sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%.6d",
-			timeinfo->tm_year + 1900,
-			timeinfo->tm_mon + 1,
-			timeinfo->tm_mday,
-			timeinfo->tm_hour,
-			timeinfo->tm_min,
-			timeinfo->tm_sec,
-			_TimeStamp.microSeconds);
+				timeinfo->tm_year + 1900,
+				timeinfo->tm_mon + 1,
+				timeinfo->tm_mday,
+				timeinfo->tm_hour,
+				timeinfo->tm_min,
+				timeinfo->tm_sec,
+				_TimeStamp.microSeconds);
 
 		localCounter(oldTime, timeinfo->tm_sec);
 
 		//////////////////////////////////////////////
+
 		if (_TimeStamp.microSeconds > oldTimeUs)
 			difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs;
 		else
@@ -562,13 +603,18 @@ void Flea3CamThread::run()
 		//Not in calibration mode. Move image to buffer for further procession
 		if (!_Calibration->doCalibration){
 			std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>
-				(new beeCompress::ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
-			int numBytesRead = flycapTo420(buf.get()->data, &cimg);
+			(new beeCompress::ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
+			//int numBytesRead = flycapTo420(buf.get()->data, &cimg);
+			memcpy( buf.get()->data, cimg.GetData(), vwidth*vheight );
+
+#ifndef USE_ENCODER
 			_Buffer->push(buf);
+#endif
+			_SharedMemBuffer->push(buf);
 
 			//For every 50th picture create image statistics
-			if (loopCount % 50 == 0)
-				_AnalysisBuffer->push(buf);
+			//if (loopCount % 50 == 0)
+				//_AnalysisBuffer->push(buf);
 		}
 		//Calibrating cameras only
 		else if (loopCount % 3 == 0){
@@ -577,13 +623,9 @@ void Flea3CamThread::run()
 			analyzeImage(_ID, &cimg, &ref, _Calibration);
 		}
 
-		//Do some logging
-		sprintf(logfilepathFull, logdir.c_str(), _ID);
-		generateLog(logfilepathFull, timeresult);
 
 		loopCount++;
 	}	
-
 	_Camera.StopCapture();
 	_Camera.Disconnect();
 
@@ -591,25 +633,47 @@ void Flea3CamThread::run()
 	return;
 }
 
+void Flea3CamThread::logCriticalError(Error e){
+	char 				logfilepathFull[256];
+	std::stringstream 	str;
+	SettingsIAC*		set 		= SettingsIAC::getInstance();
+	std::string 		logdir 		= set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+	str << "Error acquiring image. Printing full info and exiting. " << std::endl;
+	str << "Type: " 				<< e.GetType() 				<< std::endl;
+	str << "Description: " 			<< e.GetDescription() 		<< std::endl;
+	str << "Filename: " 			<< e.GetFilename() 			<< std::endl;
+	str << "Line: " 				<< e.GetLine() 				<< std::endl;
+	str << "ErrorType: " 			<< e.GetType() 				<< std::endl;
+	Error cause = e.GetCause();
+	str << "Cause.Type: " 			<< cause.GetType() 			<< std::endl;
+	str << "Cause.Description: " 	<< cause.GetDescription() 	<< std::endl;
+	str << "Cause.Filename: " 		<< cause.GetFilename() 		<< std::endl;
+	str << "Cause.Line: " 			<< cause.GetLine() 			<< std::endl;
+	str << "Cause.ErrorType: " 		<< cause.GetType() 			<< std::endl;
+	str << "Exit! " 				<< std::endl;
+	sprintf(logfilepathFull, logdir.c_str(), _ID);
+	generateLog(logfilepathFull, str.str().c_str());
+}
+
 // We will use Format7 to set the video parameters instead of DCAM, so it becomes handy to print this info
 void Flea3CamThread::PrintFormat7Capabilities(Format7Info fmt7Info)
 {    
-	sendLogMessage(3,  "Max image pixels: " + QString::number(fmt7Info.maxWidth) + " x " + QString::number(fmt7Info.maxHeight) + "\n" 
-			+	"Image Unit size: " + QString::number(fmt7Info.imageHStepSize) + " x " + QString::number(fmt7Info.imageVStepSize) + "\n"
-			+	"Offset Unit size: " + QString::number(fmt7Info.offsetHStepSize) + " x " + QString::number(fmt7Info.offsetVStepSize) + "\n"
-			+	"Pixel format bitfield: " + QString::number(fmt7Info.pixelFormatBitField));
+	sendLogMessage(3,  "Max image pixels: " + 	QString::number(fmt7Info.maxWidth) + " x " + QString::number(fmt7Info.maxHeight) + "\n"
+			+	"Image Unit size: " + 			QString::number(fmt7Info.imageHStepSize) + " x " + QString::number(fmt7Info.imageVStepSize) + "\n"
+			+	"Offset Unit size: " + 			QString::number(fmt7Info.offsetHStepSize) + " x " + QString::number(fmt7Info.offsetVStepSize) + "\n"
+			+	"Pixel format bitfield: " + 	QString::number(fmt7Info.pixelFormatBitField));
 }
 
 // Just prints the camera's info
 void Flea3CamThread::PrintCameraInfo(CameraInfo* pCamInfo)
 {
 	sendLogMessage(3,  QString() + "\n*** CAMERA INFORMATION ***\n" + "Serial number - " + QString::number( pCamInfo->serialNumber ) + "\n" 
-			+ "Camera model - " +	QString( pCamInfo->modelName ) + "\n"
-			+ "Camera vendor - " +	QString( pCamInfo->vendorName ) + "\n"
-			+ "Sensor - " +			QString( pCamInfo->sensorInfo ) + "\n"
-			+ "Resolution - " +		QString( pCamInfo->sensorResolution ) + "\n"
-			+ "Firmware version - " + QString( pCamInfo->firmwareVersion ) + "\n"
-			+ "Firmware build time - " + QString( pCamInfo->firmwareBuildTime ) + "\n"+ "\n");
+			+ "Camera model - " +		QString( pCamInfo->modelName ) + "\n"
+			+ "Camera vendor - " +		QString( pCamInfo->vendorName ) + "\n"
+			+ "Sensor - " +				QString( pCamInfo->sensorInfo ) + "\n"
+			+ "Resolution - " +			QString( pCamInfo->sensorResolution ) + "\n"
+			+ "Firmware version - " + 	QString( pCamInfo->firmwareVersion ) + "\n"
+			+ "Firmware build time - " +QString( pCamInfo->firmwareBuildTime ) + "\n"+ "\n");
 }
 
 bool Flea3CamThread::checkReturnCode(Error error)

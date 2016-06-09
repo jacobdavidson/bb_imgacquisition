@@ -4,6 +4,7 @@
 #Eclipse
 .cproject
 .project
+.settings
 
 # User-specific files
 *.suo

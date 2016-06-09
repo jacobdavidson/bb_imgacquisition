@@ -25,10 +25,12 @@ public:
 	 */
 	std::mutex _Access;
 
-	virtual void push(std::shared_ptr<ImageBuffer> imbuffer);//std::shared_ptr<ImageBuffer>
+	virtual void push(std::shared_ptr<ImageBuffer> imbuffer);
 
 	virtual std::shared_ptr<beeCompress::ImageBuffer> pop();
 
+	//Simple function to get the current size of the buffer in elements.
+	//Locks the data structure.
 	virtual int size(){
 		int tsize = 0;
 		_Access.lock();

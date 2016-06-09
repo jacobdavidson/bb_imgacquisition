@@ -12,6 +12,7 @@
 #include "ParamNames.h"
 
 #include <fstream>
+#include <iostream>
 
    /*rcmode		The rc (rate control) mode to use. <br>
 	* 						0 = Constant quantizer parameter (default)<br>

@@ -6,6 +6,7 @@
 #include "Flea3CamThread.h"
 #include "ImageAnalysis.h"
 #include "NvEncGlue.h"
+#include "SharedMemory.h"
 #include <memory>
 using namespace FlyCapture2;
 
@@ -24,8 +25,9 @@ public:
 	void 						resolveLocks();				// Find and fix any partially written videos
 
 private:
+	beeCompress::SharedMemory	*smthread;					//
 	Flea3CamThread				threads[4];					// A vector of the class Flea3CamThread, they are accessed from the constructor
-	beeCompress::ImageAnalysis	*analysis;
+	//beeCompress::ImageAnalysis	*analysis;
 	unsigned int				numCameras;					// Number of detected cameras
 	beeCompress::NvEncGlue 		glue1,glue2;
 
