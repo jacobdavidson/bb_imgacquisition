@@ -535,14 +535,6 @@ void Flea3CamThread::run()
 	}
 	}
 
-	//_Dog->pulse(_ID);
-	int duration=0;
-	std::cout << "Warning: Processing time too long:  " << duration << "\n";
-	QString str("Warning: Processing time too long: " );
-	str.append(std::to_string(duration).c_str());
-	str.append(" on camera ");
-	str.append(std::to_string(_ID).c_str());
-	generateLog(logfilepathFull, str);
 	while (1)
 	{
 		_Dog->pulse(_ID);
