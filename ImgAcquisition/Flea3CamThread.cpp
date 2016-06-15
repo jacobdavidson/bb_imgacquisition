@@ -534,9 +534,15 @@ void Flea3CamThread::run()
 			std::cout << "Warning: not found reference image refIm.jpg."<<std::endl;
 	}
 	}
+
 	//_Dog->pulse(_ID);
-
-
+	int duration=0;
+	std::cout << "Warning: Processing time too long:  " << duration << "\n";
+	QString str("Warning: Processing time too long: " );
+	str.append(std::to_string(duration).c_str());
+	str.append(" on camera ");
+	str.append(std::to_string(_ID).c_str());
+	generateLog(logfilepathFull, str);
 	while (1)
 	{
 		_Dog->pulse(_ID);
@@ -552,6 +558,8 @@ void Flea3CamThread::run()
 		if (duration > 333333){
 			std::cout << "Warning: Processing time too long:  " << duration << "\n";
 			QString str("Warning: Processing time too long: " );
+			str.append(std::to_string(duration).c_str());
+			str.append(" on camera ");
 			str.append(std::to_string(_ID).c_str());
 			generateLog(logfilepathFull, str);
 		}
@@ -710,7 +718,7 @@ void Flea3CamThread::cleanFolder(QString path, QString message)
 
 void Flea3CamThread::generateLog(QString path, QString message)
 {	
-	QString filename = (path + "log" + message.left(8) + ".txt");
+	QString filename = (path + "log.txt");
 	QFile file(filename);
 	file.open(QIODevice::Append);
 	QTextStream stream(&file);
