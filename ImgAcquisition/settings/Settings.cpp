@@ -44,8 +44,6 @@ int setCLIoptions(int argc, char **argv){
 	}
 
 	boost::property_tree::ptree *pt = &(set->_ptree);
-	//if (vm.count("ebr")) pt->put(ENCODERPARAM::ENC_BITRATE, vm["ebr"].as<int>());
-	//if (vm.count("i"))pt->put(TAGSTRINGPARAM::INFOLDER, vm["i"].as<std::string>());
 
 	return 0;
 }

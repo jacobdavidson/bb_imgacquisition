@@ -17,7 +17,11 @@ struct CalibrationInfo{
 	std::mutex dataAccess;
 };
 
-//inherits from Qthread
+/*!\brief Thread object which acquires images from a camera.
+ *
+ * Inherits from Qthread for threading.
+ * Contains functions to initialize the cameras and run the acquistion.
+ */
 class Flea3CamThread : public QThread
 {
 	Q_OBJECT   //generates the MOC
@@ -25,19 +29,42 @@ class Flea3CamThread : public QThread
 public:
 	Flea3CamThread(); //constructor
 	~Flea3CamThread(); //destructor
+
+	/*!\brief Initialization of cameras and configuration
+	 *
+	 * \param Virtual ID of the camera (0 to 3)
+	 * \param Buffer shared with the encoder thread
+	 * \param Buffer shared with the shared memory thread
+	 * \param Pointer to calibration data storeage
+	 * \param Watchdog to notifiy each acquisition loop (when running)
+	 */
 	bool				initialize(unsigned int id, beeCompress::MutexBuffer * pBuffer,
-								beeCompress::MutexBuffer * pAnalysisBuffer, CalibrationInfo *calib, Watchdog *dog); //here goes the camera ID (from 0 to 3)
+								beeCompress::MutexBuffer * pSharedMemBuffer, CalibrationInfo *calib, Watchdog *dog); //here goes the camera ID (from 0 to 3)
+
+	//! Object has been initialized using "initialize"
 	bool				_initialized;
+
+	//! Virtual ID of the camera
 	unsigned int		_ID;
+
+	//! Hardware ID (id in bus order) of the camera. (used internally)
 	unsigned int		_HWID;
+
+	//! Serial number of the camera
 	unsigned int		_Serial;
+
+	//! Pointer to calibration data storeage (set by initialize)
 	CalibrationInfo		*_Calibration;
+
+	//! Watchdog to notifiy each acquisition loop (set by initialize)
 	Watchdog	 		*_Dog;
 
 private:
 	bool				initCamera();
 	bool				startCapture();
-	void				PrintCameraInfo			(CameraInfo* pCamInfo); // Just prints the camera's info
+
+	//! \brief Just prints the camera's info
+	void				PrintCameraInfo			(CameraInfo* pCamInfo);
 	void				PrintFormat7Capabilities(Format7Info fmt7Info); // We will use Format7 to set the video parameters instead of DCAM, so it becomes handy to print this info
 	bool				checkReturnCode			(Error error);
 	void				sendLogMessage			(int logLevel, QString message);
@@ -57,7 +84,10 @@ private:
 
 	unsigned int		_LocalCounter; //to enumerate each image in a second
 
+	//! Buffer shared with the encoder thread
 	beeCompress::MutexBuffer *_Buffer;
+
+	//! Buffer shared with the shared memory thread
 	beeCompress::MutexBuffer *_SharedMemBuffer;
 	
 protected:
