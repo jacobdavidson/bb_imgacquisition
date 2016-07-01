@@ -10,7 +10,6 @@
 
 #include <string>
 
-
 std::string getTimestamp();
 
 #endif /* UTILITY_H_ */

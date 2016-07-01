@@ -8,36 +8,77 @@
 #include "NvEncGlue.h"
 #include "SharedMemory.h"
 #include <memory>
+
 using namespace FlyCapture2;
 
 //inherits from QCoreApplication
 class ImgAcquisitionApp : public QCoreApplication
 {
-	Q_OBJECT  //generates the MOC
+    Q_OBJECT  //generates the MOC
 
 public:
-	ImgAcquisitionApp(int & argc, char ** argv); //constructor
-	~ImgAcquisitionApp();						 //destructor
+    /**
+     * @brief Initializes acquisition/shared memory threads and runs them.
+     *
+     * Also runs a watchdog or calibration indefinately. DOES NOT RETURN.
+     *
+     * @param Process argc
+     * @param Process argv
+     */
+    ImgAcquisitionApp(int &argc, char **argv);
 
-	void						printBuildInfo();			// Just prints the library's info
-	int							checkCameras();				// This function checks that at least one camera is connected
+    /**
+     * @brief STUB
+     */
+    ~ImgAcquisitionApp();
 
-	void 						resolveLocks();				// Find and fix any partially written videos
+    /**
+     * @brief prints FlyCapture2 and Application build info
+     *
+     * Just prints the library's info
+     */
+    void                        printBuildInfo();
+
+    /**
+     * @brief This function checks that at least one camera is connected
+     */
+    int                         checkCameras();
+
+    /**
+     * @brief Find and fix any partially written videos
+     *
+     * might print error messages if resolving failed.
+     * This might be the case when the textfile was empty.
+     */
+    void                        resolveLocks();
 
 private:
-	beeCompress::SharedMemory	*smthread;					//
-	Flea3CamThread				threads[4];					// A vector of the class Flea3CamThread, they are accessed from the constructor
-	//beeCompress::ImageAnalysis	*analysis;
-	unsigned int				numCameras;					// Number of detected cameras
-	beeCompress::NvEncGlue 		glue1,glue2;
+    //! Shared memory thread pointer
+    beeCompress::SharedMemory   *_smthread;
 
-	//Helper functions of resolveLocks
-	std::string 				figureBasename(std::string infile);
-	void 						resolveLockDir(std::string from, std::string to);
-	
+    //! A vector of the class Flea3CamThread, they are accessed from the constructor
+    Flea3CamThread              _threads[4];
+
+    //! Number of detected cameras
+    unsigned int                _numCameras;
+
+    //! Glue objects which handle encoder workers
+    beeCompress::NvEncGlue      _glue1,_glue2;
+
+    /**
+     * @brief Helper function of resolveLocks
+     */
+    std::string                 figureBasename(std::string infile);
+
+    /**
+     * @brief Helper function of resolveLocks
+     */
+    void                        resolveLockDir(std::string from, std::string to);
+
 //Slots for the signals sent by Flea3CamThread Class
 public slots:
-	void						logMessage(int logLevel, QString message);
+
+    void                        logMessage(int logLevel, QString message);
 };
 
 #endif // IMGACQUISITIONAPP_H

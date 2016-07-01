@@ -87,8 +87,6 @@ template<template<typename...> class Ref, typename... Args>
 struct is_specialization<Ref<Args...>, Ref>: std::true_type {};
 }
 
-int setCLIoptions(int argc, char **argv);
-
 class SettingsIAC {
 
 private:

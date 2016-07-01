@@ -1,15 +1,8 @@
-/*
- * NvEncGlue.h
- *
- *  Created on: Nov 6, 2015
- *      Author: hauke
- */
 
 #ifndef NVENCGLUE_H_
 #define NVENCGLUE_H_
 
 #include "FlyCapture2.h"
-//#include "MutexRingbuffer.h"
 #include "Buffer/MutexBuffer.h"
 #include "Buffer/MutexLinkedList.h"
 #include <QThread>
@@ -26,48 +19,48 @@ namespace beeCompress {
  * <br>
  * Warning:<br>
  * Keep in mind:<br>
- * - 	The number of processors you spawn.
- * 		Most Nvidia GPU's are only able to spawn 2 HEVC GPU encoders.
- * 		One thread will use one encoder and crash if no GPU encoder is available.<br>
- * - 	The resolution. Encoding may throw errors madly if 4096x4096 is exceeded.
- * 		This is a Nvidia GPU encoder limitation.
+ * -    The number of processors you spawn.
+ *      Most consumer Nvidia GPU's are only able to spawn 2 HEVC GPU encoders.
+ *      One thread will use one encoder and crash if no GPU encoder is available.<br>
+ * -    The resolution. Encoding may throw errors madly if 4096x4096 is exceeded.
+ *      This is a Nvidia GPU encoder limitation.
  */
-class NvEncGlue : public QThread{
-	Q_OBJECT   //generates the MOC
+class NvEncGlue : public QThread {
+    Q_OBJECT   //generates the MOC
 
 public:
 
-	/**
-	 * @brief _Buffer1 The first buffer to encode
-	 */
-	MutexLinkedList *_Buffer1;
-	MutexLinkedList *_Buffer1_preview;
+    /**
+     * @brief _Buffer1 The first buffer to encode
+     */
+    MutexLinkedList *_Buffer1;
+    MutexLinkedList *_Buffer1_preview;
 
-	/**
-	 * @brief _CamRing1 Cam number associated with the first ringbuffer
-	 */
-	int _CamBuffer1;
+    /**
+     * @brief _CamRing1 Cam number associated with the first ringbuffer
+     */
+    int _CamBuffer1;
 
-	/**
-	 * @brief _Buffer2 The second buffer to encode
-	 */
-	MutexLinkedList *_Buffer2;
-	MutexLinkedList *_Buffer2_preview;
+    /**
+     * @brief _Buffer2 The second buffer to encode
+     */
+    MutexLinkedList *_Buffer2;
+    MutexLinkedList *_Buffer2_preview;
 
-	/**
-	 * @brief _CamRing2 Cam number associated with the second ringbuffer
-	 */
-	int _CamBuffer2;
+    /**
+     * @brief _CamRing2 Cam number associated with the second ringbuffer
+     */
+    int _CamBuffer2;
 
-	/**
-	 * @brief Creates a new encoder glue. Initializes ringbuffers.
-	 */
-	NvEncGlue();
+    /**
+     * @brief Creates a new encoder glue. Initializes ringbuffers.
+     */
+    NvEncGlue();
 
-	/**
-	 * @brief Destroy the encoder glue
-	*/
-	virtual ~NvEncGlue();
+    /**
+     * @brief Destroy the encoder glue
+    */
+    virtual ~NvEncGlue();
 
 protected:
 
@@ -79,7 +72,7 @@ protected:
      *
      * @param Length of the ringbuffer
      */
-	void run();
+    void run();
 };
 
 } /* namespace beeCompress */

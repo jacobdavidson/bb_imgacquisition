@@ -18,37 +18,138 @@ namespace beeCompress {
 
 class ImageAnalysis : public QThread
 {
-	Q_OBJECT   //generates the MOC
+    Q_OBJECT   //generates the MOC
 
-	std::string _Logfile;
-	Watchdog *_Dog;
+    //! File to write the analysis results to
+    std::string _Logfile;
+
+    //! Watchdog object. Notify this while the thread is active
+    Watchdog    *_Dog;
 
 public:
 
-	MutexLinkedList *_Buffer;
+    //! Buffer which holds the images to analyse
+    MutexLinkedList *_Buffer;
 
-	ImageAnalysis(std::string logfile, Watchdog *dog);
-	virtual ~ImageAnalysis();
+    /**
+     * @brief A simple constructor. Sets members according to parameters.
+     *
+     * @param Sets _Logfile
+     * @param Sets _Dog
+     */
+    ImageAnalysis(std::string logfile, Watchdog *dog);
 
-	void run();
+    //! Stub
+    virtual ~ImageAnalysis();
 
-	void getContrastRatio(cv::Mat &image);
+    /**
+     * @brief runs analysis thread. (Deprecated)
+     *
+     * Runs the analysis thread while encoding is running.
+     * This is deprecated. Use the new project "bb_statistics"
+     * for this task. It is using the shared memory interface.
+     */
+    void run();
 
-	double getVariance(cv::Mat &image);
+    /**
+     * @brief Gets the contrast ratio of a Matrix
+     *
+     * This might be useless for large real images, as
+     * the ratio will always be maximum. Pick image sections.
+     *
+     * @param The input image
+     * @return Contrast ratio
+     */
+    double getContrastRatio(cv::Mat &image);
 
-	double sumModulusDifference(cv::Mat *image);
+    /**
+     * @brief Gets the variance of an image.
+     *
+     * @param The image
+     * @return The variance
+     */
+    double getVariance(cv::Mat &image);
 
-	double DCT(double k1, double k2, int m, int n, cv::Mat &image);
+    /**
+     * @brief Gets the Sum Modulus Difference of an image (SMD).
+     *
+     * See the following papers for info:
+     * Practical issues in pixel-based autofocusing for machine vision
+     * Echtzeitfhige Extraktion scharfer Standbilder in der Video-Koloskopie
+     *
+     * @param The image
+     * @return The SMD
+     */
+    double sumModulusDifference(cv::Mat *image);
 
-	double SSF(double d);
+    /**
+     * @brief A helper function of S_PSM.
+     *
+     * See paper for detail:
+     * Echtzeitfhige Extraktion scharfer Standbilder in der Video-Koloskopie
+     * Parameters are as per paper
+     */
+    double DCT(double k1, double k2, int m, int n, cv::Mat &image);
 
-	double STilde(int m, int n,cv::Mat &image);
-	double S_PSM(cv::Mat *image);
+    /**
+     * @brief A helper function of S_PSM.
+     *
+     * See paper for detail:
+     * Echtzeitfhige Extraktion scharfer Standbilder in der Video-Koloskopie
+     * Parameters are as per paper
+     */
+    double SSF(double d);
 
-	cv::Mat getHist(cv::Mat *M);
-	double avgHistDifference(cv::Mat reference, cv::Mat measure);
+    /**
+     * @brief A helper function of S_PSM.
+     *
+     * See paper for detail:
+     * Echtzeitfhige Extraktion scharfer Standbilder in der Video-Koloskopie
+     * Parameters are as per paper
+     */
+    double STilde(int m, int n,cv::Mat &image);
 
-	double noiseEstimate(cv::Mat image);
+    /**
+     * @brief Calculates the Perceptual Sharpness Metric
+     *
+     * See paper for detail:
+     * Echtzeitfhige Extraktion scharfer Standbilder in der Video-Koloskopie
+     *
+     * @param The image
+     * @return The PSM
+     */
+    double S_PSM(cv::Mat *image);
+
+    /**
+     * @brief Gets a colour histogram. Helper of avgHistDifference
+     *
+     * Use grayscale images only.
+     *
+     * @param The image to get the histogram from
+     * @param The histogram
+     */
+    cv::Mat getHist(cv::Mat *M);
+
+    /**
+     * @brief Calculates the average difference of colour histograms.
+     *
+     * @param First image
+     * @param Second image
+     * @return Avg difference
+     */
+    double avgHistDifference(cv::Mat reference, cv::Mat measure);
+
+    /**
+     * @brief Estimates the noise in an image
+     *
+     * Applies a median filter and gets the SSD.
+     * See thesis for details:
+     * Masters Thesis Hauke Moenck
+     *
+     * @param The image to analyse
+     * @return Noise estimate
+     */
+    double noiseEstimate(cv::Mat image);
 };
 
 } /* namespace beeCompress */

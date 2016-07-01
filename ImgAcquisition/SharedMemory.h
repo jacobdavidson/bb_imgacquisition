@@ -16,27 +16,72 @@ namespace beeCompress {
 
 class SharedMemory : public QThread
 {
-	Q_OBJECT   //generates the MOC
+    Q_OBJECT   //generates the MOC
 public:
-	SharedMemory();
-	virtual ~SharedMemory();
-	boost::interprocess::interprocess_mutex *createSharedMemory(key_t *key, int *shmid, char **data, int id);
+    /**
+     * @brief Simple constuctor. Only creates the buffer.
+     */
+    SharedMemory();
 
+    /**
+     * @brief STUB
+     */
+    virtual ~SharedMemory();
 
-	MutexLinkedList *_Buffer;
+    /**
+     * @brief Creates a shared memory segment
+     *
+     * All but the last parameter are output parameters.
+     * Memory layout:
+     * - image data. Size: WidthxHeight
+     * - Boost interprocess mutex object
+     *
+     * @param (out) Shared memory key
+     * @param (out) Shared memory id
+     * @param (out) Pointer to the memory segment
+     * @param Id of the camera
+     */
+    boost::interprocess::interprocess_mutex *createSharedMemory(key_t *key, int *shmid, char **data, int id);
 
-	void doLock(int id);
-	void doUnlock(int id);
+    //! Buffer which to feed the shared memory from
+    MutexLinkedList *_Buffer;
+
+    /**
+     * @brief lock the shared memory mutex.
+     *
+     * Uses try_lock() to lock. If it fails enough many times in a second,
+     * the lock is deleted and a new one is being created. This is to
+     * prevent starvation.
+     */
+    void doLock(int id);
+
+    /**
+     * @brief unlock the shared memory mutex.
+     *
+     * Wraps lock() just to keep function calls similar.
+     */
+    void doUnlock(int id);
 protected:
 
-	////////////////////////Shared Memory///////////////
-	key_t key[4];
-	int shmid[4];
-	char *data[4];
-	boost::interprocess::interprocess_mutex *mutex[4];
-	////////////////////////////////////////////////////
+    ////////////////////////Shared Memory///////////////#
 
-	void run(); //this is the function that will be iterated indefinitely
+    //! Shared memory keys of camera 0 - 3
+    key_t _key[4];
+
+    //! Shared memory ids of camera 0 - 3
+    int _shmid[4];
+
+    //! Pointer to the memory segments of camera 0 - 3
+    char *_data[4];
+
+    //! Interprocess mutexes of camera 0 - 3
+    boost::interprocess::interprocess_mutex *_mutex[4];
+    ////////////////////////////////////////////////////
+
+    /**
+     * @brief Runs thread to supply shared memory indefinately
+     */
+    void run();
 };
 
 } /* namespace beeCompress */

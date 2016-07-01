@@ -11,9 +11,9 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #if defined(NV_WINDOWS)
-    #include <d3d9.h>
-    #include <d3d10_1.h>
-    #include <d3d11.h>
+#include <d3d9.h>
+#include <d3d10_1.h>
+#include <d3d11.h>
 #pragma warning(disable : 4996)
 #endif
 
@@ -35,9 +35,9 @@ class CNvQueue {
     unsigned int m_uPendingndex;
 public:
     CNvQueue(): m_pBuffer(NULL), m_uSize(0), m_uPendingCount(0), m_uAvailableIdx(0),
-                m_uPendingndex(0)
-    {
-    }
+    m_uPendingndex(0)
+{
+}
 
     ~CNvQueue()
     {
@@ -152,7 +152,7 @@ public:
      * @return 				The encoded file size or -1 in case of an error.
      */
     int                                                  EncodeMain(double *elapsedTimeP, double *avgtimeP,beeCompress::MutexBuffer *buffer, beeCompress::MutexBuffer *bufferPrev,
-    																beeCompress::writeHandler *wh, EncoderQualityConfig encCfg, EncoderQualityConfig encPrevCfg);
+                                                                     beeCompress::writeHandler *wh, EncoderQualityConfig encCfg, EncoderQualityConfig encPrevCfg);
 
 protected:
     CNvHWEncoder                                        *m_pNvHWEncoder;
