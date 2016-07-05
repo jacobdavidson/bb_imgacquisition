@@ -1,13 +1,13 @@
-//
-// Copyright 1993-2014 NVIDIA Corporation.  All rights reserved.
-//
-// Please refer to the NVIDIA end user license agreement (EULA) associated
-// with this source code for terms and conditions that govern your use of
-// this software. Any use, reproduction, disclosure, or distribution of
-// this software and related documentation outside the terms of the EULA
-// is strictly prohibited.
-//
-////////////////////////////////////////////////////////////////////////////
+/*
+ * Copyright 1993-2015 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
 
 #ifndef NVUTILS_H
 #define NVUTILS_H
@@ -17,25 +17,31 @@
 
 #if defined (NV_WINDOWS)
 #include <windows.h>
+
 #elif defined NV_UNIX
 #include <sys/time.h>
 #include <limits.h>
 
 #define FALSE 0
 #define TRUE  1
+#define S_OK  0
 #define INFINITE UINT_MAX
 #define stricmp strcasecmp
 #define FILE_BEGIN               SEEK_SET
 #define INVALID_SET_FILE_POINTER (-1)
 #define INVALID_HANDLE_VALUE     ((void *)(-1))
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
 
 typedef void* HANDLE;
 typedef void* HINSTANCE;
 typedef unsigned long DWORD, *LPWORD;
 typedef DWORD FILE_SIZE;
+typedef DWORD HRESULT;
+
 #endif
+
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define FABS(a) ((a) >= 0 ? (a) : -(a))
 
 inline bool NvSleep(unsigned int mSec)
 {

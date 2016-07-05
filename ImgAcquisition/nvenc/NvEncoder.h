@@ -11,18 +11,22 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #if defined(NV_WINDOWS)
-#include <d3d9.h>
-#include <d3d10_1.h>
-#include <d3d11.h>
+    #include <d3d9.h>
+    #include <d3d10_1.h>
+    #include <d3d11.h>
 #pragma warning(disable : 4996)
 #endif
 
 #include "NvHWEncoder.h"
+
 #include "../Buffer/MutexBuffer.h"
 #include "../writeHandler.h"
 #include "../settings/Settings.h"
 
 #define MAX_ENCODE_QUEUE 32
+
+#define MAX_ENCODE_QUEUE 32
+#define FRAME_QUEUE 240
 
 #define SET_VER(configStruct, type) {configStruct.version = type##_VER;}
 
@@ -35,9 +39,9 @@ class CNvQueue {
     unsigned int m_uPendingndex;
 public:
     CNvQueue(): m_pBuffer(NULL), m_uSize(0), m_uPendingCount(0), m_uAvailableIdx(0),
-    m_uPendingndex(0)
-{
-}
+                m_uPendingndex(0)
+    {
+    }
 
     ~CNvQueue()
     {
@@ -180,6 +184,7 @@ protected:
     NVENCSTATUS                                          ReleaseIOBuffers();
     unsigned char*                                       LockInputBuffer(void * hInputSurface, uint32_t *pLockedPitch);
     NVENCSTATUS                                          FlushEncoder();
+    NVENCSTATUS                                          RunMotionEstimationOnly(MEOnlyConfig *pMEOnly, bool bFlush);
 };
 
 // NVEncodeAPI entry point

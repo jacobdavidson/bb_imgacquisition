@@ -17,7 +17,7 @@ find_package( OpenCV REQUIRED)
 IF (DEFINED NO_ENCODER)
     SET(USECUDA "false")
 ELSE()
-	find_package(CUDA REQUIRED COMPONENTS cuda cudart)
+#	find_package(CUDA REQUIRED COMPONENTS cuda cudart)
 ENDIF()
  
 # project dependecies

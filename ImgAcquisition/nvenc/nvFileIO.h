@@ -1,13 +1,13 @@
-///
-// Copyright 1993-2014 NVIDIA Corporation.  All rights reserved.
-//
-// Please refer to the NVIDIA end user license agreement (EULA) associated
-// with this source code for terms and conditions that govern your use of
-// this software. Any use, reproduction, disclosure, or distribution of
-// this software and related documentation outside the terms of the EULA
-// is strictly prohibited.
-//
-////////////////////////////////////////////////////////////////////////////
+/*
+ * Copyright 1993-2015 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
 
 #ifndef NVFILE_IO_H
 #define NVFILE_IO_H
@@ -70,12 +70,12 @@ inline bool nvReadFile(HANDLE hInputFile, void *buf, U32 bytes_to_read, U32 *byt
     ReadFile(hInputFile, buf, bytes_to_read, (LPDWORD)bytes_read, NULL);
     return true;
 #elif defined __linux || defined __APPLE__ || defined __MACOSX
-    U32 num_bytes_read;
-    num_bytes_read = fread(buf, bytes_to_read, 1, (FILE *)hInputFile);
+    U32 elems_read;
+    elems_read = fread(buf, bytes_to_read, 1, (FILE *)hInputFile);
 
     if (bytes_read)
     {
-        *bytes_read = num_bytes_read;
+        *bytes_read = elems_read > 0 ? bytes_to_read : 0;
     }
     return true;
 #endif
