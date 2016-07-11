@@ -65,9 +65,9 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams() {
 	pt.put(IMACQUISITION::DO_PREVIEWS, 			1		);
 	pt.put(IMACQUISITION::ANALYSISFILE,			"./analysis.txt");
 	pt.put(IMACQUISITION::LOGDIR, 				"./log/Cam_%d/");
-	pt.put(IMACQUISITION::IMDIR, 				"./tmp/Cam_%u/Cam_%u_%s_TO_Cam_%u_%s");
+	pt.put(IMACQUISITION::IMDIR, 				"./tmp/Cam_%u/Cam_%u_%s--%s");
 	pt.put(IMACQUISITION::EXCHANGEDIR, 			"./out/Cam_%u/");
-	pt.put(IMACQUISITION::IMDIRPREVIEW, 		"./tmpPrev/Cam_%u/Cam_%u_%s_TO_Cam_%u_%s");
+	pt.put(IMACQUISITION::IMDIRPREVIEW, 		"./tmpPrev/Cam_%u/Cam_%u_%s--%s");
 	pt.put(IMACQUISITION::EXCHANGEDIRPREVIEW, 	"./outPrev/Cam_%u/");
 
 

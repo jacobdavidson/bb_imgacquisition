@@ -516,7 +516,7 @@ void analyzeImage(int camid, FlyCapture2::Image *cimg, cv::Mat *ref,
 //this is what the function does with the information set in configure
 void Flea3CamThread::run() {
     struct tm *timeinfo;
-    char timeresult[15];
+    char timeresult[32];
     char logfilepathFull[256];
 
     SettingsIAC *set = SettingsIAC::getInstance();
@@ -622,7 +622,8 @@ void Flea3CamThread::run() {
         timeinfo = localtime(&_TimeStamp.seconds);
 
         // string with local time info
-        sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%.6d",
+        //According to ISO 8601:  Cam_<ID>_YYYY-MM-DDThh:mm:ss.s--YYYY-MM-DDThh:mm:ss.s
+        sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%.6d",
                 timeinfo->tm_year + 1900, timeinfo->tm_mon + 1,
                 timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min,
                 timeinfo->tm_sec, _TimeStamp.microSeconds);

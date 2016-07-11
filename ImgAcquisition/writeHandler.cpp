@@ -24,7 +24,7 @@ writeHandler::writeHandler(std::string imdir, int currentCam,
     char filepath[512];
     char exdirFilepath[512];
 
-    sprintf(filepath, _basename.c_str(), _camId, _camId, timestamp.c_str(), _camId,
+    sprintf(filepath, _basename.c_str(), _camId, _camId, timestamp.c_str(),
             timestamp.c_str(), 0);
     sprintf(exdirFilepath, edir.c_str(), _camId, 0);
 
