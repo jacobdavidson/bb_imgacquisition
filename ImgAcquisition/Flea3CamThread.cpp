@@ -769,7 +769,7 @@ void Flea3CamThread::generateLog(QString path, QString message) {
     QFile file(filename);
     file.open(QIODevice::Append);
     QTextStream stream(&file);
-    stream << message << "\r\n";
+    stream << QString(getTimestamp().c_str()) << ": " << message << "\r\n";
     file.close();
 }
 

@@ -23,7 +23,7 @@
 std::string getTimestamp(){
 #if __linux__
     struct          tm * timeinfo;
-    char            timeresult[15];
+    char            timeresult[32];
     struct timeval  tv;
     struct timezone tz;
     struct tm       *tm;
@@ -32,7 +32,7 @@ std::string getTimestamp(){
     timeinfo=localtime(&tv.tv_sec);
 
 
-    sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%06d",
+    sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%06d",
             timeinfo -> tm_year + 1900,
             timeinfo -> tm_mon  + 1,
             timeinfo -> tm_mday,
@@ -43,7 +43,7 @@ std::string getTimestamp(){
     std::string r(timeresult);
     return r;
 #else
-    char		timeresult[20];
+    char		timeresult[32];
     SYSTEMTIME	stime;
     //structure to store system time (in usual time format)
     FILETIME	ltime;
@@ -54,7 +54,7 @@ std::string getTimestamp(){
     FileTimeToLocalFileTime(&ftTimeStamp, &ltime);//convert in local time and store in ltime
     FileTimeToSystemTime(&ltime, &stime);//convert in system time and store in stime
 
-    sprintf(timeresult, "%d%.2d%.2d%.2d%.2d%.2d_%06d",
+    sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%06d",
             stime.wYear,
             stime.wMonth,
             stime.wDay,
