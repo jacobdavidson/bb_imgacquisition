@@ -623,10 +623,11 @@ void Flea3CamThread::run() {
 
         // string with local time info
         //According to ISO 8601:  Cam_<ID>_YYYY-MM-DDThh:mm:ss.s--YYYY-MM-DDThh:mm:ss.s
-        sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%.6d",
+        sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%.3d%s",
                 timeinfo->tm_year + 1900, timeinfo->tm_mon + 1,
                 timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min,
-                timeinfo->tm_sec, _TimeStamp.microSeconds);
+                timeinfo->tm_sec, (_TimeStamp.microSeconds/1000),
+                get_utc_offset_string().c_str());
 
         localCounter(oldTime, timeinfo->tm_sec);
 

@@ -10,6 +10,7 @@
 
 #include <string>
 
+std::string get_utc_offset_string();
 std::string getTimestamp();
 
 #endif /* UTILITY_H_ */

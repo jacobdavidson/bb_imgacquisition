@@ -50,7 +50,7 @@ static const std::string LOGDIR 					= "IMACQUISITION.LOGDIR";
 static const std::string IMDIR 						= "IMACQUISITION.IMDIR";
 static const std::string IMDIRPREVIEW 				= "IMACQUISITION.IMDIRPREVIEW";
 static const std::string EXCHANGEDIR 				= "IMACQUISITION.EXCHANGEDIR";
-static const std::string EXCHANGEDIRPREVIEW 		= "IMACQUISITION.EXCHANGEDIRPREVIEW";
+static const std::string EXCHANGEDIRPREVIEW         = "IMACQUISITION.EXCHANGEDIRPREVIEW";
 }
 
 

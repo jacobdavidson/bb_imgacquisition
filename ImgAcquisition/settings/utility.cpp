@@ -17,6 +17,36 @@
 #include "windows.h"
 #endif
 
+#include "boost/date_time/local_time/local_time.hpp"
+#include "boost/date_time/c_local_time_adjustor.hpp"
+
+boost::posix_time::time_duration get_utc_offset() {
+    using namespace boost::posix_time;
+
+    // boost::date_time::c_local_adjustor uses the C-API to adjust a
+    // moment given in utc to the same moment in the local time zone.
+    typedef boost::date_time::c_local_adjustor<ptime> local_adj;
+
+    const ptime utc_now = second_clock::universal_time();
+    const ptime now = local_adj::utc_to_local(utc_now);
+
+    return now - utc_now;
+}
+
+std::string get_utc_offset_string() {
+    std::stringstream out;
+
+    using namespace boost::posix_time;
+//This is no memory leak!
+    time_facet* tf = new time_facet();
+    tf->time_duration_format("%+%H:%M");
+    out.imbue(std::locale(out.getloc(), tf));
+
+    out << get_utc_offset();
+
+    return out.str();
+}
+
 /*
  * Timestamp creation from system clock
  */
@@ -32,14 +62,15 @@ std::string getTimestamp(){
     timeinfo=localtime(&tv.tv_sec);
 
 
-    sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%06d",
+    sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%03d%s",
             timeinfo -> tm_year + 1900,
             timeinfo -> tm_mon  + 1,
             timeinfo -> tm_mday,
             timeinfo -> tm_hour,
             timeinfo -> tm_min,
             timeinfo -> tm_sec,
-            tv		 .	tv_usec);
+            (tv.tv_usec/1000),
+            get_utc_offset_string().c_str());
     std::string r(timeresult);
     return r;
 #else
@@ -54,14 +85,15 @@ std::string getTimestamp(){
     FileTimeToLocalFileTime(&ftTimeStamp, &ltime);//convert in local time and store in ltime
     FileTimeToSystemTime(&ltime, &stime);//convert in system time and store in stime
 
-    sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%06d",
+    sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%03d%s",
             stime.wYear,
             stime.wMonth,
             stime.wDay,
             stime.wHour,
             stime.wMinute,
             stime.wSecond,
-            stime.wMilliseconds);
+            stime.wMilliseconds,
+            get_utc_offset_string().c_str());
     std::string r(timeresult);
     return r;
 #endif

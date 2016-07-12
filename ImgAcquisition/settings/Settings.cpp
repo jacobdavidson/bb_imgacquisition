@@ -68,7 +68,7 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams() {
 	pt.put(IMACQUISITION::IMDIR, 				"./tmp/Cam_%u/Cam_%u_%s--%s");
 	pt.put(IMACQUISITION::EXCHANGEDIR, 			"./out/Cam_%u/");
 	pt.put(IMACQUISITION::IMDIRPREVIEW, 		"./tmpPrev/Cam_%u/Cam_%u_%s--%s");
-	pt.put(IMACQUISITION::EXCHANGEDIRPREVIEW, 	"./outPrev/Cam_%u/");
+    pt.put(IMACQUISITION::EXCHANGEDIRPREVIEW,   "./outPrev/Cam_%u/");
 
 
 	return pt;

@@ -56,7 +56,7 @@ std::string ImgAcquisitionApp::figureBasename(std::string infile) {
                 << infile << std::endl;
         return "-1";
     }
-    return fst + "_TO_" + last;
+    return fst + "--" + last.substr(6);
 }
 
 void ImgAcquisitionApp::resolveLockDir(std::string from, std::string to) {
