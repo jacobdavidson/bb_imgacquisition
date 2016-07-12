@@ -63,7 +63,7 @@ writeHandler::~writeHandler() {
 
     //assemble final file name
     sprintf(filepath, _basename.c_str(), _camId, _camId, _firstTimestamp.c_str(),
-            _camId, _lastTimestamp.c_str(), 0);
+            _lastTimestamp.c_str(), 0);
 
     //Rename the temporary files to their final names:
     std::string tmp = filepath;
