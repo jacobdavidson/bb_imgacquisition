@@ -20,6 +20,13 @@
 #include "boost/date_time/local_time/local_time.hpp"
 #include "boost/date_time/c_local_time_adjustor.hpp"
 
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/date_time.hpp>
+
+std::string get_utc_time() {
+    return boost::posix_time::to_iso_extended_string(boost::posix_time::microsec_clock::universal_time())+"Z";
+}
+
 boost::posix_time::time_duration get_utc_offset() {
     using namespace boost::posix_time;
 

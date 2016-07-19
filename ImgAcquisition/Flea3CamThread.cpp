@@ -16,10 +16,6 @@
 #include <ctime> //get time
 #include <time.h>
 
-//#include <sys/types.h>
-//#include <sys/ipc.h>
-//#include <sys/shm.h>
-
 #if __linux__
 #include <unistd.h> //sleep
 #include <sys/time.h>
@@ -589,6 +585,9 @@ void Flea3CamThread::run() {
             std::chrono::steady_clock::now();
         //Retrieve image and metadata
         Error e = _Camera.RetrieveBuffer(&cimg);
+	//Get the timestamp
+	std::string currentTimestamp = get_utc_time();
+
         std::chrono::steady_clock::time_point begin =
             std::chrono::steady_clock::now();
 
@@ -621,14 +620,6 @@ void Flea3CamThread::run() {
         //converts the time in seconds to local time
         timeinfo = localtime(&_TimeStamp.seconds);
 
-        // string with local time info
-        //According to ISO 8601:  Cam_<ID>_YYYY-MM-DDThh:mm:ss.s--YYYY-MM-DDThh:mm:ss.s
-        sprintf(timeresult, "%d-%.2d-%.2dT%.2d:%.2d:%.2d.%.3d%s",
-                timeinfo->tm_year + 1900, timeinfo->tm_mon + 1,
-                timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min,
-                timeinfo->tm_sec, (_TimeStamp.microSeconds/1000),
-                get_utc_offset_string().c_str());
-
         localCounter(oldTime, timeinfo->tm_sec);
 
         //////////////////////////////////////////////
@@ -647,7 +638,7 @@ void Flea3CamThread::run() {
         oldTime = timeinfo->tm_sec;
 
         //Prepare and put the image into the buffer
-        std::string currentTimestamp(timeresult);
+        //std::string currentTimestamp(timeresult);
 
         //Not in calibration mode. Move image to buffer for further procession
         if (!_Calibration->doCalibration) {
