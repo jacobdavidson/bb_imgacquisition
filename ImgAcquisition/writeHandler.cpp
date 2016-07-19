@@ -16,7 +16,7 @@ writeHandler::writeHandler(std::string imdir, int currentCam,
                            std::string edir) {
 
     //Create assemble file name and create a file handle to pass the encoder.
-    std::string timestamp   = getTimestamp();
+    std::string timestamp    = get_utc_time();
     _basename                = imdir;
     _camId                   = currentCam;
 
