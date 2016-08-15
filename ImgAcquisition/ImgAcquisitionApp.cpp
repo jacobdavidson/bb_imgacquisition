@@ -1,6 +1,7 @@
 #include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
 #include "settings/ParamNames.h"
+#include "settings/utility.h"
 #include "Watchdog.h"
 #include <iostream>
 #include <fstream>
@@ -161,6 +162,11 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) :
     printBuildInfo();
     resolveLocks();
     numCameras = checkCameras(); // when the number of cameras is insufficient it should interrupt the program
+
+    int camcountConf = set->getValueOfParam<int>(IMACQUISITION::CAMCOUNT);
+    if (numCameras < camcountConf){
+        slackpost("Camera count is less than configured!", 2);
+    }
 
     if (numCameras < 1) {
         std::exit(2);

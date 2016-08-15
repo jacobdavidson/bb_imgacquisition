@@ -585,8 +585,8 @@ void Flea3CamThread::run() {
             std::chrono::steady_clock::now();
         //Retrieve image and metadata
         Error e = _Camera.RetrieveBuffer(&cimg);
-	//Get the timestamp
-	std::string currentTimestamp = get_utc_time();
+        //Get the timestamp
+        std::string currentTimestamp = get_utc_time();
 
         std::chrono::steady_clock::time_point begin =
             std::chrono::steady_clock::now();
@@ -680,11 +680,14 @@ void Flea3CamThread::logCriticalError(Error e) {
     SettingsIAC *set = SettingsIAC::getInstance();
     std::string logdir = set->getValueOfParam<std::string>(
                              IMACQUISITION::LOGDIR);
+    std::string shortmsg = "Short log: \n";
     str << "Error acquiring image. Printing full info and exiting. "
         << std::endl;
     str << "Type: "                 << e.GetType()              << std::endl;
     str << "Description: "          << e.GetDescription()       << std::endl;
     str << "Filename: "             << e.GetFilename()          << std::endl;
+    shortmsg = shortmsg + str.str();
+
     str << "Line: "                 << e.GetLine()              << std::endl;
     str << "ErrorType: "            << e.GetType()              << std::endl;
     Error cause = e.GetCause();
@@ -696,6 +699,7 @@ void Flea3CamThread::logCriticalError(Error e) {
     str << "Exit! "                                             << std::endl;
     sprintf(logfilepathFull, logdir.c_str(), _ID);
     generateLog(logfilepathFull, str.str().c_str());
+    slackpost(shortmsg, 0);
 }
 
 // We will use Format7 to set the video parameters instead of DCAM, so it becomes handy to print this info

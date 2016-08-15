@@ -1,6 +1,7 @@
 //
 #include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
+#include "settings/utility.h"
 
 #include <stdio.h>
 #include <execinfo.h>
@@ -8,10 +9,20 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+/*
+ * Slackposting requires the config.
+ * If the segfault is caused from parsing config, well...
+ * -> infinte loop.
+ */
+int handlecounter = 0;
+
 /**
  * @brief handles segmentation faults
  */
 void handler(int sig) {
+    if (handlecounter>0) exit(1);
+    handlecounter++;
+
     void *array[10];
     size_t size;
 
@@ -21,6 +32,8 @@ void handler(int sig) {
     // print out all the frames to stderr
     fprintf(stderr, "Error: signal %d:\n", sig);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
+
+    slackpost("Encountered segmentation fault!",1);
     exit(1);
 }
 

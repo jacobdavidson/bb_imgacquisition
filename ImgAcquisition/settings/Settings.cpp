@@ -69,6 +69,10 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams() {
 	pt.put(IMACQUISITION::EXCHANGEDIR, 			"./out/Cam_%u/");
 	pt.put(IMACQUISITION::IMDIRPREVIEW, 		"./tmpPrev/Cam_%u/Cam_%u_%s--%s");
     pt.put(IMACQUISITION::EXCHANGEDIRPREVIEW,   "./outPrev/Cam_%u/");
+    pt.put(IMACQUISITION::SLACKPOST,            "/home/moenck/slackpost.sh bb_notification On Emma: ");
+    pt.put(IMACQUISITION::POSTLEVEL1,            "@moenck ");
+    pt.put(IMACQUISITION::POSTLEVEL2,            "@channel ");
+    pt.put(IMACQUISITION::CAMCOUNT,             2);
 
 
 	return pt;
