@@ -1,8 +1,7 @@
-
+﻿
 #ifndef NVENCGLUE_H_
 #define NVENCGLUE_H_
 
-#include "FlyCapture2.h"
 #include "Buffer/MutexBuffer.h"
 #include "Buffer/MutexLinkedList.h"
 #include <QThread>

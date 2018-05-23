@@ -1,4 +1,4 @@
-/*
+﻿/*
  * SharedMemory.h
  *
  *  Created on: Jun 8, 2016
@@ -75,7 +75,7 @@ protected:
     char *_data[4];
 
     //! Interprocess mutexes of camera 0 - 3
-    boost::interprocess::interprocess_mutex *_mutex[4];
+    boost::interprocess::interprocess_mutex *_mutex[4] = {nullptr, nullptr, nullptr, nullptr};
     ////////////////////////////////////////////////////
 
     /**

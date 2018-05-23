@@ -1,15 +1,13 @@
-#ifndef IMGACQUISITIONAPP_H
+﻿#ifndef IMGACQUISITIONAPP_H
 #define IMGACQUISITIONAPP_H
 
 #include <QCoreApplication>
 #include <QtGui/QKeyEvent>
-#include "Flea3CamThread.h"
+#include "CamThread.h"
 #include "ImageAnalysis.h"
 #include "NvEncGlue.h"
 #include "SharedMemory.h"
 #include <memory>
-
-using namespace FlyCapture2;
 
 //inherits from QCoreApplication
 class ImgAcquisitionApp : public QCoreApplication
@@ -56,8 +54,8 @@ private:
     //! Shared memory thread pointer
     beeCompress::SharedMemory   *_smthread;
 
-    //! A vector of the class Flea3CamThread, they are accessed from the constructor
-    Flea3CamThread              _threads[4];
+    //! A vector of the class CamThread, they are accessed from the constructor
+    std::unique_ptr<CamThread> _threads[4];
 
     //! Number of detected cameras
     unsigned int                _numCameras;
@@ -75,7 +73,7 @@ private:
      */
     void                        resolveLockDir(std::string from, std::string to);
 
-//Slots for the signals sent by Flea3CamThread Class
+//Slots for the signals sent by CamThread Class
 public slots:
 
     void                        logMessage(int logLevel, QString message);

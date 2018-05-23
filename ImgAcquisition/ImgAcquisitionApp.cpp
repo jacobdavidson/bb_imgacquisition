@@ -1,4 +1,4 @@
-#include "ImgAcquisitionApp.h"
+﻿#include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
 #include "settings/ParamNames.h"
 #include "settings/utility.h"
@@ -16,7 +16,13 @@
 #include <stdint.h>
 #endif
 
+#ifdef HAS_FLYCAPTURE
+#include "Flea3CamThread.h"
 using namespace FlyCapture2;
+#else
+#include "XimeaCamThread.h"
+#endif
+
 using namespace std;
 
 #ifdef __linux__
@@ -45,7 +51,7 @@ std::string ImgAcquisitionApp::figureBasename(std::string infile) {
         if (fst.size() == 0) {
             fst = line;
         }
-        if (last.size() == prevSize || prevSize == -1) {
+        if (static_cast<int>(last.size()) == prevSize || prevSize == -1) {
             last = line;
         }
         lineCount++;
@@ -172,18 +178,25 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) :
         std::exit(2);
     }
 
-    //one connect for each combination signal-slot
+    // Initialize CamThreads and connect the respective signals.
     for (int i = 0; i < 4; i++)
-        connect(&_threads[i], SIGNAL(logMessage(int, QString)), this,
+    {
+#ifdef USE_FLYCAPTURE
+        _threads[i] = std::unique_ptr<CamThread> { static_cast<CamThread*>(new Flea3CamThread()) };
+#else
+        _threads[i] = std::unique_ptr<CamThread> { static_cast<CamThread*>(new XimeaCamThread()) };
+#endif
+        connect(_threads[i].get(), SIGNAL(logMessage(int, QString)), this,
                 SLOT(logMessage(int, QString)));
+    }
 
     cout << "Connected " << numCameras << " cameras." << endl;
 
     //the threads are initialized as a private variable of the class ImgAcquisitionApp
-    _threads[0].initialize(0, (_glue1._Buffer1), _smthread->_Buffer, &calib, &dog);
-    _threads[1].initialize(1, (_glue2._Buffer1), _smthread->_Buffer, &calib, &dog);
-    _threads[2].initialize(2, (_glue1._Buffer2), _smthread->_Buffer, &calib, &dog);
-    _threads[3].initialize(3, (_glue2._Buffer2), _smthread->_Buffer, &calib, &dog);
+    _threads[0]->initialize(0, (_glue1._Buffer1), _smthread->_Buffer, &calib, &dog);
+    _threads[1]->initialize(1, (_glue2._Buffer1), _smthread->_Buffer, &calib, &dog);
+    _threads[2]->initialize(2, (_glue1._Buffer2), _smthread->_Buffer, &calib, &dog);
+    _threads[3]->initialize(3, (_glue2._Buffer2), _smthread->_Buffer, &calib, &dog);
 
     //Map the buffers to camera id's
     _glue1._CamBuffer1 = 0;
@@ -195,8 +208,8 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) :
 
     //execute run() function, spawns cam readers
     for (int i = 0; i < 4; i++) {
-        if (_threads[i]._initialized) {
-            _threads[i].start();
+        if (_threads[i]->isInitialized()) {
+            _threads[i]->start();
             camsStarted++;
         }
     }
@@ -231,7 +244,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) :
         printf("CamId,\tSMD,\tVar,\tCont,\tNoise\n");
         calib.dataAccess.lock();
         for (int i = 0; i < 4; i++)
-            printf("Cam %d: %f,\t%f,\t%f,\t%f,\t%f\n", i,
+            printf("Cam %d: %f,\t%f,\t%f,\t%f\n", i,
                    calib.calibrationData[i][0], calib.calibrationData[i][1],
                    calib.calibrationData[i][2], calib.calibrationData[i][3]);
 
@@ -252,36 +265,62 @@ ImgAcquisitionApp::~ImgAcquisitionApp() {
 
 // Just prints the library's info
 void ImgAcquisitionApp::printBuildInfo() {
+#ifdef USE_FLYCAPTURE
     FC2Version fc2Version;
     Utilities::GetLibraryVersion(&fc2Version);
 
     cout << "FlyCapture2 library version: " << fc2Version.major << "."
          << fc2Version.minor << "." << fc2Version.type << "."
          << fc2Version.build << endl << endl;
-
+#endif
     cout << "Application build date: " << __DATE__ << ", " << __TIME__ << endl
          << endl;
 }
 
 // This function checks that at least one camera is connected
 int ImgAcquisitionApp::checkCameras() {
-    BusManager cc_busMgr;
-    Error error;
+#ifdef USE_FLYCAPTURE
+    FlyCapture2::BusManager cc_busMgr;
+    FlyCapture2::Error error;
 
     error = cc_busMgr.GetNumOfCameras(&_numCameras);
     if (error != PGRERROR_OK) {
         return -1;
     }
+#else
+    {
+        const auto errorCode = xiGetNumberDevices(&_numCameras);
+        if (errorCode != XI_OK)
+            return -1;
+    }
+#endif
 
     qDebug() << "Number of cameras detected: " << _numCameras << endl << endl;
 
     //Find hardware ID to serial number
     for (int i = 0; i < 4; i++) {
+#ifdef USE_FLYCAPTURE
         unsigned int serial;
         Error error = cc_busMgr.GetCameraSerialNumberFromIndex(i, &serial);
         if (error == PGRERROR_OK) {
             qDebug() << "Detected cam with serial: " << serial;
         }
+#else
+        XI_RETURN errorCode;
+        HANDLE cam;
+        errorCode = xiOpenDevice(i, &cam);
+        if (errorCode != XI_OK)
+        {
+            qDebug() << QString("Error opening cam ") << i << ": error code " << errorCode;
+            continue;
+        }
+        char serial[20] = "";
+        errorCode = xiGetParamString(cam, XI_PRM_DEVICE_SN, serial, sizeof(serial));
+        if (errorCode == XI_OK) {
+            qDebug() << "Detected cam with serial: " << serial;
+        }
+        xiCloseDevice(cam);
+#endif
     }
 
     if (_numCameras < 1) {

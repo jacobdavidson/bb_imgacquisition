@@ -1,4 +1,4 @@
-/*
+﻿/*
  * SharedMemory.cpp
  *
  *  Created on: Jun 8, 2016
@@ -108,7 +108,7 @@ boost::interprocess::interprocess_mutex *SharedMemory::createSharedMemory(key_t 
     }
 
     /* attach to the segment to get a pointer to it: */
-    *data = shmat(*shmid, (void *)0, 0);
+    *data = static_cast<char*>(shmat(*shmid, (void *)0, 0));
     if (*data == (char *)(-1)) {
         perror("shmat");
         exit(1);

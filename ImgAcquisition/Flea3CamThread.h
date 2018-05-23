@@ -1,28 +1,22 @@
-#ifndef FLEA3CAMTHREAD_H
+﻿#ifndef FLEA3CAMTHREAD_H
 #define FLEA3CAMTHREAD_H
 
 #ifdef WINDOWS
 #include <windows.h>
 #endif
-#include <QThread>
+#include "CamThread.h"
 #include "FlyCapture2.h"
 #include "Buffer/MutexBuffer.h"
 #include "Watchdog.h"
 #include <mutex>
 using namespace FlyCapture2;
 
-struct CalibrationInfo {
-    bool doCalibration;
-    double calibrationData[4][4];
-    std::mutex dataAccess;
-};
-
 /*!\brief Thread object which acquires images from a camera.
  *
  * Inherits from Qthread for threading.
  * Contains functions to initialize the cameras and run the acquistion.
  */
-class Flea3CamThread : public QThread
+class Flea3CamThread : public CamThread
 {
     Q_OBJECT   //generates the MOC
 
@@ -39,11 +33,12 @@ public:
      * @param Pointer to calibration data storeage
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
-    bool                initialize(unsigned int id, beeCompress::MutexBuffer *pBuffer,
+    virtual bool                initialize(unsigned int id, beeCompress::MutexBuffer *pBuffer,
                                    beeCompress::MutexBuffer *pSharedMemBuffer, CalibrationInfo *calib,
-                                   Watchdog *dog);  //here goes the camera ID (from 0 to 3)
+                                   Watchdog *dog) override;  //here goes the camera ID (from 0 to 3)
 
     //! Object has been initialized using "initialize"
+    virtual bool isInitialized() const override { return _initialized; }
     bool                _initialized;
 
     //! Virtual ID of the camera
@@ -156,7 +151,7 @@ protected:
     void run(); //this is the function that will be iterated indefinitely
 
 signals:
-    void                logMessage(int logLevel, QString message);
+    virtual void                logMessage(int logLevel, QString message) override;
 };
 
 #endif // FLEA3CAMTHREAD_H
