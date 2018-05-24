@@ -99,7 +99,7 @@ bool XimeaCamThread::initCamera()
         return false;
     }
 
-    errorCode = xiSetParamInt(_Camera, XI_PRM_IMAGE_DATA_FORMAT, XI_RAW8);
+    errorCode = xiSetParamInt(_Camera, XI_PRM_IMAGE_DATA_FORMAT, XI_MONO8);
     if (errorCode != XI_OK)
     {
         sendLogMessage(0, "xiSetParamInt (XI_PRM_IMAGE_DATA_FORMAT) failed with code " + std::to_string(errorCode));
