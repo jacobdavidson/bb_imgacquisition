@@ -1,4 +1,4 @@
-/*
+﻿/*
  * MutexBuffer.h
  *
  *  Created on: Jan 25, 2016
@@ -46,7 +46,7 @@ public:
 	}
 
 	~ImageBuffer(){
-		delete(data);
+        delete[] data;
 	}
 };
 
