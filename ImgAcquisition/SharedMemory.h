@@ -72,7 +72,7 @@ protected:
     int _shmid[4];
 
     //! Pointer to the memory segments of camera 0 - 3
-    char *_data[4];
+    char *_data[4] = {nullptr, nullptr, nullptr, nullptr};
 
     //! Interprocess mutexes of camera 0 - 3
     boost::interprocess::interprocess_mutex *_mutex[4] = {nullptr, nullptr, nullptr, nullptr};
