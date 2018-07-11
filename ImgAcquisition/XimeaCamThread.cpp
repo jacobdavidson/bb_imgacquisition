@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include <QDebug>
 #include <qdir.h>       //QT stuff
 #include <qtextstream.h>
 
@@ -30,6 +31,9 @@
 #endif
 
 #include <opencv2/opencv.hpp>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 XimeaCamThread::XimeaCamThread() {
 
@@ -68,386 +72,178 @@ bool XimeaCamThread::initCamera()
 {
     _initialized = false;
 
+    // Try settings that our mc124mg does not support.
+    // This might become relevant with other XIMEA cams.
+    // However, with our camera, it just displays warnings.
+    const bool tryAllXimeaCamSettings {false};
     DWORD numberOfDevices { 0 };
     XI_RETURN errorCode { XI_OK };
 
+    // Disable bandwith-measuring for Ximea cams.
+    // According to docs, this can be wonky with multiple cameras.
+    xiSetParamInt(0, XI_PRM_AUTO_BANDWIDTH_CALCULATION, XI_OFF);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AUTO_BANDWIDTH_CALCULATION")) return false;
+
     errorCode = xiGetNumberDevices(&numberOfDevices);
-    if (errorCode != XI_OK)
-    {
-        sendLogMessage(0, "xiGetNumberDevices failed with code " + std::to_string(errorCode));
-        return false;
-    }
+    if (!checkReturnCode(errorCode, "xiGetNumberDevices")) return false;
 
-    if (_ID >= numberOfDevices)
-    {
-        sendLogMessage(0, "not enough cameras connected.");
-        return false;
-    }
-
-    errorCode = xiOpenDevice(_ID, &_Camera);
-    if (errorCode != XI_OK)
-    {
-        sendLogMessage(0, "xiOpenDevice failed with code " + std::to_string(errorCode));
-        return false;
-    }
-
-    int exposure_us = 10000;
-    errorCode = xiSetParam(_Camera, XI_PRM_EXPOSURE, &exposure_us, sizeof(DWORD), xiTypeInteger);
-    if (errorCode != XI_OK)
-    {
-        sendLogMessage(0, "xiSetParam (exposure) failed with code " + std::to_string(errorCode));
-        return false;
-    }
-
-    errorCode = xiSetParamInt(_Camera, XI_PRM_IMAGE_DATA_FORMAT, XI_MONO8);
-    if (errorCode != XI_OK)
-    {
-        sendLogMessage(0, "xiSetParamInt (XI_PRM_IMAGE_DATA_FORMAT) failed with code " + std::to_string(errorCode));
-        return false;
-    }
-   /*SettingsIAC *set = SettingsIAC::getInstance();
+    SettingsIAC *set = SettingsIAC::getInstance();
     EncoderQualityConfig cfg = set->getBufferConf(_ID, 0);
 
-    // SET VIDEO MODE HERE!!!
-    Format7Info fmt7Info;
-
-    const Mode fmt7Mode = MODE_10;
-    const PixelFormat fmt7PixFmt = PIXEL_FORMAT_RAW8;
-
-    Format7ImageSettings fmt7ImageSettings;
-
-    fmt7ImageSettings.mode = fmt7Mode;
-    fmt7ImageSettings.offsetX = 0;
-    fmt7ImageSettings.offsetY = 0;
-    fmt7ImageSettings.width = cfg.width;
-    fmt7ImageSettings.height = cfg.height;
-    fmt7ImageSettings.pixelFormat = fmt7PixFmt;
-
-    Format7PacketInfo fmt7PacketInfo;
-    //fmt7PacketInfo.recommendedBytesPerPacket = 5040;
-
-    BusManager busMgr;
-    PGRGuid guid;
-    CameraInfo camInfo;
-    unsigned int snum;
-
-    FC2Config BufferFrame;
-
-    EmbeddedImageInfo EmbeddedInfo;
-
-    // Properties to be modified
-
-    Property brightness;
-    brightness.type = BRIGHTNESS;
-
-    Property exposure;
-    exposure.type = AUTO_EXPOSURE;
-
-    Property shutter;
-    shutter.type = SHUTTER;
-
-    Property frmRate;
-    frmRate.type = FRAME_RATE;
-
-    Property gain;
-    gain.type = GAIN;
-
-    Property wBalance;
-    wBalance.type = WHITE_BALANCE;
-
-    bool supported;
-
-    Error error;
-
-    //Find hardware ID to serial number
-    for (int i = 0; i < 4; i++) {
-        unsigned int serial;
-        Error error = busMgr.GetCameraSerialNumberFromIndex(i, &serial);
-        if (error == PGRERROR_OK && serial == cfg.serial) {
-            _HWID = i;
+    _HWID = std::numeric_limits<decltype(_HWID)>::max();
+    for (int i = 0; i < 4; ++i)
+    {
+        XI_RETURN errorCode;
+        HANDLE cam;
+        errorCode = xiOpenDevice(i, &cam);
+        if (errorCode != XI_OK)
+        {
+            // Maybe the cam has already been opened by another thread.
+            continue;
         }
+        char serial[20] = "";
+        errorCode = xiGetParamString(cam, XI_PRM_DEVICE_SN, serial, sizeof(serial));
+        if (errorCode != XI_OK) {
+            qDebug() << "Error checking serial of cam #" << i;
+        }
+        else
+        {
+            if (cfg.serialString == serial)
+            {
+                _HWID = i;
+                _Serial = cfg.serialString;
+                _Camera = cam;
+                // Do NOT close the camera.
+                break;
+            }
+        }
+        // Close the camera if mismatch.
+        xiCloseDevice(cam);
     }
 
-    if (_HWID == -1) {
+    if (_HWID == std::numeric_limits<decltype(_HWID)>::max())
+    {
+        sendLogMessage(0, "failed to find cam matching config serial nr: " + cfg.serialString);
         return false;
     }
+    else
+    {
+        sendLogMessage(0, "OPEN! hardware ID: " + std::to_string(_HWID) + " serial nr: " + _Serial);
+        // Print some interesting meta data.
 
-    // Gets the Camera serial number
-    if (!checkReturnCode(busMgr.GetCameraSerialNumberFromIndex(_HWID, &snum))) {
-        return false;
+        // Temperature.
+        {
+            float temperature = 0;
+            errorCode = xiSetParamInt(_Camera, XI_PRM_TEMP_SELECTOR, XI_TEMP_FRONT_HOUSING);
+            if (errorCode == XI_OK)
+            {
+                errorCode = xiGetParamFloat(_Camera, XI_PRM_TEMP, &temperature);
+                if (errorCode == XI_OK)
+                {
+                    std::ostringstream out;
+                    out << "Sensor temperature at " << std::setprecision(5) << std::fixed << temperature << "°C";
+                    sendLogMessage(0, out.str());
+                }
+                else
+                {
+                    sendLogMessage(0, "Reading temperature failed.");
+                }
+            }
+            else
+            {
+                sendLogMessage(0, "Temperature unavailable.");
+            }
+        }
+        if (tryAllXimeaCamSettings)
+        {
+            float focusDistance = 0;
+            errorCode = xiGetParamFloat(_Camera, XI_PRM_LENS_FOCUS_DISTANCE, &focusDistance);
+            if (errorCode == XI_OK)
+            {
+                std::ostringstream out;
+                out << "Focus distance at " << std::setprecision(5) << std::fixed << focusDistance << "cm";
+                sendLogMessage(0, out.str());
+            }
+            else
+            {
+                sendLogMessage(0, "Focus distance unavailable.");
+            }
+         }
     }
 
-    sendLogMessage(3,
-                   "Camera " + QString::number(_HWID) + "(HWID) "
-                   + QString::number(_ID) + "(SWID) Serial Number: "
-                   + QString::number(snum));   // serial number is printed
+    // Set the bandwidth limit.
+    errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH , cfg.bitrate);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH")) return false;
+    errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH_MODE , XI_ON);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH_MODE")) return false;
 
-    // Gets the PGRGuid from the camera
-    if (!checkReturnCode(busMgr.GetCameraFromIndex(_HWID, &guid))) {
-        return false;
+    // Set a format that corresponds to the Y in YUV.
+    errorCode = xiSetParamInt(_Camera, XI_PRM_IMAGE_DATA_FORMAT, XI_RAW8);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_IMAGE_DATA_FORMAT")) return false;
+
+    // Deactivate downsampling.
+    if (tryAllXimeaCamSettings)
+    {
+        errorCode = xiSetParamInt(_Camera, XI_PRM_DOWNSAMPLING, 1);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_IMAGE_DATA_FORMAT")) return false;
     }
 
-    // Connect to camera
-    if (!checkReturnCode(_Camera.Connect(&guid))) {
-        return false;
+    // Select configured properties.
+
+    // Exposure
+    // Disable auto-exposure.
+    errorCode = xiSetParamInt(_Camera, XI_PRM_AEAG, 1);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AEAG")) return false;
+    const int exposure_us = cfg.shutter * 1000; // Micro seconds to milli seconds.
+    errorCode = xiSetParamInt(_Camera, XI_PRM_EXPOSURE, exposure_us);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_EXPOSURE")) return false;
+
+    // Disable burst exposure - the default is off, but we make sure here.
+    xiSetParamInt(_Camera, XI_PRM_TRG_SELECTOR, XI_TRG_SEL_FRAME_START);
+    xiSetParamInt(_Camera, XI_PRM_EXPOSURE_BURST_COUNT, 1);
+
+    // The Ximea camera does not support 4000x3000 pixels.
+    // errorCode = xiSetParamInt(_Camera, XI_PRM_WIDTH, 4000);
+    // if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_WIDTH")) return false;
+    // errorCode = xiSetParamInt(_Camera, XI_PRM_HEIGHT, 3000);
+    // if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_HEIGHT")) return false;
+
+    // Gain.
+    errorCode = xiSetParamInt(_Camera, XI_PRM_GAIN_SELECTOR, XI_GAIN_SELECTOR_ALL);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GAIN_SELECTOR")) return false;
+    errorCode = xiSetParamFloat(_Camera, XI_PRM_GAIN, static_cast<float>(cfg.gain));
+    if (!checkReturnCode(errorCode, "xiSetParamFloat XI_PRM_GAIN")) return false;
+
+    // Whitebalance.
+    if (tryAllXimeaCamSettings)
+    {
+        errorCode = xiSetParamInt(_Camera, XI_PRM_AUTO_WB, cfg.whitebalance);
+        checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AUTO_WB");
     }
 
-    // Get the camera information
-    if (!checkReturnCode(_Camera.GetCameraInfo(&camInfo))) {
-        return false;
+    // Set framerate even though we trigger per hardware in the actual setup.
+    // A failure is not fatal.
+    errorCode = xiSetParamInt(_Camera, XI_PRM_ACQ_TIMING_MODE, XI_ACQ_TIMING_MODE_FRAME_RATE);
+    if (errorCode == XI_OK)
+        xiSetParamFloat(_Camera, XI_PRM_FRAMERATE, cfg.fps);
+
+    // Enable hardware trigger.
+    const int triggerSource = cfg.hwtrigger ? XI_TRG_EDGE_FALLING : XI_TRG_OFF;
+    if (triggerSource != XI_TRG_OFF)
+    {
+        errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_SELECTOR, cfg.hwtriggersrc);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_SELECTOR")) return false;
+        errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_MODE, XI_GPI_TRIGGER);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_MODE")) return false;
     }
+    errorCode = xiSetParamInt(_Camera, XI_PRM_TRG_SOURCE, triggerSource);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_TRG_SOURCE")) return false;
 
-    PrintCameraInfo(&camInfo);  // camera information is printed
-
-    /////////////////// ALL THE PROCESS WITH FORMAT 7 ////////////////////////////////
-
-    // Query for available Format 7 modes
-    if (!checkReturnCode(_Camera.GetFormat7Info(&fmt7Info, &supported))) {
-        return false;
-    }
-
-    // Print the camera capabilities for fmt7
-    PrintFormat7Capabilities(fmt7Info);
-
-    // Validate the settings to make sure that they are valid
-    if (!checkReturnCode(
-                _Camera.ValidateFormat7Settings(&fmt7ImageSettings, &supported,
-                        &fmt7PacketInfo))) {
-        return false;
-    }
-
-    if (!supported) {
-        // Settings are not valid
-        sendLogMessage(1, "Format7 settings are not valid");
-        return false;
-    }
-
-    // Set the settings to the camera
-    if (!checkReturnCode(
-                _Camera.SetFormat7Configuration(&fmt7ImageSettings,
-                        fmt7PacketInfo.recommendedBytesPerPacket))) {
-        return false;
-    }
-
-    /////////////////////////////// ENDS PROCESS WITH FORMAT 7 //////////////////////////////////////////
-
-    /////////////////// ALL THE PROCESS WITH FC2Config  ////////////////////////////////
-
-    // Grab the current configuration from the camera in ss_BufferFrame
-    if (!checkReturnCode(_Camera.GetConfiguration(&BufferFrame))) {
-        return false;
-    }
-    // Modify the maximum number of frames to be buffered and send it back to the camera
-    BufferFrame.numBuffers = cfg.hwbuffersize; //default is 20
-    BufferFrame.grabMode = BUFFER_FRAMES;
-
-    //TODO: Re-enable this, if it happens to work some day
-    // Exits if the configuration is not supported
-    if (!checkReturnCode(_Camera.SetConfiguration(&BufferFrame))) {
-        return false;
-    }
-
-    /////////////////// ENDS PROCESS WITH FC2Config  ////////////////////////////////
-
-    /////////////////// ALL THE PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
-
-    // Get the info of the image in ss_EmbeddedInfo
-    if (!checkReturnCode(_Camera.GetEmbeddedImageInfo(&EmbeddedInfo))) {
-        return false;
-    }
-
-    // Again modify a couple of parameters and send them back to the camera
-    if (EmbeddedInfo.timestamp.available == true) {
-        // if possible activates timestamp
-        EmbeddedInfo.timestamp.onOff = true;
-    } else {
-        sendLogMessage(3, "Timestamp is not available!");
-    }
-
-    if (EmbeddedInfo.frameCounter.available == true) {
-        // if possible activates frame counter
-        EmbeddedInfo.frameCounter.onOff = true;
-    } else {
-        sendLogMessage(3, "Framecounter is not avalable!");
-    }
-
-    if (!checkReturnCode(_Camera.SetEmbeddedImageInfo(&EmbeddedInfo))) {
-        return false;
-    }
-
-    /////////////////// ENDS PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
-
-    /////////////////// ALL THE PROCESS WITH PROPERTIES  ////////////////////////////////
-
-    //-------------------- BRIGHTNESS STARTS        -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&brightness))) {
-        return false;
-    }
-
-    brightness.onOff = cfg.brightnessonoff;     //default is true
-    brightness.autoManualMode = cfg.brightnessauto;     //default is false
-    brightness.absValue = cfg.brightness;           //default is 0
-
-    if (!checkReturnCode(_Camera.SetProperty(&brightness))) {
-        return false;
-    }
-
-    if (!checkReturnCode(_Camera.GetProperty(&brightness))) {
-        return false;
-    }
-
-    sendLogMessage(3,
-                   "Brightness Parameter is: "
-                   + QString().sprintf("%s and %.2f",
-                                       brightness.onOff ? "On" : "Off",
-                                       brightness.absValue));
-
-    //-------------------- BROGHTNESS ENDS          -----------------------------------
-
-    //-------------------- EXPOSURE STARTS          -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&exposure))) {
-        return false;
-    }
-
-    exposure.onOff = cfg.exposureonoff;     //default is false
-    exposure.autoManualMode = cfg.exposureauto;         //default is true
-
-    if (!checkReturnCode(_Camera.SetProperty(&exposure))) {
-        return false;
-    }
-
-    if (!checkReturnCode(_Camera.GetProperty(&exposure))) {
-        return false;
-    }
-
-    sendLogMessage(3,
-                   "Exposure Parameter is: "
-                   + QString().sprintf("%s and %s",
-                                       exposure.onOff ? "On" : "Off",
-                                       exposure.autoManualMode ? "Auto" : "Manual"));
-
-    //-------------------- EXPOSURE ENDS -----------------------------------
-
-    //-------------------- SHUTTER STARTS           -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&shutter))) {
-        return false;
-    }
-
-    shutter.onOff = cfg.shutteronoff;       //default is true
-    shutter.autoManualMode = cfg.shutterauto;           //default is false
-    shutter.absValue = cfg.shutter;                 //default is 40
-
-    if (!checkReturnCode(_Camera.SetProperty(&shutter))) {
-        return false;
-    }
-
-    if (!checkReturnCode(_Camera.GetProperty(&shutter))) {
-        return false;
-    }
-
-    sendLogMessage(3,
-                   "New shutter parameter is: "
-                   + QString().sprintf("%s and %.2f ms",
-                                       shutter.autoManualMode ? "Auto" : "Manual",
-                                       shutter.absValue));
-    //-------------------- SHUTTER ENDS             -----------------------------------
-
-    //-------------------- FRAME RATE STARTS        -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&frmRate))) {
-        return false;
-    }
-
-    frmRate.absControl = true;
-    frmRate.onOff = true;
-    frmRate.autoManualMode = false;
-    frmRate.absValue = cfg.fps;
-
-    if (!checkReturnCode(_Camera.SetProperty(&frmRate))) {
-        return false;
-    }
-
-    if (!checkReturnCode(_Camera.GetProperty(&frmRate))) {
-        return false;
-    }
-
-    sendLogMessage(3,
-                   "New frame rate is " + QString().sprintf("%.2f", frmRate.absValue)
-                   + " fps");
-
-    //-------------------- FRAME RATE ENDS          -----------------------------------
-
-    //-------------------- GAIN STARTS              -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&gain))) {
-        return false;
-    }
-
-    gain.onOff = cfg.gainonoff;     //default is true
-    gain.autoManualMode = cfg.gainauto;     //default is false
-    gain.absValue = cfg.gain;       //default is 0
-
-    if (!checkReturnCode(_Camera.SetProperty(&gain))) {
-        return false;
-    }
-
-    if (!checkReturnCode(_Camera.GetProperty(&gain))) {
-        return false;
-    }
-
-    sendLogMessage(3,
-                   "New gain parameter is: "
-                   + QString().sprintf("%s",
-                                       gain.autoManualMode ? "Auto" : "Manual"));
-    //-------------------- GAIN ENDS                -----------------------------------
-
-    //-------------------- WHITE BALANCE STARTS     -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&wBalance))) {
-        return false;
-    }
-
-    wBalance.onOff = cfg.whitebalance;  //default is false
-
-    if (!checkReturnCode(_Camera.SetProperty(&wBalance))) {
-        return false;
-    }
-
-    if (!checkReturnCode(_Camera.GetProperty(&wBalance))) {
-        return false;
-    }
-
-    sendLogMessage(3,
-                   "New White Balance parameter is: "
-                   + QString().sprintf("%s", wBalance.onOff ? "On" : "Off"));
-    //-------------------- WHITE BALANCE ENDS       -----------------------------------
-
-    //-------------------- TRIGGER MODE STARTS      -----------------------------------
-
-    // Get current trigger settings
-    TriggerMode triggerMode;
-    if (!checkReturnCode(_Camera.GetTriggerMode(&triggerMode))) {
-        return false;
-    }
-
-    // Set camera to trigger mode 0
-    triggerMode.onOff = cfg.hwtrigger;
-    triggerMode.mode = 0;
-    triggerMode.parameter = 0;
-
-    // Triggering the camera externally using source 0.
-    triggerMode.source = 0;
-
-    if (!checkReturnCode(_Camera.SetTriggerMode(&triggerMode))) {
-        return false;
-    }
-
-    //-------------------- TRIGGER MODE ENDS        -----------------------------------
-
-    /////////////////// ALL THE PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
-    //Saves the configuration to memory channel 2
-    if (!checkReturnCode(_Camera.SaveToMemoryChannel(2))) {
-        return false;
-    }
-
-    return true;*/
+    // Set the buffering behavior. The default is no buffering.
+    errorCode = xiSetParamInt(_Camera, XI_PRM_BUFFERS_QUEUE_SIZE, cfg.hwbuffersize + 1);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_BUFFERS_QUEUE_SIZE")) return false;
+    errorCode = xiSetParamInt(_Camera, XI_PRM_RECENT_FRAME, cfg.hwbuffersize == 0 ? 1 : 0);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_RECENT_FRAME")) return false;
 
     _initialized = true;
     return true;
@@ -463,98 +259,8 @@ bool XimeaCamThread::startCapture() {
     }
     return true;
 }
-/*
-int flycapTo420NoHalide(uint8_t *yuvInput, FlyCapture2::Image *img) {
-    //  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg
 
-    int bytesRead = 0;
-    unsigned char *prtM = img->GetData();
-    unsigned int rows, cols, stride;
-    FlyCapture2::PixelFormat pixFmt;
-    FlyCapture2::BayerTileFormat bayerFormat;
-    img->GetDimensions(&rows, &cols, &stride, &pixFmt, &bayerFormat);
-
-    //Being lazy pays: conversion in 58.22ms (don't set all channels - Cb and Cr are a waste of time)
-    unsigned int x = 0, y = 0;
-    for (y = 0; y < rows; y++) {
-        for (x = 0; x < cols; x++) {
-            yuvInput[y * cols + x] = (uint8_t)(0.895 * (*prtM) + 16);
-            prtM++;
-            bytesRead++;
-        }
-    }
-
-    return bytesRead;
-}
-
-int flycapTo420(uint8_t *outputImage, FlyCapture2::Image *inputImage) {
-    //  See: http://stackoverflow.com/questions/8349352/how-to-encode-grayscale-video-streams-with-ffmpeg
-
-    int bytesRead;
-#if HALIDE
-    unsigned long long time, time2;
-    unsigned char *prtM = inputImage->GetData();
-    unsigned int rows,cols,stride;
-    FlyCapture2::PixelFormat pixFmt;
-    FlyCapture2::BayerTileFormat bayerFormat;
-    inputImage->GetDimensions(&rows,&cols,&stride,&pixFmt,&bayerFormat);
-
-    //Precompiled code gets run in 17.88ms. BAM!
-    buffer_t input_buf = {0}, output_buf = {0};
-
-    // The host pointers point to the start of the image data:
-    input_buf.host = prtM;
-    output_buf.host = outputImage;
-    //See the halide tutorial how to set these.
-    input_buf.stride[0] = output_buf.stride[0] = 1;
-    input_buf.stride[1] = output_buf.stride[1] = stride;
-    input_buf.extent[0] = output_buf.extent[0] = cols;
-    input_buf.extent[1] = output_buf.extent[1] = rows;
-    input_buf.elem_size = output_buf.elem_size = 1;
-
-    //do it
-    int error = halideYuv420Conv(&input_buf, &output_buf);
-    bytesRead=rows*cols*3;//fool the system. We never read/written or set Cb and Cr
-#else
-    return flycapTo420NoHalide(outputImage, inputImage);
-#endif
-
-    return bytesRead;
-}*/
-/*
-void analyzeImage(int camid, FlyCapture2::Image *cimg, cv::Mat *ref,
-                  CalibrationInfo *c) {
-    beeCompress::ImageAnalysis ia("", NULL);
-
-    //Create CV Matrix and make it use the flycap image ptr
-    unsigned char *prtM = cimg->GetData();
-    unsigned int rows, cols, stride;
-    FlyCapture2::PixelFormat pixFmt;
-    FlyCapture2::BayerTileFormat bayerFormat;
-    cimg->GetDimensions(&rows, &cols, &stride, &pixFmt, &bayerFormat);
-    cv::Mat mat(rows, cols, cv::DataType<uint8_t>::type);
-    mat.data = prtM;
-
-    //Analyze image quality
-    double smd = ia.sumModulusDifference(&mat);
-    double variance = ia.getVariance(mat);
-    double contrast = ia.avgHistDifference(*ref, mat);
-    double noise = ia.noiseEstimate(mat);
-
-    //Write results to mutex datastructure
-    c->dataAccess.lock();
-    c->calibrationData[camid][0] = smd;
-    c->calibrationData[camid][1] = variance;
-    c->calibrationData[camid][2] = contrast;
-    c->calibrationData[camid][3] = noise;
-    c->dataAccess.unlock();
-
-    //printf("Cam %d: %f,\t%f,\t%f,\t%f,\t%f\n",camid,smd,variance,contrast,noise);
-}*/
-
-//this is what the function does with the information set in configure
 void XimeaCamThread::run() {
-    char timeresult[32];
     char logfilepathFull[256];
 
     SettingsIAC *set = SettingsIAC::getInstance();
@@ -562,39 +268,21 @@ void XimeaCamThread::run() {
     std::string logdir = set->getValueOfParam<std::string>(
                              IMACQUISITION::LOGDIR);
 
-    const int vwidth = cfg.width;
-    const int vheight = cfg.height;
-    timeresult[14] = 0;
-    int cont = 0;
+    const unsigned int vwidth = cfg.width;
+    const unsigned int vheight = cfg.height;
     int loopCount = 0;
-
-    //PGRGuid guid;
 
     ////////////////////////WINDOWS/////////////////////
     int oldTime = 0;
-    unsigned int oldTimeUs = 1000000;
-    unsigned int difTimeStampUs;
-    ////////////////////////////////////////////////////
-
-    ////////////////////////Logging and timekeeping/////
-    std::chrono::steady_clock::time_point begin =
-        std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point end =
-        std::chrono::steady_clock::now();
-    sprintf(logfilepathFull, logdir.c_str(), _ID);
     ////////////////////////////////////////////////////
 
     ////////////////////////LINUX/////////////////////
 #ifdef __linux__
     //Timestamp housekeeping
-    time_t rawtime;
     struct timeval tv;
     struct timezone tz;
-    int cs;
-    long int startTime;
 
     gettimeofday(&tv, &tz);
-    startTime = tv.tv_sec; //Note: using this method the start might be shifted by <1sec
 
 #endif
     ////////////////////////////////////////////////////
@@ -623,17 +311,17 @@ void XimeaCamThread::run() {
         std::chrono::steady_clock::time_point end =
             std::chrono::steady_clock::now();
         //Retrieve image and metadata
-        auto returnCode = xiGetImage(_Camera, 1000, &image);
+        auto returnCode = xiGetImage(_Camera, 1000 * 1, &image);
         //Get the timestamp
         std::string currentTimestamp = get_utc_time();
 
         std::chrono::steady_clock::time_point begin =
             std::chrono::steady_clock::now();
 
-        //Check if processing a frame took longer than 0.4 seconds. If so, log the event.
-        int duration = std::chrono::duration_cast<std::chrono::microseconds>(
+        //Check if processing a frame took longer than X seconds. If so, log the event.
+        const int duration = std::chrono::duration_cast<std::chrono::microseconds>(
                            begin - end).count();
-        if (duration > 333333) {
+        if (duration > 5 * (1000000 / 6)) {
             std::cout << "Warning: Processing time too long:  " << duration
                       << "\n";
             QString str("Warning: Processing time too long: ");
@@ -656,39 +344,39 @@ void XimeaCamThread::run() {
         //converts the time in seconds to local time
         const std::time_t timestamp { image.tsSec };
         const struct tm *timeinfo { localtime(&timestamp) };
-        const unsigned int microsecondTimestamp = image.tsUSec;
 
         localCounter(oldTime, timeinfo->tm_sec);
-
-        //////////////////////////////////////////////
-
-        if (microsecondTimestamp > oldTimeUs) {
-            difTimeStampUs = microsecondTimestamp - oldTimeUs;
-        }
-        else {
-            difTimeStampUs = microsecondTimestamp - oldTimeUs + 1000000;
-        }
-
-        oldTimeUs = microsecondTimestamp;
-
-        ///////////////////////////////////
-
         oldTime = timeinfo->tm_sec;
-
-        //Prepare and put the image into the buffer
-        //std::string currentTimestamp(timeresult);
 
         //Not in calibration mode. Move image to buffer for further procession
         if (!_Calibration->doCalibration) {
-            auto buf = std::shared_ptr<beeCompress::ImageBuffer>(
-                        new beeCompress::ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
-            memcpy(buf.get()->data, image.bp, vwidth * vheight);
+            // Crop the image to the expected size (e.g. 4000x3000).
+            // This is necessary, because the encoder/codec requires the image sizes to be some multiple of X.
+            cv::Mat wholeImageMatrix(cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)), CV_8UC1, image.bp, cv::Mat::AUTO_STEP);
+            const unsigned int marginToBeCroppedX = (image.width > vwidth) ? image.width - vwidth : 0;
+            const unsigned int marginToBeCroppedY = (image.height > vheight) ? image.height - vheight : 0;
+            if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
+            {
+                const int cropLeft = marginToBeCroppedX / 2;
+                const int cropTop = marginToBeCroppedY / 2;
+                cv::Mat croppedImageMatrix = wholeImageMatrix(cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
+                croppedImageMatrix.copyTo(wholeImageMatrix);
+            }
+            auto buf = std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, currentTimestamp);
+            memcpy(buf.get()->data, wholeImageMatrix.data, vwidth * vheight);
 
 #ifndef USE_ENCODER
             _Buffer->push(buf);
 #endif
             _SharedMemBuffer->push(buf);
 
+#ifdef WITH_DEBUG_IMAGE_OUTPUT
+            {
+                cv::Mat smallMat;
+                cv::resize(wholeImageMatrix, smallMat, cv::Size(400, 300));
+                cv::imshow("Display window", smallMat );
+            }
+#endif
             //For every 50th picture create image statistics
             //if (loopCount % 50 == 0)
             //_AnalysisBuffer->push(buf);
@@ -703,6 +391,8 @@ void XimeaCamThread::run() {
 
         loopCount++;
     }
+    // This code will never be executed.
+    assert (false);
     auto errorCode = xiStopAcquisition(_Camera);
     checkReturnCode(errorCode, "xiStopAcquisition");
     errorCode = xiCloseDevice(_Camera);
@@ -768,7 +458,7 @@ void XimeaCamThread::PrintCameraInfo(CameraInfo *pCamInfo) {
 bool XimeaCamThread::checkReturnCode(XI_RETURN errorCode, const std::string &operation) {
     if (errorCode != XI_OK) {
         sendLogMessage(1,
-                       "Cam " + QString::number(_ID) + " : [" + QString::fromStdString(operation) + "] error code " + QString::number(errorCode));
+                       "[" + QString::fromStdString(operation) + "] error code " + QString::number(errorCode));
         return false;
     }
     return true;

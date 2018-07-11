@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <type_traits>
 #include <boost/filesystem.hpp>
@@ -11,6 +11,7 @@
 #include "StringTranslator.h"
 #include "ParamNames.h"
 
+#include <string>
 #include <fstream>
 #include <iostream>
 
@@ -49,6 +50,7 @@ typedef struct _EncoderQualityConfig
 	int camid;
 	int isPreview;
 	int serial;
+	std::string serialString;
 	int enabled;
 	int rcmode;
 	int preset;

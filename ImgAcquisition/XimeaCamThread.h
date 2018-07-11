@@ -46,7 +46,7 @@ public:
     unsigned int        _HWID;
 
     //! Serial number of the camera
-    unsigned int        _Serial;
+    std::string _Serial;
 
     //! Pointer to calibration data storeage (set by initialize)
     CalibrationInfo     *_Calibration;

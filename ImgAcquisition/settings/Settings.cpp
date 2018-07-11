@@ -1,4 +1,4 @@
-#include "Settings.h"
+﻿#include "Settings.h"
 
 #include "boost/program_options.hpp"
 
@@ -17,6 +17,7 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams() {
 		hd.put(IMACQUISITION::BUFFERCONF::CAMID,	 		i		);
 		hd.put(IMACQUISITION::BUFFERCONF::ISPREVIEW, 		0		);
 		hd.put(IMACQUISITION::BUFFERCONF::SERIAL,	 		0		);
+		hd.put(IMACQUISITION::BUFFERCONF::SERIAL_STRING,    ""  	);
 		hd.put(IMACQUISITION::BUFFERCONF::ENABLED,	 		1		);
 		hd.put(IMACQUISITION::BUFFERCONF::VIDEO_WIDTH, 		4000	);
 		hd.put(IMACQUISITION::BUFFERCONF::VIDEO_HEIGHT, 	3000	);
@@ -49,6 +50,7 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams() {
 		ld.put(IMACQUISITION::BUFFERCONF::CAMID,	 		i		);
 		ld.put(IMACQUISITION::BUFFERCONF::ISPREVIEW, 		1		);
 		ld.put(IMACQUISITION::BUFFERCONF::SERIAL,	 		0		);
+		ld.put(IMACQUISITION::BUFFERCONF::SERIAL_STRING,	""		);
 		ld.put(IMACQUISITION::BUFFERCONF::ENABLED,	 		1		);
 		ld.put(IMACQUISITION::BUFFERCONF::VIDEO_WIDTH, 		2000	);
 		ld.put(IMACQUISITION::BUFFERCONF::VIDEO_HEIGHT, 	1500	);
@@ -85,6 +87,7 @@ EncoderQualityConfig SettingsIAC::setFromNode(boost::property_tree::ptree node){
 	cfg.camid 				= node.get<int>(IMACQUISITION::BUFFERCONF::CAMID);
 	cfg.isPreview 			= node.get<int>(IMACQUISITION::BUFFERCONF::ISPREVIEW);
 	cfg.serial	 			= node.get<int>(IMACQUISITION::BUFFERCONF::SERIAL);
+	cfg.serialString		= node.get<std::string>(IMACQUISITION::BUFFERCONF::SERIAL_STRING);
 	cfg.enabled 			= node.get<int>(IMACQUISITION::BUFFERCONF::ENABLED);
 	cfg.rcmode 				= node.get<int>(IMACQUISITION::BUFFERCONF::RCMODE);
 	cfg.preset 				= node.get<int>(IMACQUISITION::BUFFERCONF::PRESET);

@@ -19,6 +19,8 @@ message("Qt5Core_LIBRARIES is ${Qt5Core_LIBRARIES}")
 
 # Figure out whether to use Flea3 or Ximea cams.
 option(WITH_FLYCAPTURE "Build for Flea3 cam support (instead of Ximea support)." ON)
+# This option will use OpenCV to display the captured images live - for debugging purposes.
+option(WITH_DEBUG_IMAGE_OUTPUT "Show the captured images live." OFF)
 
 #########################
 #As the AOT compiling app needs to be run beforehand, add 

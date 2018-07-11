@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string> // std::string
 
@@ -12,6 +12,7 @@ namespace IMACQUISITION {
 	static const std::string CAMID 					= "CAMID";
 	static const std::string ISPREVIEW 				= "ISPREVIEW";
 	static const std::string SERIAL 				= "SERIAL";
+	static const std::string SERIAL_STRING			= "SERIAL_STRING";
 	static const std::string ENABLED 				= "ENABLED";
 	static const std::string BITRATE 				= "BITRATE";
 	static const std::string RCMODE 				= "RCMODE";
