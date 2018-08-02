@@ -104,7 +104,7 @@ private:
      * @param Deprecated
      * @param Deprecated
      */
-    void                localCounter(unsigned int oldTime, unsigned int newTime);
+    void                localCounter(int oldTime, int newTime);
 
     /**
      * @brief Logs a critical error in very detail
