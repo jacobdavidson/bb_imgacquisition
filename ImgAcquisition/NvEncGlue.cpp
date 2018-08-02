@@ -1,4 +1,4 @@
-/*
+﻿/*
  * NvEncGlue.cpp
  *
  *  Created on: Nov 6, 2015
@@ -114,6 +114,10 @@ void NvEncGlue::run() {
             dir = imdirprev;
             exdir = exchangedirprev;
         }
+        else { // Would write into preview buffer. Disable if previews are disabled.
+            if (!previewsEnabled)
+                currentPreviewBuffer = nullptr;
+        }
         beeCompress::writeHandler wh(dir, currentCam, exdir);
 
         //encode the frames in the buffer using given configuration
@@ -146,6 +150,7 @@ NvEncGlue::NvEncGlue() {
     _CamBuffer1 = -1;
     _CamBuffer2 = -1;
 
+    previewsEnabled = set->getValueOfParam<int>(IMACQUISITION::DO_PREVIEWS) == 1;;
 }
 
 NvEncGlue::~NvEncGlue() {

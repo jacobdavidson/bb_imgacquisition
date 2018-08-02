@@ -61,6 +61,13 @@ public:
     */
     virtual ~NvEncGlue();
 
+    /**
+     * @brief Whether to enable previews.
+    */
+    void enablePreviews(bool enable=true) {
+        previewsEnabled = enable;
+    }
+
 protected:
 
     /**
@@ -72,6 +79,11 @@ protected:
      * @param Length of the ringbuffer
      */
     void run();
+
+    /**
+     * @brief Whether to write smaller preview images into the preview buffers.
+     */
+    bool previewsEnabled { true };
 };
 
 } /* namespace beeCompress */
