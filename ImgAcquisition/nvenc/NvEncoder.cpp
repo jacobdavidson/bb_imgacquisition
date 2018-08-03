@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////
 //
 // Copyright 1993-2014 NVIDIA Corporation.  All rights reserved.
 //
@@ -16,6 +16,7 @@
 #include "NvEncoder.h"
 #include "nvFileIO.h"
 #include <new>
+#include <vector>
 
 #if HAVE_UNISTD_H
 #include <unistd.h> //sleep
@@ -702,7 +703,6 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP,
         beeCompress::writeHandler *wh, EncoderQualityConfig encCfg,
         EncoderQualityConfig encPrevCfg) {
     HANDLE hInput;
-    uint32_t numBytesRead = 0;
     uint8_t *yuv[3];
     unsigned long long lStart, lEnd, lFreq;
     int numFramesEncoded = 0;
@@ -797,20 +797,21 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP,
         memset(yuv[2], 128, encodeConfig.width * encodeConfig.height / 4);
     }
     //To never ever write in used memory. Maybe unnecessary
-    uint8_t *tmp = new uint8_t[encodeConfig.width * encodeConfig.height];
+    std::vector<uint8_t> temporaryBuffer;
+    temporaryBuffer.resize(static_cast<size_t>(encodeConfig.width * encodeConfig.height));
 
     NvQueryPerformanceCounter(&lStart);
 
     for (int frm = 0; frm < encCfg.totalFrames; frm++) {
-        numBytesRead = 0;
+        uint32_t numBytesRead = 0;
 
         //Wait until there is a new image available (done by pop)
         std::shared_ptr<beeCompress::ImageBuffer> imgptr = buffer->pop();
         beeCompress::ImageBuffer *img = imgptr.get();
-        numBytesRead = img->width * img->height;
+        numBytesRead = static_cast<decltype(numBytesRead)>(img->width * img->height);
 
         //Debug output TODO: remove?
-        if (frm % 50 == 0)
+        if (frm % 100 == 0)
             printf("Loaded frame %d \n", frm);
 
         //This should not happen
@@ -821,9 +822,8 @@ int CNvEncoder::EncodeMain(double *elapsedTimeP, double *avgtimeP,
         memset(&stEncodeFrame, 0, sizeof(stEncodeFrame));
 
         //Fill data structure for the encoder
-        rawTo420NoHalide(tmp, img->data, encodeConfig.height,
-                encodeConfig.width);
-        stEncodeFrame.yuv[0] = tmp;
+        rawTo420NoHalide(temporaryBuffer.data(), img->data, encodeConfig.height, encodeConfig.width);
+        stEncodeFrame.yuv[0] = temporaryBuffer.data();
         //memcpy(stEncodeFrame.yuv[0], img->data, encodeConfig.height*encodeConfig.width);
         //stEncodeFrame.yuv[0] = yuv[0];
         stEncodeFrame.yuv[1] = yuv[1];
