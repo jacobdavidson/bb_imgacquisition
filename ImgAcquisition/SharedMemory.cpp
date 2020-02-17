@@ -102,7 +102,7 @@ boost::interprocess::interprocess_mutex *SharedMemory::createSharedMemory(key_t 
     }
 
     /*  create the segment: */
-    if ((*shmid = shmget(*key, memsize, 0644 | IPC_CREAT)) == -1) {
+    if ((*shmid = shmget(*key, memsize, 0777 | IPC_CREAT)) == -1) {
         perror("shmget");
         exit(1);
     }
@@ -113,7 +113,7 @@ boost::interprocess::interprocess_mutex *SharedMemory::createSharedMemory(key_t 
         perror("shmat");
         exit(1);
     }
-
+    assert((int64_t)(*data) != -1L);
     boost::interprocess::interprocess_mutex *mutex = new((*data)+lockpos) boost::interprocess::interprocess_mutex();
     return mutex;
 }
