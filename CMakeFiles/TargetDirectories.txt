@@ -1,0 +1,4 @@
+/home/chris/AntTracking/bb_imgacquisition_tim/CMakeFiles/rebuild_cache.dir
+/home/chris/AntTracking/bb_imgacquisition_tim/CMakeFiles/bb_ImageAcquistion.dir
+/home/chris/AntTracking/bb_imgacquisition_tim/CMakeFiles/edit_cache.dir
+/home/chris/AntTracking/bb_imgacquisition_tim/CMakeFiles/bb_ImageAcquistion_autogen.dir
