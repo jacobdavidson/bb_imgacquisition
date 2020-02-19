@@ -1,4 +1,4 @@
-﻿#include "ImgAcquisitionApp.h"
+﻿#include "ImgAcquisitionApp.h" 
 #include "settings/Settings.h"
 #include "settings/ParamNames.h"
 #include "settings/utility.h"
@@ -16,11 +16,17 @@
 #include <stdint.h>
 #endif
 
-#ifdef HAS_FLYCAPTURE
+#ifdef USE_FLEA3
 #include "Flea3CamThread.h"
 using namespace FlyCapture2;
-#else
+#endif
+
+#ifdef USE_XIMEA
 #include "XimeaCamThread.h"
+#endif
+
+#ifdef USE_BASLER
+#include <pylon/PylonIncludes.h>
 #endif
 
 using namespace std;
@@ -35,7 +41,8 @@ void cpsleep(int t) {
 }
 #endif
 
-std::string ImgAcquisitionApp::figureBasename(std::string infile) {
+std::string ImgAcquisitionApp::figureBasename(std::string infile) 
+{
     std::ifstream f(infile.c_str());
     std::string line;
     std::string fst = "", last = "";
@@ -138,8 +145,7 @@ void ImgAcquisitionApp::resolveLocks() {
 //constructor
 //definition of ImgAcquisitionApp, it configures the threads, connects them including the signals(input) to be read and the slots (output)
 //the whole process is executed when the object is initialized in main.
-ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) :
-    QCoreApplication(argc, argv) //
+ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) : QCoreApplication(argc, argv) //
 {
     CalibrationInfo calib;
     Watchdog dog;
@@ -181,11 +187,19 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) :
     // Initialize CamThreads and connect the respective signals.
     for (int i = 0; i < 4; i++)
     {
-#ifdef USE_FLYCAPTURE
+
+#ifdef USE_FLEA3
         _threads[i] = std::unique_ptr<CamThread> { static_cast<CamThread*>(new Flea3CamThread()) };
-#else
+#endif
+
+#ifdef USE_XIMEA
         _threads[i] = std::unique_ptr<CamThread> { static_cast<CamThread*>(new XimeaCamThread()) };
 #endif
+
+#ifdef USE_BASLER
+        //_threads[i] = std::unique_ptr<CamThread> static_cast<CamThread*>(new BaslerCamThread());
+#endif
+
         connect(_threads[i].get(), SIGNAL(logMessage(int, QString)), this,
                 SLOT(logMessage(int, QString)));
     }
@@ -269,7 +283,7 @@ ImgAcquisitionApp::~ImgAcquisitionApp() {
 
 // Just prints the library's info
 void ImgAcquisitionApp::printBuildInfo() {
-#ifdef USE_FLYCAPTURE
+#ifdef USE_FLEA3
     FC2Version fc2Version;
     Utilities::GetLibraryVersion(&fc2Version);
 
@@ -282,8 +296,9 @@ void ImgAcquisitionApp::printBuildInfo() {
 }
 
 // This function checks that at least one camera is connected
+// returns -1 if no camera is found
 int ImgAcquisitionApp::checkCameras() {
-#ifdef USE_FLYCAPTURE
+#ifdef USE_FLEA3
     FlyCapture2::BusManager cc_busMgr;
     FlyCapture2::Error error;
 
@@ -291,25 +306,43 @@ int ImgAcquisitionApp::checkCameras() {
     if (error != PGRERROR_OK) {
         return -1;
     }
-#else
+#endif
+
+#ifdef USE_XIMEA
+{
+    const auto errorCode = xiGetNumberDevices(&_numCameras);
+    if (errorCode != XI_OK)
+        return -1;
+}
+#endif
+
+#ifdef USE_BASLER
+ try
     {
-        const auto errorCode = xiGetNumberDevices(&_numCameras);
-        if (errorCode != XI_OK)
+        // Get the transport layer factory.
+        CTlFactory& tlFactory = CTlFactory::GetInstance();
+
+        // Get all attached devices and return -1 if no device is found.
+        DeviceInfoList_t devices;
+        if ( tlFactory.EnumerateDevices(devices) == 0 )
             return -1;
-    }
+        
+        _numCameras = devices.size();
 #endif
 
     qDebug() << "Number of cameras detected: " << _numCameras << endl << endl;
 
     //Find hardware ID to serial number
     for (int i = 0; i < 4; i++) {
-#ifdef USE_FLYCAPTURE
+#ifdef USE_FLEA3
         unsigned int serial;
         Error error = cc_busMgr.GetCameraSerialNumberFromIndex(i, &serial);
         if (error == PGRERROR_OK) {
             qDebug() << "Detected cam with serial: " << serial;
         }
-#else
+#endif
+
+#ifdef USE_XIMEA
         XI_RETURN errorCode;
         HANDLE cam;
         errorCode = xiOpenDevice(i, &cam);

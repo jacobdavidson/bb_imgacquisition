@@ -1,128 +1,175 @@
-﻿cmake_minimum_required(VERSION 2.6)
-#(Minimal benötigte CMake-Version wenn z.B. bestimmte CMake-Kommandos benutzt werden)
-
+﻿cmake_minimum_required(VERSION 3.1)
 cmake_policy (SET CMP0020 NEW)
-#cmake_policy(SET CMP0054 NEW)
 
-# Der Projektname
-project(bb_imageacquisition)
+project(bb_imageacquisition CXX)
 
-SET(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
-
-add_definitions( -DBOOST_ALL_NO_LIB )
-find_package(Qt5Core REQUIRED) #  PATHS "C:\\Qt\\Qt5.4.1\\5.4\\msvc2013_64_opengl"
 set(Boost_USE_STATIC_LIBS ON)
-find_package( Boost REQUIRED system filesystem program_options date_time)
-find_package( OpenCV REQUIRED)
-IF (DEFINED NO_ENCODER)
-    SET(USECUDA "false")
-ELSE()
-#	find_package(CUDA REQUIRED COMPONENTS cuda cudart)
-ENDIF()
- 
-
-# project dependecies
-
-#CFLAGS:=-Os -Wall -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer
-#CFLAGS+=-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT
+add_definitions( -DBOOST_ALL_NO_LIB )
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT")
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    # using Clang or GCC
-    # minimal optimmization and debug symbols for debug builds
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -g -rdynamic")
-    # enable optimization for release builds
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DQT_NO_DEBUG")
-    # enable C++1y
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -fPIC")
-    # enable all warnings
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra  -Woverloaded-virtual -Wnon-virtual-dtor -Wsign-promo -Wno-missing-braces") #-pedantic
-    # warnings are errors
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=unused-variable -Wno-error=unused-parameter")
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    # using Visual Studio C++
-    # Force to always compile with W3 and treat warnings as errors
-    # W4 would be preferable, but causes to many warnings in included files
-    if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-        string(REGEX REPLACE "/W[0-4]" "/W3" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
-    endif()
-	# warnings are errors
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
-	# disable warning 4503 on visual studio (boost)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503")
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-endif()
+list(APPEND CMAKE_PREFIX_PATH "/opt/Qt5/5.14.1/gcc_64/")
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	# determine clang version
-	EXECUTE_PROCESS( COMMAND ${CMAKE_CXX_COMPILER} --version OUTPUT_VARIABLE clang_full_version_string )
-	string (REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
-	if (CLANG_VERSION_STRING VERSION_GREATER 3.5)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=inconsistent-missing-override")
+find_package(Qt5Core REQUIRED) 
+find_package(Boost REQUIRED system filesystem program_options date_time)
+find_package(OpenCV REQUIRED)
+find_package(CUDA REQUIRED COMPONENTS cuda cudart)
+
+message("CUDA_LIBRARIES is ${CUDA_LIBRARIES}")
+message("Boost_LIBRARIES is ${Boost_LIBRARIES}")
+message("OpenCV_LIBRARIES is ${OpenCV_LIBRARIES}")
+message("Qt5Core_LIBRARIES is ${Qt5Core_LIBRARIES}")
+
+set(CAM_HARDWARE "BASLER")
+# set(CAM_HARDWARE "FLEA3")
+# set(CAM_HARDWARE "XIMEA")
+
+# This option will use OpenCV to display the captured images live - for debugging purposes.
+option(WITH_DEBUG_IMAGE_OUTPUT "Show the captured images live." OFF)
+
+#########################
+#Get all the libraries into a variable
+#########################
+set(LIBS 
+    ${CUDA_LIBRARIES} 
+    ${Qt5Core_LIBRARIES} 
+    ${Boost_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+		)
+
+#########################
+#OS specific configuration
+#########################
+if("${CMAKE_SYSTEM}" MATCHES "Linux")
+	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ /opt/XIMEA/include/ /opt/pylon5/include/ )
+	set(LIBS -L/usr/local/lib ${LIBS} pthread dl cuda rt )
+	message("Configuring for ${CAM_HARDWARE} on Linux...")
+else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
+	if(WITH_FLYCAPTURE)
+		set(INCLUDE_DIRS "C:\\Program Files\\Point Grey Research\\FlyCapture2\\include"  )
+		set(LIBS ${LIBS}
+		"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2.lib"
+		"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2_v110.lib"
+		)
 	endif()
-	# gcc doesn't know about unused-private-field warning
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-private-field")
-    # use Wdocumentation
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wdocumentation")
-    # enable thread safety analysis
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wthread-safety")
-    # enable thread safety analysis
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough")
-    # implicit conversion warnings
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # -Wfloat-conversion
-    # osx clang3.6 throw additional warnings
-    if(${APPLE})
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-deprecated-declarations")
-        set(CMAKE_CXX_LINK_FLAGS_DEBUG "-lc++abi")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_CXX_LINK_FLAGS_DEBUG}")
-    endif()
-endif()
-
-message("${CLANG_VERSION}")
-
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    # clang doesnt know about unused-but-set-variable warning
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-but-set-variable")
-
-	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-					OUTPUT_VARIABLE GCC_VERSION)
-	if (GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9)
-		# implicit conversion warnings
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ") # -Wfloat-conversion
-	endif()
-endif()
-
-# use runtime analyzers when using clang/gcc in debug mode
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND
-		(GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9))
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-optimize-sibling-calls")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
-	endif()
-
-	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-optimize-sibling-calls")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=integer")
-	endif()
+	set(INCLUDE_DIRS ${Boost_INCLUDE_DIRS} )
+	set(LIBS ${LIBS}
+		"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\lib\\x64\\cudart.lib"
+		"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\lib\\x64\\cuda.lib"
+		)
+	message("Configuring for ${CAM_HARDWARE} on Windows...")
 endif()
 
 
-add_subdirectory(ImgAcquisition)
+message("All libs: ${LIBS}")
 
-option(WITH_HALIDE "Build with halide support (slightly faster copying of images)." OFF)
-if (WITH_HALIDE)
-	add_subdirectory(halidePreCompile)
-endif()
+#########################
+#Put everything together
+#########################
+
+set(EXE_NAME bb_ImageAcquistion)
+#file(GLOB_RECURSE ImgAcquisitionSrc RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.c *.h *.hpp)
+
+list(APPEND ImgAcquisitionSrc 
+	CamThread.cpp;
+	ImageAnalysis.cpp;
+	ImgAcquisitionApp.cpp;
+	NvEncGlue.cpp;
+	SharedMemory.cpp;
+	main.cpp;
+	writeHandler.cpp;
+	Buffer/MutexLinkedList.cpp;
+	Buffer/MutexBuffer.h;
+	Buffer/MutexLinkedList.h;
+	Buffer/Semaphore.h;
+	nvenc/NvEncoder.cpp;
+	nvenc/NvHWEncoder.cpp;
+	nvenc/cudaModuleMgr.cpp;
+	nvenc/dynlink_cuda.cpp;
+	nvenc/dynlink_nvcuvid.cpp;
+	settings/Settings.cpp;
+	settings/StringTranslator.cpp;
+	settings/stringTools.cpp;
+	settings/utility.cpp;
+	CamThread.h;
+	ImageAnalysis.h;
+	ImgAcquisitionApp.h;
+	NvEncGlue.h;
+	SharedMemory.h;
+	Watchdog.h;
+	nvenc/NvEncoder.h;
+	nvenc/NvHWEncoder.h;
+	nvenc/cudaModuleMgr.h;
+	nvenc/drvapi_error_string.h;
+	nvenc/dynlink_builtin_types.h;
+	nvenc/dynlink_cuda.h;
+	nvenc/dynlink_cudaGL.h;
+	nvenc/dynlink_cuda_cuda.h;
+	nvenc/dynlink_cuda_gl.h;
+	nvenc/dynlink_cuviddec.h;
+	nvenc/dynlink_nvcuvid.h;
+	nvenc/exception.h;
+	nvenc/helper_cuda.h;
+	nvenc/helper_cuda_drvapi.h;
+	nvenc/helper_functions.h;
+	nvenc/helper_string.h;
+	nvenc/helper_timer.h;
+	nvenc/nvCPUOPSys.h;
+	nvenc/nvEncodeAPI.h;
+	nvenc/nvFileIO.h;
+	nvenc/nvUtils.h;
+	settings/ParamNames.h;
+	settings/Settings.h;
+	settings/StringTranslator.h;
+	settings/stringTools.h;
+	settings/utility.h;
+	writeHandler.h;
+)
+
+# keep this in case we return to GLOB_RECURSE
+# first remove all cam specific sources and add the targetted ones again
+# LIST(REMOVE_ITEM ImgAcquisitionSrc XimeaCamThread.h XimeaCamThread.cpp Flea3CamThread.h Flea3CamThread.cpp BaslerCamThread.h BaslerCamThread.cpp)
+
+# now add the cam specific sources again and define preprocessor 
+# flag used for including respective headers
+IF (${CAM_HARDWARE} STREQUAL "BASLER")
+	link_directories(/opt/pylon5/lib64)
+	set(LIBS ${LIBS} pylonutility pylonbase GCBase_gcc_v3_1_Basler_pylon_v5_1 )
+	LIST(APPEND ImgAcquisitionSrc BaslerCamThread.h BaslerCamThread.cpp)
+	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/pylon5/include" )
+	add_definitions(-DUSE_BASLER)
+ENDIF()
+
+IF (${CAM_HARDWARE} STREQUAL "FLEA3")
+	set(LIBS ${LIBS} flycapture )
+	LIST(APPEND ImgAcquisitionSrc Flea3CamThread.cpp)
+	add_definitions(-DUSE_FLEA3)
+ENDIF()
+
+IF (${CAM_HARDWARE} STREQUAL "XIMEA")
+	set(LIBS ${LIBS} m3api )
+	LIST(APPEND ImgAcquisitionSrc XimeaCamThread.cpp)
+	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/XIMEA/include" )
+	add_definitions(-DUSE_XIMEA)
+ENDIF()
+
+include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${CUDA_INCLUDE_DIRS} ${Qt5Core_INCLUDE_DIRS} )
+
+message("Sources are ${ImgAcquisitionSrc}")
+
+if(COMMAND cmake_policy)
+	cmake_policy(SET CMP0003 NEW)
+endif(COMMAND cmake_policy)
+
+add_executable(${EXE_NAME} ${ImgAcquisitionSrc} )
+
+target_link_libraries(${EXE_NAME} ${LIBS} )
+
+
+
+
 
 
 
