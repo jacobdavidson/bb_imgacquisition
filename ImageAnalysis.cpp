@@ -36,7 +36,8 @@ void ImageAnalysis::run() {
     FILE *outfile = fopen(_Logfile.c_str(), "ab");
     FILE *fp = fopen("refIm.jpg", "r");
     if (fp) {
-        ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+        ref = cv::imread("refIm.jpg", IMREAD_GRAYSCALE);
+        //CV_LOAD_IMAGE_GRAYSCALE
         fclose(fp);
     } else {
         std::cout << "Warning: not found reference image refIm.jpg."

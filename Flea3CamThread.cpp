@@ -1,5 +1,6 @@
 #include "Flea3CamThread.h"
 
+
 #include <cstdlib>
 #include <iostream>
 
@@ -7,6 +8,7 @@
 #include <qtextstream.h>
 
 #include "FlyCapture2.h"
+
 #include "Watchdog.h"
 #include "settings/Settings.h"
 #include "settings/utility.h"
