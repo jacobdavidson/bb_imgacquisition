@@ -136,7 +136,7 @@ list(APPEND ImgAcquisitionSrc
 # flag used for including respective headers
 IF (${CAM_HARDWARE} STREQUAL "BASLER")
 	link_directories(/opt/pylon5/lib64)
-	set(LIBS ${LIBS} pylonutility pylonbase GCBase_gcc_v3_1_Basler_pylon_v5_1 )
+	set(LIBS ${LIBS} pylonutility pylonbase GCBase_gcc_v3_1_Basler_pylon GenApi_gcc_v3_1_Basler_pylon)
 	LIST(APPEND ImgAcquisitionSrc BaslerCamThread.h BaslerCamThread.cpp)
 	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/pylon5/include" )
 	add_definitions(-DUSE_BASLER)

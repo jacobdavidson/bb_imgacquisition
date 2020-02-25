@@ -26,7 +26,9 @@ using namespace FlyCapture2;
 #endif
 
 #ifdef USE_BASLER
+#include "BaslerCamThread.h"
 #include <pylon/PylonIncludes.h>
+using namespace Pylon;
 #endif
 
 using namespace std;
@@ -147,16 +149,19 @@ void ImgAcquisitionApp::resolveLocks() {
 //the whole process is executed when the object is initialized in main.
 ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) : QCoreApplication(argc, argv) //
 {
-    CalibrationInfo calib;
-    Watchdog dog;
-    int numCameras = 0;
-    int camsStarted = 0;
-    SettingsIAC *set = SettingsIAC::getInstance();
-    calib.doCalibration = false;            // When calibrating cameras only
+    CalibrationInfo     calib;
+    Watchdog            dog;
+    int numCameras      = 0;
+    int camsStarted     = 0;
+    SettingsIAC *set    = SettingsIAC::getInstance();
+    calib.doCalibration = false;            
+
+    // When calibrating cameras only
     //Do not do image analysis on regular recordings
     //analysis              = new beeCompress::ImageAnalysis(
     //      set->getValueOfParam<std::string>(IMACQUISITION::ANALYSISFILE), &dog);
-    _smthread = new beeCompress::SharedMemory();
+
+    _smthread           = new beeCompress::SharedMemory();
 
     std::cout << "Successfully parsed config!" << std::endl;
 
@@ -173,7 +178,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) : QCoreApplication(
 
     printBuildInfo();
     resolveLocks();
-    numCameras = checkCameras(); // when the number of cameras is insufficient it should interrupt the program
+
+    #ifdef USE_BASLER
+        PylonInitialize();
+        std::cout << "Pylon Initialized" << endl;
+    #endif
+
+    // when the number of cameras is insufficient it should interrupt the program
+    numCameras = checkCameras(); 
 
     int camcountConf = set->getValueOfParam<int>(IMACQUISITION::CAMCOUNT);
     if (numCameras < camcountConf){
@@ -197,7 +209,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) : QCoreApplication(
 #endif
 
 #ifdef USE_BASLER
-        //_threads[i] = std::unique_ptr<CamThread> static_cast<CamThread*>(new BaslerCamThread());
+        _threads[i] = std::unique_ptr<CamThread> { static_cast<CamThread*>(new BaslerCamThread()) };
 #endif
 
         connect(_threads[i].get(), SIGNAL(logMessage(int, QString)), this,
@@ -278,7 +290,9 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) : QCoreApplication(
 
 //destructor
 ImgAcquisitionApp::~ImgAcquisitionApp() {
-
+#ifdef USE_BASLER
+    PylonTerminate();
+#endif
 }
 
 // Just prints the library's info
@@ -291,6 +305,11 @@ void ImgAcquisitionApp::printBuildInfo() {
          << fc2Version.minor << "." << fc2Version.type << "."
          << fc2Version.build << endl << endl;
 #endif
+
+#ifdef USE_BASLER
+
+#endif
+
     cout << "Application build date: " << __DATE__ << ", " << __TIME__ << endl
          << endl;
 }
@@ -328,12 +347,36 @@ int ImgAcquisitionApp::checkCameras() {
             return -1;
         
         _numCameras = devices.size();
+
+                // ToDo: make max number of cameras accessible
+        CInstantCameraArray cameras( std::min<size_t>( _numCameras, 4 ));
+
+        // Create and attach all Pylon Devices.
+        for ( size_t i = 0; i < cameras.GetSize(); ++i)
+        {
+            cameras[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
+
+            
+            // Print the model name and serial number of the camera(s).
+            cout << "Cam #" << i << ": " <<cameras[ i ].GetDeviceInfo().GetModelName() << ", SN:" << cameras[ i ].GetDeviceInfo().GetSerialNumber() << endl;
+
+        }
+
+        // Detach cameras in array
+        cameras.DestroyDevice(); 	
+    }
+    catch(const GenericException &e)
+    {
+        return -1;
+    }
 #endif
 
     qDebug() << "Number of cameras detected: " << _numCameras << endl << endl;
 
-    //Find hardware ID to serial number
-    for (int i = 0; i < 4; i++) {
+    // print cam serial numbers
+    for (int i = 0; i < 4; i++) 
+    {
+
 #ifdef USE_FLEA3
         unsigned int serial;
         Error error = cc_busMgr.GetCameraSerialNumberFromIndex(i, &serial);
@@ -358,6 +401,7 @@ int ImgAcquisitionApp::checkCameras() {
         }
         xiCloseDevice(cam);
 #endif
+
     }
 
     if (_numCameras < 1) {

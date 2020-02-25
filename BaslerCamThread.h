@@ -44,6 +44,7 @@ public:
 
     //! Hardware ID (id in bus order) of the camera. (used internally)
     unsigned int        _HWID;
+    Pylon::String_t     _SerialNumber;
 
     //! Serial number of the camera
     std::string _Serial;
@@ -117,12 +118,9 @@ private:
     //void logCriticalError(Error e);
     void logCriticalError(const std::string &shortMsg, const std::string &message);
 
-    //! Deprecated JPeg compression parameter
-    //JPEGOption            _jpegConf;
-
-    //! Handle returned by xiOpenDevice.
-    int _Camera;
-
+    // Pylon camera object 
+    Pylon::CInstantCamera _camera;
+    
     //! ... to enumerate each image in a second
     unsigned int        _LocalCounter;
 

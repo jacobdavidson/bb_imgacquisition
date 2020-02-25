@@ -4,10 +4,11 @@
 #include <QThread>
 #include <mutex>
 
+// 
 struct CalibrationInfo {
-    bool doCalibration;
-    double calibrationData[4][4];
-    std::mutex dataAccess;
+    bool        doCalibration;
+    double      calibrationData[4][4];
+    std::mutex  dataAccess;
 };
 
 // Forward declare not-required types.
