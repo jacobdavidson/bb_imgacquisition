@@ -277,15 +277,23 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) : QCoreApplication(
         calib.dataAccess.unlock();
         cpsleep(500*1000);
     }
+
+    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
+    
     while (true) {
         dog.check();
+        
+        std::cout << "BOOM" << endl;
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
+
         for (int i = 0; i < 5 * 1000; ++i)
             cv::waitKey(100);
 #else
         cpsleep(500*1000);
 #endif
     }
+
+    
 }
 
 //destructor

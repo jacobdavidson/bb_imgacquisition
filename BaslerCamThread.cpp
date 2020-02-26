@@ -109,6 +109,7 @@ bool BaslerCamThread::initCamera()
             {
                 _HWID = i;
                 _camera.Attach( tlFactory.CreateDevice( devices[i] ));
+
                 _initialized = true;
 
                 return true;
@@ -177,7 +178,8 @@ void BaslerCamThread::run()
     if (_Calibration->doCalibration) {
         FILE *fp = fopen("refIm.jpg", "r");
         if (fp) {
-            ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+            //ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+            ref = cv::imread("refIm.jpg", cv::IMREAD_GRAYSCALE);
             fclose(fp);
         } else {
             std::cout << "Warning: not found reference image refIm.jpg."
@@ -187,118 +189,147 @@ void BaslerCamThread::run()
     
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
-    unsigned long lastCameraTimestampMicroseconds   {0};
-    unsigned long lastImageSequenceNumber           {0};
+    unsigned long n_last_camera_tick_count               {0};
+    unsigned long n_last_frame_id                       {0};
     boost::posix_time::ptime lastCameraTimestamp;
 
-    // Preallocate image buffer on stack in order to safe performance later.
-    std::array<unsigned char, 3008 * 4112> imageBuffer;
+    uint8_t* p_image;
+    uint img_width, img_height;
+    unsigned long n_current_frame_id;
 
     for (size_t loopCount = 0; true; loopCount += 1)
     {
+        // signal thread is alive
         _Dog->pulse(static_cast<int>(_ID));
 
-        // CONTINUE HERE
-        XI_IMG image;
-        image.size = sizeof(XI_IMG);
-        image.bp = static_cast<LPVOID> (&imageBuffer[0]);
-        image.bp_size = imageBuffer.size();
+        // grab image
+        CGrabResultPtr ptrGrabResult;
 
-        const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-        //Retrieve image and metadata
-        auto returnCode = xiGetImage(_Camera, 1000 * 2, &image);
-        //Get the timestamp
-        const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
-        const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        const unsigned long currentCameraTimestampMicroseconds = image.tsUSec;
-
-        // Image sequence sanity check.
-        if (lastImageSequenceNumber != 0 && image.nframe != lastImageSequenceNumber + 1)
+        if (_camera.IsGrabbing())
         {
-            QString str("Warning: Camera lost frame: This frame: #");
-            str.append(std::to_string(image.nframe).c_str());
-            str.append(" last frame: #");
-            str.append(std::to_string(lastImageSequenceNumber).c_str());
-            str.append(" timestamp: ");
-            str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-            std::cout << str.toStdString() << std::endl;
-            generateLog(logfilepathFull, str);
-
-            for (auto &what : std::map<std::string, int> {{"Transport layer loss: ", XI_CNT_SEL_TRANSPORT_SKIPPED_FRAMES},
-                                {"API layer loss: ", XI_CNT_SEL_API_SKIPPED_FRAMES}})
+            try
             {
-                xiSetParamInt(_Camera, XI_PRM_COUNTER_SELECTOR, what.second);
-                int result {0};
-                xiGetParamInt(_Camera, XI_PRM_COUNTER_VALUE, &result);
-                std::cout << what.first << result << std::endl;
+                // get time before getting the data
+                const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+                
+                // Timeout is 5000, ToDo: add respective setting to configuration file
+                _camera.RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
+
+                // Image grabbed successfully?
+                if (ptrGrabResult->GrabSucceeded())
+                {
+                    // get image data
+                    img_width           = ptrGrabResult->GetWidth();
+                    img_height          = ptrGrabResult->GetHeight();
+                    p_image             = (uint8_t *) ptrGrabResult->GetBuffer();
+                    n_current_frame_id  = ptrGrabResult->GetImageNumber();
+
+                    // get time after getting the data
+                    const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
+                    const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+                    // the camera specific tick count. The Basler acA4096-30um clock freq is 1 GHz (1 tick per 1 ns)
+                    const unsigned long n_current_camera_tick_count = ptrGrabResult->GetTimeStamp(); 
+
+                    
+                    // Image sequence sanity check.
+                    if (n_last_frame_id != 0 && n_current_frame_id != n_last_frame_id + 1)
+                    {
+                        QString str("Warning: Camera lost frame: This frame: #");
+                        str.append(std::to_string(n_current_frame_id).c_str());
+                        str.append(" last frame: #");
+                        str.append(std::to_string(n_last_frame_id).c_str());
+                        str.append(" timestamp: ");
+                        str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
+                        std::cout << str.toStdString() << std::endl;
+                        generateLog(logfilepathFull, str);
+
+                        // add camera handling
+                        // ...
+
+                    }
+                    n_last_frame_id = n_current_frame_id;
+
+                    // If last timestamp is later than current timestamp, we have to reset the camera timestamps.
+                    if (n_last_camera_tick_count == 0 || (n_last_camera_tick_count > n_current_camera_tick_count))
+                    {
+                        if (n_last_camera_tick_count != 0 && lastCameraTimestamp > wallClockNow && loopCount > 10)
+                        {
+                            QString str("Warning: camera clock faster than wall time. Last camera time: ");
+                            str.append(boost::posix_time::to_iso_extended_string(lastCameraTimestamp).c_str());
+                            str.append(" wall clock: ");
+                            str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
+                            std::cout << str.toStdString() << std::endl;
+                            generateLog(logfilepathFull, str);
+                        }
+                        lastCameraTimestamp = wallClockNow;
+                    }
+                    else
+                    {
+                        const long tick_delta = static_cast<const long>(n_current_camera_tick_count - n_last_camera_tick_count);
+                        assert (tick_delta >= 0);\
+                        // ToDo: add tick to microsecond conversion factor as config setting
+                        lastCameraTimestamp += boost::posix_time::microseconds(tick_delta * 1000);
+                    }
+                    n_last_camera_tick_count = n_current_camera_tick_count;
+
+                    // Skip the first X images to allow the camera buffer to be flushed.
+                    // ToDo: is this still necessary for the Basler cameras?
+                    if (loopCount < 10)
+                    {
+                        continue;
+                    }
+
+                    //Check if processing a frame took longer than X seconds. If so, log the event.
+                    const long duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+                    if (duration > 2 * (1000000 / 6)) {
+                        QString str("Warning: Processing time too long: ");
+                        str.append(std::to_string(duration).c_str());
+                        str.append(" on camera ");
+                        str.append(std::to_string(_ID).c_str());
+                        std::cout << str.toStdString() << std::endl;
+                        generateLog(logfilepathFull, str);
+                    }
+                    
+                    //converts the time in seconds to local time
+                    const std::time_t timestamp { n_current_camera_tick_count };
+                    const struct tm *timeinfo { localtime(&timestamp) };
+
+                    localCounter(oldTime, timeinfo->tm_sec);
+                    oldTime = timeinfo->tm_sec;
+                    
+                } // grab did not succeed
+                else
+                {
+                    cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription() << endl;
+                }
+                
             }
-
-        }
-        lastImageSequenceNumber = image.nframe;
-
-        // Reset the camera timestamp?
-        if (lastCameraTimestampMicroseconds == 0 || (lastCameraTimestampMicroseconds > currentCameraTimestampMicroseconds))
-        {
-            if (lastCameraTimestampMicroseconds != 0 && lastCameraTimestamp > wallClockNow && loopCount > 10)
+            catch(GenericException e) // could not retrieve grab result
             {
-                QString str("Warning: camera clock faster than wall time. Last camera time: ");
-                str.append(boost::posix_time::to_iso_extended_string(lastCameraTimestamp).c_str());
-                str.append(" wall clock: ");
-                str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-                std::cout << str.toStdString() << std::endl;
-                generateLog(logfilepathFull, str);
+                std::cerr << e.what() << '\n';
+                
+                // ToDo: if the problem persists and we get this error repeatedly, restart application
             }
-            lastCameraTimestamp = wallClockNow;
         }
-        else
+        else // camera not grabbing
         {
-            const long microsecondDelta = static_cast<const long>(currentCameraTimestampMicroseconds - lastCameraTimestampMicroseconds);
-            assert (microsecondDelta >= 0);
-            lastCameraTimestamp += boost::posix_time::microseconds(microsecondDelta);
-        }
-        lastCameraTimestampMicroseconds = currentCameraTimestampMicroseconds;
-
-        // Skip the first X images to allow the camera buffer to be flushed.
-        if (loopCount < 10)
-        {
-            continue;
-        }
-
-        //Check if processing a frame took longer than X seconds. If so, log the event.
-        const long duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-        if (duration > 2 * (1000000 / 6)) {
-            QString str("Warning: Processing time too long: ");
-            str.append(std::to_string(duration).c_str());
-            str.append(" on camera ");
-            str.append(std::to_string(_ID).c_str());
-            std::cout << str.toStdString() << std::endl;
-            generateLog(logfilepathFull, str);
-        }
-
-        //In case an error occurs, simply log it and restart the application.
-        //Sometimes fetching images starts to fail and cameras need to be re-initialized.
-        //However, this will solve the issue in the general case
-        if (returnCode != XI_OK) {
-            const std::string message = "Aquisition failed with error code " + std::to_string(returnCode);
+            // although grabbing had been started, isGrabbing returned false. this means somehow the camera stopped grabbing
+            // --> we simply log it and restart the application.
+            const std::string message = "Aquisition failed with error code " + std::to_string(42);
             logCriticalError(message, message);
             std::exit(1);
         }
-
-
-        //converts the time in seconds to local time
-        const std::time_t timestamp { image.tsSec };
-        const struct tm *timeinfo { localtime(&timestamp) };
-
-        localCounter(oldTime, timeinfo->tm_sec);
-        oldTime = timeinfo->tm_sec;
+    
 
         //Not in calibration mode. Move image to buffer for further procession
-        if (!_Calibration->doCalibration) {
+        if (!_Calibration->doCalibration) 
+        {
             // Crop the image to the expected size (e.g. 4000x3000).
             // This is necessary, because the encoder/codec requires the image sizes to be some multiple of X.
-            cv::Mat wholeImageMatrix(cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)), CV_8UC1, image.bp, cv::Mat::AUTO_STEP);
-            const unsigned int marginToBeCroppedX = (image.width > vwidth) ? image.width - vwidth : 0;
-            const unsigned int marginToBeCroppedY = (image.height > vheight) ? image.height - vheight : 0;
+            // ToDo: remove this part and add camera check if conforming with size requirements
+            cv::Mat wholeImageMatrix(cv::Size(img_width, img_height), CV_8UC1, p_image, cv::Mat::AUTO_STEP);
+            const unsigned int marginToBeCroppedX = (img_width > vwidth) ? img_width - vwidth : 0;
+            const unsigned int marginToBeCroppedY = (img_height > vheight) ? img_height - vheight : 0;
             if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
             {
                 const int cropLeft = marginToBeCroppedX / 2;
@@ -310,9 +341,7 @@ void BaslerCamThread::run()
             auto buf = std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
             memcpy(buf.get()->data, wholeImageMatrix.data, vwidth * vheight);
 
-#ifndef USE_ENCODER
             _Buffer->push(buf);
-#endif
             _SharedMemBuffer->push(buf);
 
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
@@ -322,27 +351,9 @@ void BaslerCamThread::run()
                 cv::imshow("Display window", smallMat );
             }
 #endif
-            //For every 50th picture create image statistics
-            //if (loopCount % 50 == 0)
-            //_AnalysisBuffer->push(buf);
-        }
-        //Calibrating cameras only
-        else if (loopCount % 3 == 0) {
-
-            //Analyze image properties
-            assert(false);
-            //analyzeImage(_ID, &cimg, &ref, _Calibration);
         }
     }
-    // This code will never be executed.
-    assert (false);
-    auto errorCode = xiStopAcquisition(_Camera);
-    checkReturnCode(errorCode, "xiStopAcquisition");
-    errorCode = xiCloseDevice(_Camera);
-    checkReturnCode(errorCode, "xiCloseDevice");
 
-    std::cout << "done" << std::endl;    
-    
     return;
 }
 
