@@ -39,7 +39,7 @@ set(LIBS
 #OS specific configuration
 #########################
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
-	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ /opt/XIMEA/include/ /opt/pylon5/include/)
+	set(INCLUDE_DIRS /usr/local/include /opt/ffmpeg/ffmpeg_build/include/)
 	message("Configuring for ${CAMERA_BACKEND} on Linux...")
 else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
 	if(WITH_FLYCAPTURE)
@@ -125,6 +125,7 @@ endif()
 if(${CAMERA_BACKEND} STREQUAL "Flea3")
 	set(LIBS ${LIBS} flycapture)
 	list(APPEND ImgAcquisitionSrc Flea3CamThread.cpp)
+	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/usr/include/flycapture")
 	add_definitions(-DUSE_FLEA3)
 endif()
 
