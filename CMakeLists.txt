@@ -39,7 +39,6 @@ set(LIBS
 #OS specific configuration
 #########################
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
-	set(INCLUDE_DIRS /usr/local/include /opt/ffmpeg/ffmpeg_build/include/)
 	message("Configuring for ${CAMERA_BACKEND} on Linux...")
 else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
 	if(WITH_FLYCAPTURE)
