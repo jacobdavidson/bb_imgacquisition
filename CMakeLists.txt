@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.1)
 cmake_policy (SET CMP0020 NEW)
 
-project(bb_imageacquisition CXX)
+project(bb_imageacquisition LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
