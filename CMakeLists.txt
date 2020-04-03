@@ -2,7 +2,6 @@
 
 project(bb_imageacquisition LANGUAGES CXX)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
 find_package(Threads REQUIRED)
@@ -29,59 +28,59 @@ message("Configuring for ${CAMERA_BACKEND} on ${CMAKE_SYSTEM_NAME}")
 set(EXE_NAME bb_ImageAcquistion)
 
 add_executable(${EXE_NAME}
-	CamThread.cpp
-	ImageAnalysis.cpp
-	ImgAcquisitionApp.cpp
-	NvEncGlue.cpp
-	SharedMemory.cpp
-	main.cpp
-	writeHandler.cpp
-	Buffer/MutexLinkedList.cpp
-	Buffer/MutexBuffer.h
-	Buffer/MutexLinkedList.h
-	Buffer/Semaphore.h
-	nvenc/NvEncoder.cpp
-	nvenc/NvHWEncoder.cpp
-	nvenc/cudaModuleMgr.cpp
-	nvenc/dynlink_cuda.cpp
-	nvenc/dynlink_nvcuvid.cpp
-	settings/Settings.cpp
-	settings/StringTranslator.cpp
-	settings/stringTools.cpp
-	settings/utility.cpp
-	CamThread.h
-	ImageAnalysis.h
-	ImgAcquisitionApp.h
-	NvEncGlue.h
-	SharedMemory.h
-	Watchdog.h
-	nvenc/NvEncoder.h
-	nvenc/NvHWEncoder.h
-	nvenc/cudaModuleMgr.h
-	nvenc/drvapi_error_string.h
-	nvenc/dynlink_builtin_types.h
-	nvenc/dynlink_cuda.h
-	nvenc/dynlink_cudaGL.h
-	nvenc/dynlink_cuda_cuda.h
-	nvenc/dynlink_cuda_gl.h
-	nvenc/dynlink_cuviddec.h
-	nvenc/dynlink_nvcuvid.h
-	nvenc/exception.h
-	nvenc/helper_cuda.h
-	nvenc/helper_cuda_drvapi.h
-	nvenc/helper_functions.h
-	nvenc/helper_string.h
-	nvenc/helper_timer.h
-	nvenc/nvCPUOPSys.h
-	nvenc/nvEncodeAPI.h
-	nvenc/nvFileIO.h
-	nvenc/nvUtils.h
-	settings/ParamNames.h
-	settings/Settings.h
-	settings/StringTranslator.h
-	settings/stringTools.h
-	settings/utility.h
-	writeHandler.h
+	src/CamThread.cpp
+	src/ImageAnalysis.cpp
+	src/ImgAcquisitionApp.cpp
+	src/NvEncGlue.cpp
+	src/SharedMemory.cpp
+	src/main.cpp
+	src/writeHandler.cpp
+	src/Buffer/MutexLinkedList.cpp
+	src/Buffer/MutexBuffer.h
+	src/Buffer/MutexLinkedList.h
+	src/Buffer/Semaphore.h
+	src/nvenc/NvEncoder.cpp
+	src/nvenc/NvHWEncoder.cpp
+	src/nvenc/cudaModuleMgr.cpp
+	src/nvenc/dynlink_cuda.cpp
+	src/nvenc/dynlink_nvcuvid.cpp
+	src/settings/Settings.cpp
+	src/settings/StringTranslator.cpp
+	src/settings/stringTools.cpp
+	src/settings/utility.cpp
+	src/CamThread.h
+	src/ImageAnalysis.h
+	src/ImgAcquisitionApp.h
+	src/NvEncGlue.h
+	src/SharedMemory.h
+	src/Watchdog.h
+	src/nvenc/NvEncoder.h
+	src/nvenc/NvHWEncoder.h
+	src/nvenc/cudaModuleMgr.h
+	src/nvenc/drvapi_error_string.h
+	src/nvenc/dynlink_builtin_types.h
+	src/nvenc/dynlink_cuda.h
+	src/nvenc/dynlink_cudaGL.h
+	src/nvenc/dynlink_cuda_cuda.h
+	src/nvenc/dynlink_cuda_gl.h
+	src/nvenc/dynlink_cuviddec.h
+	src/nvenc/dynlink_nvcuvid.h
+	src/nvenc/exception.h
+	src/nvenc/helper_cuda.h
+	src/nvenc/helper_cuda_drvapi.h
+	src/nvenc/helper_functions.h
+	src/nvenc/helper_string.h
+	src/nvenc/helper_timer.h
+	src/nvenc/nvCPUOPSys.h
+	src/nvenc/nvEncodeAPI.h
+	src/nvenc/nvFileIO.h
+	src/nvenc/nvUtils.h
+	src/settings/ParamNames.h
+	src/settings/Settings.h
+	src/settings/StringTranslator.h
+	src/settings/stringTools.h
+	src/settings/utility.h
+	src/writeHandler.h
 )
 
 target_link_libraries(${EXE_NAME} PRIVATE
@@ -93,17 +92,17 @@ target_link_libraries(${EXE_NAME} PRIVATE
 )
 
 if(${CAMERA_BACKEND} STREQUAL "Basler")
-	target_sources(${EXE_NAME} PRIVATE BaslerCamThread.h BaslerCamThread.cpp)
+	target_sources(${EXE_NAME} PRIVATE src/BaslerCamThread.h src/BaslerCamThread.cpp)
 	target_compile_definitions(${EXE_NAME} PRIVATE USE_BASLER)
 endif()
 
 if(${CAMERA_BACKEND} STREQUAL "Flea3")
 	target_compile_definitions(${EXE_NAME} PRIVATE USE_FLEA3)
-	target_sources(${EXE_NAME} PRIVATE Flea3CamThread.h Flea3CamThread.cpp)
+	target_sources(${EXE_NAME} PRIVATE src/Flea3CamThread.h src/Flea3CamThread.cpp)
 endif()
 
 if(${CAMERA_BACKEND} STREQUAL "XIMEA")
-	target_sources(${EXE_NAME} PRIVATE XimeaCamThread.h XimeaCamThread.cpp)
+	target_sources(${EXE_NAME} PRIVATE src/XimeaCamThread.h src/XimeaCamThread.cpp)
 	target_compile_definitions(${EXE_NAME} PRIVATE USE_XIMEA)
 endif()
 
