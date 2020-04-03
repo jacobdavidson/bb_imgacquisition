@@ -10,7 +10,6 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Qt5Core REQUIRED) 
 find_package(Boost REQUIRED system filesystem program_options date_time)
 find_package(OpenCV REQUIRED)
-find_package(CUDA REQUIRED COMPONENTS cuda cudart)
 
 set(CAM_HARDWARE "BASLER")
 # set(CAM_HARDWARE "FLEA3")
@@ -23,7 +22,6 @@ option(WITH_DEBUG_IMAGE_OUTPUT "Show the captured images live." OFF)
 #Get all the libraries into a variable
 #########################
 set(LIBS 
-    ${CUDA_LIBRARIES} 
     ${Qt5Core_LIBRARIES} 
     ${Boost_LIBRARIES}
     ${OpenCV_LIBRARIES}
@@ -33,7 +31,7 @@ set(LIBS
 #OS specific configuration
 #########################
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
-	set(LIBS -L/usr/local/lib ${LIBS} pthread dl cuda rt)
+	set(LIBS -L/usr/local/lib ${LIBS} pthread dl rt)
 	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ /opt/XIMEA/include/ /opt/pylon5/include/)
 	message("Configuring for ${CAM_HARDWARE} on Linux...")
 else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
@@ -45,10 +43,6 @@ else() 				##### this needs to be tested, i will not touch this anytime soon, so
 		)
 	endif()
 	set(INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
-	set(LIBS ${LIBS}
-		"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\lib\\x64\\cudart.lib"
-		"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\lib\\x64\\cuda.lib"
-		)
 	message("Configuring for ${CAM_HARDWARE} on Windows...")
 endif()
 
@@ -137,7 +131,7 @@ IF (${CAM_HARDWARE} STREQUAL "XIMEA")
 	add_definitions(-DUSE_XIMEA)
 ENDIF()
 
-include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${CUDA_INCLUDE_DIRS} ${Qt5Core_INCLUDE_DIRS})
+include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${Qt5Core_INCLUDE_DIRS})
 
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc})
 
