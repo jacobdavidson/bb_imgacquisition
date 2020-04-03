@@ -4,11 +4,18 @@ project(bb_imageacquisition LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
+
+find_package(Threads REQUIRED)
+
+find_package(Qt5 COMPONENTS Core REQUIRED)
+
 set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost COMPONENTS system filesystem program_options date_time QUIET)
+if(NOT Boost_FOUND)
+	set(Boost_USE_STATIC_LIBS OFF)
+	find_package(Boost COMPONENTS system filesystem program_options date_time REQUIRED QUIET)
+endif()
 
-
-find_package(Qt5Core REQUIRED) 
-find_package(Boost REQUIRED system filesystem program_options date_time)
 find_package(OpenCV REQUIRED)
 
 set(CAM_HARDWARE "BASLER")
@@ -21,9 +28,11 @@ option(WITH_DEBUG_IMAGE_OUTPUT "Show the captured images live." OFF)
 #########################
 #Get all the libraries into a variable
 #########################
-set(LIBS 
-    ${Qt5Core_LIBRARIES} 
-    ${Boost_LIBRARIES}
+set(LIBS
+	 ${CMAKE_DL_LIBS}
+	 Threads::Threads
+	 Qt5::Core
+	 Boost::headers Boost::system Boost::filesystem Boost::program_options Boost::date_time Boost::disable_autolinking
     ${OpenCV_LIBRARIES}
 		)
 
@@ -31,7 +40,6 @@ set(LIBS
 #OS specific configuration
 #########################
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
-	set(LIBS -L/usr/local/lib ${LIBS} pthread dl rt)
 	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ /opt/XIMEA/include/ /opt/pylon5/include/)
 	message("Configuring for ${CAM_HARDWARE} on Linux...")
 else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
@@ -42,7 +50,6 @@ else() 				##### this needs to be tested, i will not touch this anytime soon, so
 		"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2_v110.lib"
 		)
 	endif()
-	set(INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 	message("Configuring for ${CAM_HARDWARE} on Windows...")
 endif()
 
@@ -131,11 +138,10 @@ IF (${CAM_HARDWARE} STREQUAL "XIMEA")
 	add_definitions(-DUSE_XIMEA)
 ENDIF()
 
-include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${Qt5Core_INCLUDE_DIRS})
-
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc})
 
 target_link_libraries(${EXE_NAME} ${LIBS})
+target_include_directories(${EXE_NAME} PRIVATE ${INCLUDE_DIRS} ${HALIDE_INCLUDE})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_compile_options(${EXE_NAME} PRIVATE -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer)
