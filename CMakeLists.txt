@@ -1,5 +1,4 @@
 ﻿cmake_minimum_required(VERSION 3.1)
-cmake_policy (SET CMP0020 NEW)
 
 project(bb_imageacquisition LANGUAGES CXX)
 
@@ -158,10 +157,6 @@ ENDIF()
 include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${CUDA_INCLUDE_DIRS} ${Qt5Core_INCLUDE_DIRS} )
 
 message("Sources are ${ImgAcquisitionSrc}")
-
-if(COMMAND cmake_policy)
-	cmake_policy(SET CMP0003 NEW)
-endif(COMMAND cmake_policy)
 
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc} )
 
