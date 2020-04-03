@@ -25,9 +25,10 @@ class CamThread : public QThread
 {
     Q_OBJECT   // generates the MOC
 
-public:
+protected:
     CamThread() = default;
-    virtual ~CamThread() {};
+public:
+    virtual ~CamThread();
 
     /**
      * @brief Initialization of cameras and configuration
