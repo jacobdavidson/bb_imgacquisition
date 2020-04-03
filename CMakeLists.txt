@@ -141,7 +141,7 @@ ENDIF()
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc})
 
 target_link_libraries(${EXE_NAME} ${LIBS})
-target_include_directories(${EXE_NAME} PRIVATE ${INCLUDE_DIRS} ${HALIDE_INCLUDE})
+target_include_directories(${EXE_NAME} PRIVATE ${INCLUDE_DIRS})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_compile_options(${EXE_NAME} PRIVATE -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer)
