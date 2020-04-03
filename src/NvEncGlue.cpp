@@ -1,4 +1,4 @@
-﻿/*
+/*
  * NvEncGlue.cpp
  *
  *  Created on: Nov 6, 2015

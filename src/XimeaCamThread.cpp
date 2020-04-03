@@ -1,4 +1,4 @@
-﻿#include "XimeaCamThread.h"
+#include "XimeaCamThread.h"
 
 #include <cstdlib>
 #include <iostream>

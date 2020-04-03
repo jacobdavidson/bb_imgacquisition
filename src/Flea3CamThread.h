@@ -1,4 +1,4 @@
-﻿#ifndef FLEA3CAMTHREAD_H
+#ifndef FLEA3CAMTHREAD_H
 #define FLEA3CAMTHREAD_H
 
 #ifdef WINDOWS

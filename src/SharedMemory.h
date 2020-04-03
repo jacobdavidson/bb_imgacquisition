@@ -1,4 +1,4 @@
-﻿/*
+/*
  * SharedMemory.h
  *
  *  Created on: Jun 8, 2016

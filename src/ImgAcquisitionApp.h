@@ -1,4 +1,4 @@
-﻿#ifndef IMGACQUISITIONAPP_H
+#ifndef IMGACQUISITIONAPP_H
 #define IMGACQUISITIONAPP_H
 
 #include <QCoreApplication>

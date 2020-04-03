@@ -1,4 +1,4 @@
-﻿
+
 #ifndef NVENCGLUE_H_
 #define NVENCGLUE_H_
 

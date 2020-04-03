@@ -1,4 +1,4 @@
-﻿//
+//
 #include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
 #include "settings/utility.h"
