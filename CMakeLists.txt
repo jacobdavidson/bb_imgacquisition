@@ -9,7 +9,6 @@ add_definitions( -DBOOST_ALL_NO_LIB )
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT")
 
-list(APPEND CMAKE_PREFIX_PATH "/opt/Qt5/5.14.1/gcc_64/")
 
 find_package(Qt5Core REQUIRED) 
 find_package(Boost REQUIRED system filesystem program_options date_time)
