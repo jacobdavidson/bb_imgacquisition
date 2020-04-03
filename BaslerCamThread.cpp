@@ -291,7 +291,7 @@ void BaslerCamThread::run()
                     }
                     
                     //converts the time in seconds to local time
-                    const std::time_t timestamp { n_current_camera_tick_count };
+                    const std::time_t timestamp { static_cast<std::time_t>(n_current_camera_tick_count) };
                     const struct tm *timeinfo { localtime(&timestamp) };
 
                     localCounter(oldTime, timeinfo->tm_sec);
