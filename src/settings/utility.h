@@ -13,6 +13,5 @@
 std::string get_utc_time();
 std::string get_utc_offset_string();
 std::string getTimestamp();
-void slackpost(std::string what, int level);
 
 #endif /* UTILITY_H_ */

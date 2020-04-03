@@ -30,7 +30,6 @@ void MutexLinkedList::push(std::shared_ptr<ImageBuffer> imbuffer){
 	unsigned long h = imbuffer->height;
 	if (s*w*h/1024/1024 > BUFFER_HARDLIMIT){
 		std::cout << "ERROR: Buffer exceeds hardlimit (" << BUFFER_HARDLIMIT << " MB). Exiting. " << std::endl;
-		slackpost("ERROR: Buffer exceeds hardlimit (" + std::to_string(BUFFER_HARDLIMIT) + " MB). Exiting. ", 1);
 		std::exit(1);
 	}
 

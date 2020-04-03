@@ -15,7 +15,6 @@
 #include <unistd.h>
 
 /*
- * Slackposting requires the config.
  * If the segfault is caused from parsing config, well...
  * -> infinte loop.
  */
@@ -38,7 +37,6 @@ void handler(int sig) {
     fprintf(stderr, "Error: signal %d:\n", sig);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
 
-    slackpost("Encountered segmentation fault!",1);
     exit(1);
 }
 

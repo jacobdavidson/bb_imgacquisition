@@ -521,8 +521,6 @@ void XimeaCamThread::logCriticalError(const std::string &shortMsg, const std::st
         sprintf(logfilepathFull, logdir.c_str(), _ID);
         generateLog(logfilepathFull, message.c_str());
     }
-    if (!shortMsg.empty())
-        slackpost(shortMsg, 0);
 }
 
 // Just prints the camera's info

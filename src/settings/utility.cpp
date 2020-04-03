@@ -26,23 +26,6 @@
 
 #include<cstdlib>
 
-void slackpost(std::string what, int level){
-    SettingsIAC *set = SettingsIAC::getInstance();
-    std::string postcmd = set->getValueOfParam<std::string>(
-                               IMACQUISITION::SLACKPOST);
-    std::string target = "";
-    switch(level){
-    case 0:
-        target = ""; break;
-    case 1:
-        target = set->getValueOfParam<std::string>(IMACQUISITION::POSTLEVEL1); break;
-    case 2:
-        target = set->getValueOfParam<std::string>(IMACQUISITION::POSTLEVEL2); break;
-    }
-    std::string cmd = postcmd + target + what;
-    system(cmd.c_str());
-}
-
 std::string get_utc_time() {
     return boost::posix_time::to_iso_extended_string(boost::posix_time::microsec_clock::universal_time())+"Z";
 }

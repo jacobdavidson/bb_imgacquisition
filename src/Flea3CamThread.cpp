@@ -701,7 +701,6 @@ void Flea3CamThread::logCriticalError(Error e) {
     str << "Exit! "                                             << std::endl;
     sprintf(logfilepathFull, logdir.c_str(), _ID);
     generateLog(logfilepathFull, str.str().c_str());
-    slackpost(shortmsg, 0);
 }
 
 // We will use Format7 to set the video parameters instead of DCAM, so it becomes handy to print this info

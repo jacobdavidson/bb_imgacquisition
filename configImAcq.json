@@ -199,7 +199,6 @@
         "EXCHANGEDIR": ".\/out\/Cam_%u\/",
         "IMDIRPREVIEW": ".\/tmpPrev\/Cam_%u\/Cam_%u_%s--%s",
         "EXCHANGEDIRPREVIEW": ".\/outPrev\/Cam_%u\/",
-        "SLACKPOST": "\/home\/moenck\/slackpost.sh bb_notification On Emma: ",
         "POSTLEVEL1": "@moenck ",
         "POSTLEVEL2": "@channel ",
         "CAMCOUNT": "2"

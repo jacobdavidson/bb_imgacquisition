@@ -189,7 +189,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int &argc, char **argv) : QCoreApplication(
 
     int camcountConf = set->getValueOfParam<int>(IMACQUISITION::CAMCOUNT);
     if (numCameras < camcountConf){
-        slackpost("Camera count is less than configured!", 2);
+        std::cerr << "Camera count is less than configured!" << std::endl;
     }
 
     if (numCameras < 1) {
