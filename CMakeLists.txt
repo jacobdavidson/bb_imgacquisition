@@ -38,9 +38,10 @@ set(LIBS
 #########################
 #OS specific configuration
 #########################
-if("${CMAKE_SYSTEM}" MATCHES "Linux")
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 	message("Configuring for ${CAMERA_BACKEND} on Linux...")
-else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+	##### this needs to be tested, i will not touch this anytime soon, sorry #####
 	if(WITH_FLYCAPTURE)
 		set(INCLUDE_DIRS "C:\\Program Files\\Point Grey Research\\FlyCapture2\\include")
 		set(LIBS ${LIBS}
