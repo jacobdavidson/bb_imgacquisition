@@ -33,7 +33,7 @@ set(LIBS
 #OS specific configuration
 #########################
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
-	set(LIBS -L/usr/local/lib ${LIBS} pthread dl cuda rt )
+	set(LIBS -L/usr/local/lib ${LIBS} pthread dl cuda rt)
 	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ /opt/XIMEA/include/ /opt/pylon5/include/)
 	message("Configuring for ${CAM_HARDWARE} on Linux...")
 else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
@@ -139,16 +139,9 @@ ENDIF()
 
 include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${CUDA_INCLUDE_DIRS} ${Qt5Core_INCLUDE_DIRS})
 
-add_executable(${EXE_NAME} ${ImgAcquisitionSrc} )
+add_executable(${EXE_NAME} ${ImgAcquisitionSrc})
 
-target_link_libraries(${EXE_NAME} ${LIBS} )
-
-
-
-
-
-
-
+target_link_libraries(${EXE_NAME} ${LIBS})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_compile_options(${EXE_NAME} PRIVATE -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer)
