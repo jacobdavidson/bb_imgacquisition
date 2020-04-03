@@ -149,9 +149,6 @@ private:
 
 protected:
     void run(); //this is the function that will be iterated indefinitely
-
-signals:
-    virtual void                logMessage(int logLevel, QString message) override;
 };
 
 #endif // FLEA3CAMTHREAD_H

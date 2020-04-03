@@ -44,5 +44,5 @@ public:
     virtual bool isInitialized() const = 0;
 
 signals:
-    virtual void logMessage(int logLevel, QString message) = 0;
+    void logMessage(int logLevel, QString message);
 };
