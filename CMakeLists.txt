@@ -16,11 +16,6 @@ find_package(Boost REQUIRED system filesystem program_options date_time)
 find_package(OpenCV REQUIRED)
 find_package(CUDA REQUIRED COMPONENTS cuda cudart)
 
-message("CUDA_LIBRARIES is ${CUDA_LIBRARIES}")
-message("Boost_LIBRARIES is ${Boost_LIBRARIES}")
-message("OpenCV_LIBRARIES is ${OpenCV_LIBRARIES}")
-message("Qt5Core_LIBRARIES is ${Qt5Core_LIBRARIES}")
-
 set(CAM_HARDWARE "BASLER")
 # set(CAM_HARDWARE "FLEA3")
 # set(CAM_HARDWARE "XIMEA")
@@ -61,15 +56,11 @@ else() 				##### this needs to be tested, i will not touch this anytime soon, so
 	message("Configuring for ${CAM_HARDWARE} on Windows...")
 endif()
 
-
-message("All libs: ${LIBS}")
-
 #########################
 #Put everything together
 #########################
 
 set(EXE_NAME bb_ImageAcquistion)
-#file(GLOB_RECURSE ImgAcquisitionSrc RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.c *.h *.hpp)
 
 list(APPEND ImgAcquisitionSrc 
 	CamThread.cpp;
@@ -127,10 +118,6 @@ list(APPEND ImgAcquisitionSrc
 	writeHandler.h;
 )
 
-# keep this in case we return to GLOB_RECURSE
-# first remove all cam specific sources and add the targetted ones again
-# LIST(REMOVE_ITEM ImgAcquisitionSrc XimeaCamThread.h XimeaCamThread.cpp Flea3CamThread.h Flea3CamThread.cpp BaslerCamThread.h BaslerCamThread.cpp)
-
 # now add the cam specific sources again and define preprocessor 
 # flag used for including respective headers
 IF (${CAM_HARDWARE} STREQUAL "BASLER")
@@ -155,8 +142,6 @@ IF (${CAM_HARDWARE} STREQUAL "XIMEA")
 ENDIF()
 
 include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${CUDA_INCLUDE_DIRS} ${Qt5Core_INCLUDE_DIRS} )
-
-message("Sources are ${ImgAcquisitionSrc}")
 
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc} )
 
