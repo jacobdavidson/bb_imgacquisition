@@ -18,9 +18,8 @@ endif()
 
 find_package(OpenCV REQUIRED)
 
-set(CAM_HARDWARE "BASLER")
-# set(CAM_HARDWARE "FLEA3")
-# set(CAM_HARDWARE "XIMEA")
+set(CAMERA_BACKEND "Basler" CACHE STRING "Select a camera backend")
+set_property(CACHE CAMERA_BACKEND PROPERTY STRINGS "Basler" "Flea3" "XIMEA")
 
 # This option will use OpenCV to display the captured images live - for debugging purposes.
 option(WITH_DEBUG_IMAGE_OUTPUT "Show the captured images live." OFF)
@@ -41,7 +40,7 @@ set(LIBS
 #########################
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
 	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ /opt/XIMEA/include/ /opt/pylon5/include/)
-	message("Configuring for ${CAM_HARDWARE} on Linux...")
+	message("Configuring for ${CAMERA_BACKEND} on Linux...")
 else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
 	if(WITH_FLYCAPTURE)
 		set(INCLUDE_DIRS "C:\\Program Files\\Point Grey Research\\FlyCapture2\\include")
@@ -50,7 +49,7 @@ else() 				##### this needs to be tested, i will not touch this anytime soon, so
 		"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2_v110.lib"
 		)
 	endif()
-	message("Configuring for ${CAM_HARDWARE} on Windows...")
+	message("Configuring for ${CAMERA_BACKEND} on Windows...")
 endif()
 
 #########################
@@ -115,7 +114,7 @@ list(APPEND ImgAcquisitionSrc
 	writeHandler.h;
 )
 
-if(${CAM_HARDWARE} STREQUAL "BASLER")
+if(${CAMERA_BACKEND} STREQUAL "Basler")
 	link_directories(/opt/pylon5/lib64)
 	set(LIBS ${LIBS} pylonutility pylonbase GCBase_gcc_v3_1_Basler_pylon GenApi_gcc_v3_1_Basler_pylon)
 	list(APPEND ImgAcquisitionSrc BaslerCamThread.h BaslerCamThread.cpp)
@@ -123,13 +122,13 @@ if(${CAM_HARDWARE} STREQUAL "BASLER")
 	add_definitions(-DUSE_BASLER)
 endif()
 
-if(${CAM_HARDWARE} STREQUAL "FLEA3")
+if(${CAMERA_BACKEND} STREQUAL "Flea3")
 	set(LIBS ${LIBS} flycapture)
 	list(APPEND ImgAcquisitionSrc Flea3CamThread.cpp)
 	add_definitions(-DUSE_FLEA3)
 endif()
 
-if(${CAM_HARDWARE} STREQUAL "XIMEA")
+if(${CAMERA_BACKEND} STREQUAL "XIMEA")
 	set(LIBS ${LIBS} m3api)
 	list(APPEND ImgAcquisitionSrc XimeaCamThread.cpp)
 	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/XIMEA/include")
