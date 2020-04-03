@@ -115,28 +115,26 @@ list(APPEND ImgAcquisitionSrc
 	writeHandler.h;
 )
 
-# now add the cam specific sources again and define preprocessor 
-# flag used for including respective headers
-IF (${CAM_HARDWARE} STREQUAL "BASLER")
+if(${CAM_HARDWARE} STREQUAL "BASLER")
 	link_directories(/opt/pylon5/lib64)
 	set(LIBS ${LIBS} pylonutility pylonbase GCBase_gcc_v3_1_Basler_pylon GenApi_gcc_v3_1_Basler_pylon)
-	LIST(APPEND ImgAcquisitionSrc BaslerCamThread.h BaslerCamThread.cpp)
+	list(APPEND ImgAcquisitionSrc BaslerCamThread.h BaslerCamThread.cpp)
 	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/pylon5/include")
 	add_definitions(-DUSE_BASLER)
-ENDIF()
+endif()
 
-IF (${CAM_HARDWARE} STREQUAL "FLEA3")
+if(${CAM_HARDWARE} STREQUAL "FLEA3")
 	set(LIBS ${LIBS} flycapture)
-	LIST(APPEND ImgAcquisitionSrc Flea3CamThread.cpp)
+	list(APPEND ImgAcquisitionSrc Flea3CamThread.cpp)
 	add_definitions(-DUSE_FLEA3)
-ENDIF()
+endif()
 
-IF (${CAM_HARDWARE} STREQUAL "XIMEA")
+if(${CAM_HARDWARE} STREQUAL "XIMEA")
 	set(LIBS ${LIBS} m3api)
-	LIST(APPEND ImgAcquisitionSrc XimeaCamThread.cpp)
+	list(APPEND ImgAcquisitionSrc XimeaCamThread.cpp)
 	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/XIMEA/include")
 	add_definitions(-DUSE_XIMEA)
-ENDIF()
+endif()
 
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc})
 
