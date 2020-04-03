@@ -5,9 +5,6 @@ project(bb_imageacquisition LANGUAGES CXX)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(Boost_USE_STATIC_LIBS ON)
-add_definitions( -DBOOST_ALL_NO_LIB )
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT")
 
 
 find_package(Qt5Core REQUIRED) 
@@ -153,3 +150,7 @@ target_link_libraries(${EXE_NAME} ${LIBS} )
 
 
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	target_compile_options(${EXE_NAME} PRIVATE -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer)
+	target_compile_options(${EXE_NAME} PRIVATE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT)
+endif()
