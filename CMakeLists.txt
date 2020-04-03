@@ -114,34 +114,35 @@ list(APPEND ImgAcquisitionSrc
 	writeHandler.h;
 )
 
-if(${CAMERA_BACKEND} STREQUAL "Basler")
-	link_directories(/opt/pylon5/lib64)
-	set(LIBS ${LIBS} pylonutility pylonbase GCBase_gcc_v3_1_Basler_pylon GenApi_gcc_v3_1_Basler_pylon)
-	list(APPEND ImgAcquisitionSrc BaslerCamThread.h BaslerCamThread.cpp)
-	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/pylon5/include")
-	add_definitions(-DUSE_BASLER)
-endif()
-
-if(${CAMERA_BACKEND} STREQUAL "Flea3")
-	set(LIBS ${LIBS} flycapture)
-	list(APPEND ImgAcquisitionSrc Flea3CamThread.cpp)
-	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/usr/include/flycapture")
-	add_definitions(-DUSE_FLEA3)
-endif()
-
-if(${CAMERA_BACKEND} STREQUAL "XIMEA")
-	set(LIBS ${LIBS} m3api)
-	list(APPEND ImgAcquisitionSrc XimeaCamThread.cpp)
-	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/XIMEA/include")
-	add_definitions(-DUSE_XIMEA)
-endif()
-
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc})
 
-target_link_libraries(${EXE_NAME} ${LIBS})
+target_link_libraries(${EXE_NAME} PRIVATE ${LIBS})
 target_include_directories(${EXE_NAME} PRIVATE ${INCLUDE_DIRS})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_compile_options(${EXE_NAME} PRIVATE -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer)
 	target_compile_options(${EXE_NAME} PRIVATE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT)
+endif()
+
+if(${CAMERA_BACKEND} STREQUAL "Basler")
+	target_sources(${EXE_NAME} PRIVATE BaslerCamThread.h BaslerCamThread.cpp)
+	target_compile_definitions(${EXE_NAME} PRIVATE USE_BASLER)
+	target_include_directories(${EXE_NAME} PRIVATE "/opt/pylon5/include")
+	target_link_directories(${EXE_NAME} PRIVATE /opt/pylon5/lib64)
+	target_link_libraries(${EXE_NAME} PRIVATE pylonutility pylonbase GCBase_gcc_v3_1_Basler_pylon GenApi_gcc_v3_1_Basler_pylon)
+endif()
+
+if(${CAMERA_BACKEND} STREQUAL "Flea3")
+	set(LIBS ${LIBS} flycapture)
+	target_compile_definitions(${EXE_NAME} PRIVATE USE_FLEA3)
+	target_sources(${EXE_NAME} PRIVATE Flea3CamThread.h Flea3CamThread.cpp)
+	target_include_directories(${EXE_NAME} PRIVATE "/usr/include/flycapture")
+	target_link_libraries(${EXE_NAME} PRIVATE flycapture)
+endif()
+
+if(${CAMERA_BACKEND} STREQUAL "XIMEA")
+	target_sources(${EXE_NAME} PRIVATE XimeaCamThread.h XimeaCamThread.cpp)
+	target_compile_definitions(${EXE_NAME} PRIVATE USE_XIMEA)
+	target_include_directories(${EXE_NAME} PRIVATE "/opt/XIMEA/include")
+	target_link_libraries(${EXE_NAME} PRIVATE m3api)
 endif()
