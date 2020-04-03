@@ -35,9 +35,6 @@ set(LIBS
     ${OpenCV_LIBRARIES}
 		)
 
-#########################
-#OS specific configuration
-#########################
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 	message("Configuring for ${CAMERA_BACKEND} on Linux...")
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
@@ -51,10 +48,6 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 	endif()
 	message("Configuring for ${CAMERA_BACKEND} on Windows...")
 endif()
-
-#########################
-#Put everything together
-#########################
 
 set(EXE_NAME bb_ImageAcquistion)
 
