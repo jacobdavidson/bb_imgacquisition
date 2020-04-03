@@ -37,18 +37,18 @@ set(LIBS
 #OS specific configuration
 #########################
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
-	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ /opt/XIMEA/include/ /opt/pylon5/include/ )
 	set(LIBS -L/usr/local/lib ${LIBS} pthread dl cuda rt )
+	set(INCLUDE_DIRS /usr/local/include /usr/include/flycapture/ /opt/ffmpeg/ffmpeg_build/include/ /opt/XIMEA/include/ /opt/pylon5/include/)
 	message("Configuring for ${CAM_HARDWARE} on Linux...")
 else() 				##### this needs to be tested, i will not touch this anytime soon, sorry #####
 	if(WITH_FLYCAPTURE)
-		set(INCLUDE_DIRS "C:\\Program Files\\Point Grey Research\\FlyCapture2\\include"  )
+		set(INCLUDE_DIRS "C:\\Program Files\\Point Grey Research\\FlyCapture2\\include")
 		set(LIBS ${LIBS}
 		"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2.lib"
 		"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2_v110.lib"
 		)
 	endif()
-	set(INCLUDE_DIRS ${Boost_INCLUDE_DIRS} )
+	set(INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 	set(LIBS ${LIBS}
 		"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\lib\\x64\\cudart.lib"
 		"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\lib\\x64\\cuda.lib"
@@ -124,24 +124,24 @@ IF (${CAM_HARDWARE} STREQUAL "BASLER")
 	link_directories(/opt/pylon5/lib64)
 	set(LIBS ${LIBS} pylonutility pylonbase GCBase_gcc_v3_1_Basler_pylon GenApi_gcc_v3_1_Basler_pylon)
 	LIST(APPEND ImgAcquisitionSrc BaslerCamThread.h BaslerCamThread.cpp)
-	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/pylon5/include" )
+	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/pylon5/include")
 	add_definitions(-DUSE_BASLER)
 ENDIF()
 
 IF (${CAM_HARDWARE} STREQUAL "FLEA3")
-	set(LIBS ${LIBS} flycapture )
+	set(LIBS ${LIBS} flycapture)
 	LIST(APPEND ImgAcquisitionSrc Flea3CamThread.cpp)
 	add_definitions(-DUSE_FLEA3)
 ENDIF()
 
 IF (${CAM_HARDWARE} STREQUAL "XIMEA")
-	set(LIBS ${LIBS} m3api )
+	set(LIBS ${LIBS} m3api)
 	LIST(APPEND ImgAcquisitionSrc XimeaCamThread.cpp)
-	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/XIMEA/include" )
+	set(INCLUDE_DIRS ${INCLUDE_DIRS} "/opt/XIMEA/include")
 	add_definitions(-DUSE_XIMEA)
 ENDIF()
 
-include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${CUDA_INCLUDE_DIRS} ${Qt5Core_INCLUDE_DIRS} )
+include_directories(${INCLUDE_DIRS} ${HALIDE_INCLUDE} ${CUDA_INCLUDE_DIRS} ${Qt5Core_INCLUDE_DIRS})
 
 add_executable(${EXE_NAME} ${ImgAcquisitionSrc} )
 
