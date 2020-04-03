@@ -34,9 +34,14 @@ using namespace std;
 //      exec_path       - execution path
 //      nKernels        - total # of different CUDA kernel functions in the CUBIN/OTX
 //      nGlobalMem      - total # of Global Memory arrays defined in the CUBIN/PTX (i.e. constants)
-//      nTexRef         - total # of Texture References arrays defined in the CUBIN/PTX (i.e. texture arrays)
-extern "C"
-bool modInitCTX(sCtxModule *pCtx, const char *filename, const char *exec_path, int nKernels, int nGlobalMem, int nTexRef)
+//      nTexRef         - total # of Texture References arrays defined in the CUBIN/PTX (i.e.
+//      texture arrays)
+extern "C" bool modInitCTX(sCtxModule* pCtx,
+                           const char* filename,
+                           const char* exec_path,
+                           int         nKernels,
+                           int         nGlobalMem,
+                           int         nTexRef)
 {
     pCtx->nMaxKernels_   = nKernels;
     pCtx->nMaxGlobalMem_ = nGlobalMem;
@@ -44,10 +49,10 @@ bool modInitCTX(sCtxModule *pCtx, const char *filename, const char *exec_path, i
     pCtx->mModuleName    = filename;
 
     CUresult cuStatus;
-    string module_path;
-    string ptx_source;
+    string   module_path;
+    string   ptx_source;
 
-    char *actual_path = sdkFindFilePath(pCtx->mModuleName.c_str(), exec_path);
+    char* actual_path = sdkFindFilePath(pCtx->mModuleName.c_str(), exec_path);
 
     if (actual_path)
     {
@@ -66,41 +71,45 @@ bool modInitCTX(sCtxModule *pCtx, const char *filename, const char *exec_path, i
     }
     else
     {
-        FILE *fp = fopen(module_path.c_str(), "rb");
+        FILE* fp = fopen(module_path.c_str(), "rb");
         fseek(fp, 0, SEEK_END);
-        int file_size = ftell(fp);
-        char *buf = new char[file_size+1];
+        int   file_size = ftell(fp);
+        char* buf       = new char[file_size + 1];
         fseek(fp, 0, SEEK_SET);
         fread(buf, sizeof(char), file_size, fp);
         fclose(fp);
         buf[file_size] = '\0';
-        ptx_source = buf;
-        delete [] buf;
+        ptx_source     = buf;
+        delete[] buf;
     }
 
     if (pCtx->mModuleName.rfind(".ptx") != string::npos)
     {
         // in this branch we use compilation with parameters
         const unsigned int jitNumOptions = 3;
-        CUjit_option *jitOptions = new CUjit_option[jitNumOptions];
-        void **jitOptVals = new void *[jitNumOptions];
+        CUjit_option*      jitOptions    = new CUjit_option[jitNumOptions];
+        void**             jitOptVals    = new void*[jitNumOptions];
 
         // set up size of compilation log buffer
-        jitOptions[0] = CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES;
+        jitOptions[0]        = CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES;
         int jitLogBufferSize = 1024;
-        jitOptVals[0] = (void *)(size_t)jitLogBufferSize;
+        jitOptVals[0]        = (void*) (size_t) jitLogBufferSize;
 
         // set up pointer to the compilation log buffer
-        jitOptions[1] = CU_JIT_INFO_LOG_BUFFER;
-        char *jitLogBuffer = new char[jitLogBufferSize];
-        jitOptVals[1] = jitLogBuffer;
+        jitOptions[1]      = CU_JIT_INFO_LOG_BUFFER;
+        char* jitLogBuffer = new char[jitLogBufferSize];
+        jitOptVals[1]      = jitLogBuffer;
 
         // set up pointer to set the Maximum # of registers for a particular kernel
-        jitOptions[2] = CU_JIT_MAX_REGISTERS;
+        jitOptions[2]   = CU_JIT_MAX_REGISTERS;
         int jitRegCount = 32;
-        jitOptVals[2] = (void *)(size_t)jitRegCount;
+        jitOptVals[2]   = (void*) (size_t) jitRegCount;
 
-        cuStatus = cuModuleLoadDataEx(&pCtx->cuModule_, ptx_source.c_str(), jitNumOptions, jitOptions, (void **)jitOptVals);
+        cuStatus = cuModuleLoadDataEx(&pCtx->cuModule_,
+                                      ptx_source.c_str(),
+                                      jitNumOptions,
+                                      jitOptions,
+                                      (void**) jitOptVals);
 
         if (cuStatus != CUDA_SUCCESS)
         {
@@ -120,28 +129,28 @@ bool modInitCTX(sCtxModule *pCtx, const char *filename, const char *exec_path, i
     }
 
     printf(">> modInitCTX<%20s > initialized %s",
-           pCtx->mModuleName.c_str(), (cuStatus == CUDA_SUCCESS) ? "OK\n" : "FAILED\n");
+           pCtx->mModuleName.c_str(),
+           (cuStatus == CUDA_SUCCESS) ? "OK\n" : "FAILED\n");
 
     if (cuStatus == CUDA_SUCCESS)
     {
-        pCtx->pCudaKernels_  = new CudaKernels  [pCtx->nMaxKernels_  ];
+        pCtx->pCudaKernels_   = new CudaKernels[pCtx->nMaxKernels_];
         pCtx->nLastKernel_    = 0;
-        pCtx->pGlobalMem_    = new CudaGlobalMem[pCtx->nMaxGlobalMem_];
+        pCtx->pGlobalMem_     = new CudaGlobalMem[pCtx->nMaxGlobalMem_];
         pCtx->nLastGlobalMem_ = 0;
-        pCtx->pTexRef_       = new CudaTexRef   [pCtx->nMaxTexRef_   ];
+        pCtx->pTexRef_        = new CudaTexRef[pCtx->nMaxTexRef_];
         pCtx->nLastTexRef_    = 0;
     }
 
     return (cuStatus == CUDA_SUCCESS) ? true : false;
 }
 
-extern "C"
-void modFreeCTX(sCtxModule *pCtx)
+extern "C" void modFreeCTX(sCtxModule* pCtx)
 {
     // release memory allocated
-    delete [] pCtx->pCudaKernels_;
-    delete [] pCtx->pGlobalMem_;
-    delete [] pCtx->pTexRef_;
+    delete[] pCtx->pCudaKernels_;
+    delete[] pCtx->pGlobalMem_;
+    delete[] pCtx->pTexRef_;
 
     // release the cuModule and resource strings
     cuModuleUnload(pCtx->cuModule_);
@@ -149,14 +158,19 @@ void modFreeCTX(sCtxModule *pCtx)
     printf(">> modFreeCTX success!\n");
 }
 
-extern "C"
-CUresult modGetCudaFunction(sCtxModule *pCtx, const char *func_name,    CUfunction *fpCudaKernel)
+extern "C" CUresult modGetCudaFunction(sCtxModule* pCtx,
+                                       const char* func_name,
+                                       CUfunction* fpCudaKernel)
 {
     int idx = pCtx->nLastKernel_;
 
-    CUresult cuStatus = cuModuleGetFunction(&(pCtx->pCudaKernels_[idx].fpCuda), pCtx->cuModule_, func_name);
+    CUresult cuStatus = cuModuleGetFunction(&(pCtx->pCudaKernels_[idx].fpCuda),
+                                            pCtx->cuModule_,
+                                            func_name);
     printf(">> modGetCudaFunction< CUDA file: %36s >\n", pCtx->mModuleName.c_str());
-    printf("   CUDA Kernel Function (0x%08x) = <%20s >\n", (size_t)(pCtx->pCudaKernels_[idx].fpCuda), func_name);
+    printf("   CUDA Kernel Function (0x%08x) = <%20s >\n",
+           (size_t)(pCtx->pCudaKernels_[idx].fpCuda),
+           func_name);
     pCtx->pCudaKernels_[idx].func_name = func_name;
 
     if (fpCudaKernel)
@@ -167,14 +181,20 @@ CUresult modGetCudaFunction(sCtxModule *pCtx, const char *func_name,    CUfuncti
     return cuStatus;
 }
 
-extern "C"
-CUresult modGetCudaDevicePtr(sCtxModule *pCtx, const char *address_name, CUdeviceptr *pGlobalMem)
+extern "C" CUresult modGetCudaDevicePtr(sCtxModule*  pCtx,
+                                        const char*  address_name,
+                                        CUdeviceptr* pGlobalMem)
 {
     int idx = pCtx->nLastGlobalMem_;
 
-    CUresult cuStatus = cuModuleGetGlobal(&(pCtx->pGlobalMem_[idx].devicePtr),  &(pCtx->pGlobalMem_[idx].nBytes), pCtx->cuModule_, address_name);
+    CUresult cuStatus = cuModuleGetGlobal(&(pCtx->pGlobalMem_[idx].devicePtr),
+                                          &(pCtx->pGlobalMem_[idx].nBytes),
+                                          pCtx->cuModule_,
+                                          address_name);
     printf(">> modGetCudaDevicePtr<%36s >\n", pCtx->mModuleName.c_str());
-    printf("   CUDA Device Memory (0x%08x) <%24s >\n", (unsigned int)(pCtx->pGlobalMem_[idx].devicePtr), address_name);
+    printf("   CUDA Device Memory (0x%08x) <%24s >\n",
+           (unsigned int) (pCtx->pGlobalMem_[idx].devicePtr),
+           address_name);
     pCtx->pGlobalMem_[idx].address_name = address_name;
 
     if (pGlobalMem)
@@ -185,14 +205,17 @@ CUresult modGetCudaDevicePtr(sCtxModule *pCtx, const char *address_name, CUdevic
     return cuStatus;
 }
 
-extern "C"
-CUresult modGetTexRef(sCtxModule *pCtx, const char *texref_name,  CUtexref    *pTexRef)
+extern "C" CUresult modGetTexRef(sCtxModule* pCtx, const char* texref_name, CUtexref* pTexRef)
 {
     int idx = pCtx->nLastTexRef_;
 
-    CUresult cuStatus = cuModuleGetTexRef(&(pCtx->pTexRef_[idx].texRef), pCtx->cuModule_, texref_name);
+    CUresult cuStatus = cuModuleGetTexRef(&(pCtx->pTexRef_[idx].texRef),
+                                          pCtx->cuModule_,
+                                          texref_name);
     printf(">> modGetTexRef<%36s>\n", pCtx->mModuleName.c_str());
-    printf("   CUDA TextureReference (0x%08x) <24%s >\n", (size_t)(pCtx->pTexRef_[idx].texRef), texref_name);
+    printf("   CUDA TextureReference (0x%08x) <24%s >\n",
+           (size_t)(pCtx->pTexRef_[idx].texRef),
+           texref_name);
     pCtx->pTexRef_[idx].texref_name = texref_name;
 
     if (pTexRef)
@@ -201,15 +224,13 @@ CUresult modGetTexRef(sCtxModule *pCtx, const char *texref_name,  CUtexref    *p
     pCtx->nLastTexRef_++;
 
     return cuStatus;
-
 }
 
-extern "C"
-int      modFindIndex_CudaKernels(sCtxModule *pCtx, const char *func_name)
+extern "C" int modFindIndex_CudaKernels(sCtxModule* pCtx, const char* func_name)
 {
     int found = -1;
 
-    for (int i=0; i < pCtx->nLastKernel_; i++)
+    for (int i = 0; i < pCtx->nLastKernel_; i++)
     {
         if (pCtx->pCudaKernels_[i].func_name.compare(func_name))
         {
@@ -219,15 +240,13 @@ int      modFindIndex_CudaKernels(sCtxModule *pCtx, const char *func_name)
     }
 
     return found;
-
 }
 
-extern "C"
-int      modFindIndex_GlobalMem(sCtxModule *pCtx, const char *address_name)
+extern "C" int modFindIndex_GlobalMem(sCtxModule* pCtx, const char* address_name)
 {
     int found = -1;
 
-    for (int i=0; i < pCtx->nLastGlobalMem_; i++)
+    for (int i = 0; i < pCtx->nLastGlobalMem_; i++)
     {
         if (pCtx->pGlobalMem_[i].address_name.compare(address_name))
         {
@@ -239,12 +258,11 @@ int      modFindIndex_GlobalMem(sCtxModule *pCtx, const char *address_name)
     return found;
 }
 
-extern "C"
-int      modFindIndex_TexRef(sCtxModule *pCtx, const char *texref_name)
+extern "C" int modFindIndex_TexRef(sCtxModule* pCtx, const char* texref_name)
 {
     int found = -1;
 
-    for (int i=0; i < pCtx->nLastGlobalMem_; i++)
+    for (int i = 0; i < pCtx->nLastGlobalMem_; i++)
     {
         if (pCtx->pTexRef_[i].texref_name.compare(texref_name))
         {
@@ -256,8 +274,7 @@ int      modFindIndex_TexRef(sCtxModule *pCtx, const char *texref_name)
     return found;
 }
 
-extern "C"
-CUresult modLaunchKernel(sCtxModule *pCtx, CUfunction fpFunc, dim3 block, dim3 grid)
+extern "C" CUresult modLaunchKernel(sCtxModule* pCtx, CUfunction fpFunc, dim3 block, dim3 grid)
 {
     CUresult error = CUDA_SUCCESS;
     /*
@@ -267,35 +284,36 @@ CUresult modLaunchKernel(sCtxModule *pCtx, CUfunction fpFunc, dim3 block, dim3 g
         // setup execution parameters
         cutilDrvSafeCall(cuFuncSetBlockShape( fpFunc, block.x, block.y, 1 ));
         int offset = 0;
-        cutilDrvSafeCall(cuParamSeti        ( fpFunc, 0,  d_srcNV12 ));     offset += sizeof(d_srcNV12);
-        cutilDrvSafeCall(cuParamSeti        ( fpFunc, 4,  nSourcePitch ));  offset += sizeof(nSourcePitch);
-        cutilDrvSafeCall(cuParamSeti        ( fpFunc, 8,  d_dstARGB ));     offset += sizeof(d_dstARGB);
-        cutilDrvSafeCall(cuParamSeti        ( fpFunc, 12, nDestPitch ));    offset += sizeof(nDestPitch);
-        cutilDrvSafeCall(cuParamSeti        ( fpFunc, 16, width ));         offset += sizeof(width);
-        cutilDrvSafeCall(cuParamSeti        ( fpFunc, 20, height ));        offset += sizeof(height);
-        cutilDrvSafeCall(cuParamSetSize     ( fpFunc,     offset));
+        cutilDrvSafeCall(cuParamSeti        ( fpFunc, 0,  d_srcNV12 ));     offset +=
+       sizeof(d_srcNV12); cutilDrvSafeCall(cuParamSeti        ( fpFunc, 4,  nSourcePitch )); offset
+       += sizeof(nSourcePitch); cutilDrvSafeCall(cuParamSeti        ( fpFunc, 8,  d_dstARGB ));
+       offset += sizeof(d_dstARGB); cutilDrvSafeCall(cuParamSeti        ( fpFunc, 12, nDestPitch
+       ));    offset += sizeof(nDestPitch); cutilDrvSafeCall(cuParamSeti        ( fpFunc, 16, width
+       ));         offset += sizeof(width); cutilDrvSafeCall(cuParamSeti        ( fpFunc, 20,
+       height ));        offset += sizeof(height); cutilDrvSafeCall(cuParamSetSize     ( fpFunc,
+       offset));
 
         error = cuLaunchGrid( fpFunc, grid.x, grid.y );
     */
     return error;
 }
 
-
 // CUDA Module Manager (C++ implementation)
 //      filename_module - CUDA or PTX file path
 //      exec_path       - execution path
 //      nKernels        - total # of different CUDA kernel functions in the CUBIN/OTX
 //      nGlobalMem      - total # of Global Memory arrays defined in the CUBIN/PTX (i.e. constants)
-//      nTexRef         - total # of Texture References arrays defined in the CUBIN/PTX (i.e. texture arrays)
-CUmoduleManager::CUmoduleManager(const char *filename_module,
-                                 const char *exec_path,
-                                 int nKernels,
-                                 int nGlobalMem,
-                                 int nTexRef)
+//      nTexRef         - total # of Texture References arrays defined in the CUBIN/PTX (i.e.
+//      texture arrays)
+CUmoduleManager::CUmoduleManager(const char* filename_module,
+                                 const char* exec_path,
+                                 int         nKernels,
+                                 int         nGlobalMem,
+                                 int         nTexRef)
 {
     if (modInitCTX(&mCtx, filename_module, exec_path, nKernels, nGlobalMem, nTexRef) == false)
     {
-        throw (filename_module);
+        throw(filename_module);
     }
 }
 
@@ -305,42 +323,38 @@ CUmoduleManager::~CUmoduleManager()
 }
 
 // This gets the CUDA kernel function pointers from the CUBIN/PTX
-CUresult
-CUmoduleManager::GetCudaFunction(const char *func_name, CUfunction *fpCudaKernel)
+CUresult CUmoduleManager::GetCudaFunction(const char* func_name, CUfunction* fpCudaKernel)
 {
     return modGetCudaFunction(&mCtx, func_name, fpCudaKernel);
 }
 
 // This gets the CUDA device pointers from the CUBIN/PTX
-CUresult
-CUmoduleManager::GetCudaDevicePtr(const char *address_name, CUdeviceptr *pGlobalMem)
+CUresult CUmoduleManager::GetCudaDevicePtr(const char* address_name, CUdeviceptr* pGlobalMem)
 {
     return modGetCudaDevicePtr(&mCtx, address_name, pGlobalMem);
 }
 
 // This retrieves the CUDA Texture References from the CUBIN/PTX
-CUresult
-CUmoduleManager::GetTexRef(const char *texref_name, CUtexref *pTexRef)
+CUresult CUmoduleManager::GetTexRef(const char* texref_name, CUtexref* pTexRef)
 {
     return modGetTexRef(&mCtx, texref_name, pTexRef);
 }
 
 // This retrieves the CUDA Kernel Function from the CUBIN/PTX
-int CUmoduleManager::findIndex_CudaKernels(const char *func_name)
+int CUmoduleManager::findIndex_CudaKernels(const char* func_name)
 {
     return modFindIndex_CudaKernels(&mCtx, func_name);
 }
 
 // This retrieves the CUDA Global Memory functions from the CUBIN/PTX
-int CUmoduleManager::findIndex_GlobalMem(const char *address_name)
+int CUmoduleManager::findIndex_GlobalMem(const char* address_name)
 {
     return modFindIndex_GlobalMem(&mCtx, address_name);
 }
 
-int CUmoduleManager::findIndex_TexRef(const char *texref_name)
+int CUmoduleManager::findIndex_TexRef(const char* texref_name)
 {
     return modFindIndex_TexRef(&mCtx, texref_name);
-
 }
 
 // TODO figure out how to do the same thing the CUDA Runtime did in a C++ style

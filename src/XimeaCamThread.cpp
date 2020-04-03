@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include <QDebug>
-#include <qdir.h>       //QT stuff
+#include <qdir.h> //QT stuff
 #include <qtextstream.h>
 
 #include "Watchdog.h"
@@ -18,17 +18,17 @@
 #include <time.h>
 
 #if __linux__
-#include <unistd.h> //sleep
-#include <sys/time.h>
+    #include <unistd.h> //sleep
+    #include <sys/time.h>
 #else
-#include <stdint.h>
+    #include <stdint.h>
 #endif
 
 #if HALIDE
-#include "halideYuv420Conv.h"
-#include "Halide.h"
-//On Windows this might conflict with predefs
-#undef user_error
+    #include "halideYuv420Conv.h"
+    #include "Halide.h"
+    // On Windows this might conflict with predefs
+    #undef user_error
 #endif
 
 #include <opencv2/opencv.hpp>
@@ -41,32 +41,37 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <boost/date_time.hpp>
 
-XimeaCamThread::XimeaCamThread() {
-
+XimeaCamThread::XimeaCamThread()
+{
 }
 
-XimeaCamThread::~XimeaCamThread() {
-
+XimeaCamThread::~XimeaCamThread()
+{
 }
 
-//this function reads the data input vector
-bool XimeaCamThread::initialize(unsigned int id,
-                                beeCompress::MutexBuffer *pBuffer,
-                                beeCompress::MutexBuffer *pSharedMemBuffer, CalibrationInfo *calib,
-                                Watchdog *dog) {
+// this function reads the data input vector
+bool XimeaCamThread::initialize(unsigned int              id,
+                                beeCompress::MutexBuffer* pBuffer,
+                                beeCompress::MutexBuffer* pSharedMemBuffer,
+                                CalibrationInfo*          calib,
+                                Watchdog*                 dog)
+{
     _SharedMemBuffer = pSharedMemBuffer;
-    _Buffer = pBuffer;
-    _ID = id;
-    _HWID = -1;
-    _Calibration = calib;
-    _initialized = false;
-    _Dog = dog;
+    _Buffer          = pBuffer;
+    _ID              = id;
+    _HWID            = -1;
+    _Calibration     = calib;
+    _initialized     = false;
+    _Dog             = dog;
 
-    if (initCamera()) {
+    if (initCamera())
+    {
         std::cout << "Starting capture on camera " << id << std::endl;
         _initialized = startCapture();
         std::cout << "Done starting capture." << std::endl;
-    } else {
+    }
+    else
+    {
         std::cerr << "Error on camera init " << id << std::endl;
         return false;
     }
@@ -81,19 +86,21 @@ bool XimeaCamThread::initCamera()
     // Try settings that our mc124mg does not support.
     // This might become relevant with other XIMEA cams.
     // However, with our camera, it just displays warnings.
-    const bool tryAllXimeaCamSettings {false};
-    DWORD numberOfDevices { 0 };
-    XI_RETURN errorCode { XI_OK };
+    const bool tryAllXimeaCamSettings{false};
+    DWORD      numberOfDevices{0};
+    XI_RETURN  errorCode{XI_OK};
 
     // Disable bandwith-measuring for Ximea cams.
     // According to docs, this can be wonky with multiple cameras.
     xiSetParamInt(0, XI_PRM_AUTO_BANDWIDTH_CALCULATION, XI_OFF);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AUTO_BANDWIDTH_CALCULATION")) return false;
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AUTO_BANDWIDTH_CALCULATION"))
+        return false;
 
     errorCode = xiGetNumberDevices(&numberOfDevices);
-    if (!checkReturnCode(errorCode, "xiGetNumberDevices")) return false;
+    if (!checkReturnCode(errorCode, "xiGetNumberDevices"))
+        return false;
 
-    SettingsIAC *set = SettingsIAC::getInstance();
+    SettingsIAC*         set = SettingsIAC::getInstance();
     EncoderQualityConfig cfg = set->getBufferConf(_ID, 0);
 
     // If the configuration entry is invalid, just skip it.
@@ -107,7 +114,7 @@ bool XimeaCamThread::initCamera()
     for (int i = 0; i < 4; ++i)
     {
         XI_RETURN errorCode;
-        HANDLE cam;
+        HANDLE    cam;
         errorCode = xiOpenDevice(i, &cam);
         if (errorCode != XI_OK)
         {
@@ -115,15 +122,16 @@ bool XimeaCamThread::initCamera()
             continue;
         }
         char serial[20] = "";
-        errorCode = xiGetParamString(cam, XI_PRM_DEVICE_SN, serial, sizeof(serial));
-        if (errorCode != XI_OK) {
+        errorCode       = xiGetParamString(cam, XI_PRM_DEVICE_SN, serial, sizeof(serial));
+        if (errorCode != XI_OK)
+        {
             qDebug() << "Error checking serial of cam #" << i;
         }
         else
         {
             if (cfg.serialString == serial)
             {
-                _HWID = i;
+                _HWID   = i;
                 _Serial = cfg.serialString;
                 _Camera = cam;
                 // Do NOT close the camera.
@@ -141,7 +149,8 @@ bool XimeaCamThread::initCamera()
     }
     else
     {
-        sendLogMessage(0, "OPEN! hardware ID: " + std::to_string(_HWID) + " serial nr: " + _Serial);
+        sendLogMessage(0,
+                       "OPEN! hardware ID: " + std::to_string(_HWID) + " serial nr: " + _Serial);
         // Print some interesting meta data.
 
         // Temperature.
@@ -155,7 +164,8 @@ bool XimeaCamThread::initCamera()
                 if (errorCode == XI_OK)
                 {
                     std::ostringstream out;
-                    out << "Sensor temperature at " << std::setprecision(5) << std::fixed << temperature << "°C";
+                    out << "Sensor temperature at " << std::setprecision(5) << std::fixed
+                        << temperature << "°C";
                     sendLogMessage(0, out.str());
                 }
                 else
@@ -175,31 +185,36 @@ bool XimeaCamThread::initCamera()
             if (errorCode == XI_OK)
             {
                 std::ostringstream out;
-                out << "Focus distance at " << std::setprecision(5) << std::fixed << focusDistance << "cm";
+                out << "Focus distance at " << std::setprecision(5) << std::fixed << focusDistance
+                    << "cm";
                 sendLogMessage(0, out.str());
             }
             else
             {
                 sendLogMessage(0, "Focus distance unavailable.");
             }
-         }
+        }
     }
 
     // Set the bandwidth limit.
-    errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH , cfg.bitrate);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH")) return false;
-    errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH_MODE , XI_ON);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH_MODE")) return false;
+    errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH, cfg.bitrate);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH"))
+        return false;
+    errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH_MODE, XI_ON);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH_MODE"))
+        return false;
 
     // Set a format that corresponds to the Y in YUV.
     errorCode = xiSetParamInt(_Camera, XI_PRM_IMAGE_DATA_FORMAT, XI_RAW8);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_IMAGE_DATA_FORMAT")) return false;
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_IMAGE_DATA_FORMAT"))
+        return false;
 
     // Deactivate downsampling.
     if (tryAllXimeaCamSettings)
     {
         errorCode = xiSetParamInt(_Camera, XI_PRM_DOWNSAMPLING, 1);
-        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_IMAGE_DATA_FORMAT")) return false;
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_IMAGE_DATA_FORMAT"))
+            return false;
     }
 
     // Select configured properties.
@@ -207,10 +222,12 @@ bool XimeaCamThread::initCamera()
     // Exposure
     // Disable auto-exposure.
     errorCode = xiSetParamInt(_Camera, XI_PRM_AEAG, 0);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AEAG")) return false;
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AEAG"))
+        return false;
     const int exposure_us = cfg.shutter * 1000; // Micro seconds to milli seconds.
-    errorCode = xiSetParamInt(_Camera, XI_PRM_EXPOSURE, exposure_us);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_EXPOSURE")) return false;
+    errorCode             = xiSetParamInt(_Camera, XI_PRM_EXPOSURE, exposure_us);
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_EXPOSURE"))
+        return false;
 
     // Disable burst exposure - the default is off, but we make sure here.
     xiSetParamInt(_Camera, XI_PRM_TRG_SELECTOR, XI_TRG_SEL_FRAME_START);
@@ -224,9 +241,11 @@ bool XimeaCamThread::initCamera()
 
     // Gain.
     errorCode = xiSetParamInt(_Camera, XI_PRM_GAIN_SELECTOR, XI_GAIN_SELECTOR_ALL);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GAIN_SELECTOR")) return false;
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GAIN_SELECTOR"))
+        return false;
     errorCode = xiSetParamFloat(_Camera, XI_PRM_GAIN, static_cast<float>(cfg.gain));
-    if (!checkReturnCode(errorCode, "xiSetParamFloat XI_PRM_GAIN")) return false;
+    if (!checkReturnCode(errorCode, "xiSetParamFloat XI_PRM_GAIN"))
+        return false;
 
     // Whitebalance.
     if (tryAllXimeaCamSettings)
@@ -246,34 +265,49 @@ bool XimeaCamThread::initCamera()
     if (triggerSource != XI_TRG_OFF)
     {
         errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_SELECTOR, cfg.hwtriggersrc);
-        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_SELECTOR")) return false;
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_SELECTOR"))
+            return false;
         errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_MODE, XI_GPI_TRIGGER);
-        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_MODE")) return false;
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_MODE"))
+            return false;
     }
     errorCode = xiSetParamInt(_Camera, XI_PRM_TRG_SOURCE, triggerSource);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_TRG_SOURCE")) return false;
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_TRG_SOURCE"))
+        return false;
 
     // Set the buffering behavior. The default is no buffering.
     errorCode = xiSetParamInt(_Camera, XI_PRM_BUFFERS_QUEUE_SIZE, cfg.hwbuffersize + 1);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_BUFFERS_QUEUE_SIZE")) return false;
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_BUFFERS_QUEUE_SIZE"))
+        return false;
     errorCode = xiSetParamInt(_Camera, XI_PRM_RECENT_FRAME, cfg.hwbuffersize == 0 ? 1 : 0);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_RECENT_FRAME")) return false;
+    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_RECENT_FRAME"))
+        return false;
     if (cfg.hwbuffersize > 0)
     {
-        errorCode = xiSetParamInt(_Camera, XI_PRM_ACQ_BUFFER_SIZE, 3 * (cfg.hwbuffersize+1) * 3008 * 4112);
-        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_ACQ_BUFFER_SIZE")) return false;
+        errorCode = xiSetParamInt(_Camera,
+                                  XI_PRM_ACQ_BUFFER_SIZE,
+                                  3 * (cfg.hwbuffersize + 1) * 3008 * 4112);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_ACQ_BUFFER_SIZE"))
+            return false;
     }
 
-    //errorCode = xiSetParamInt(_Camera, XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
-    //if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_BUFFER_POLICY")) return false;
+    // errorCode = xiSetParamInt(_Camera, XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
+    // if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_BUFFER_POLICY")) return false;
 
     // Set maximum transport buffer size.
     {
-        int max_transport_buf_size { 0 };
-        errorCode = xiGetParamInt(_Camera, XI_PRM_ACQ_TRANSPORT_BUFFER_SIZE XI_PRM_INFO_MAX, &max_transport_buf_size);
-        if (!checkReturnCode(errorCode, "xiGetParamInt XI_PRM_ACQ_TRANSPORT_BUFFER_SIZE XI_PRM_INFO_MAX")) return false;
-        errorCode = xiSetParamInt(_Camera, XI_PRM_ACQ_TRANSPORT_BUFFER_SIZE, max_transport_buf_size);
-        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_ACQ_TRANSPORT_BUFFER_SIZE")) return false;
+        int max_transport_buf_size{0};
+        errorCode = xiGetParamInt(_Camera,
+                                  XI_PRM_ACQ_TRANSPORT_BUFFER_SIZE XI_PRM_INFO_MAX,
+                                  &max_transport_buf_size);
+        if (!checkReturnCode(errorCode,
+                             "xiGetParamInt XI_PRM_ACQ_TRANSPORT_BUFFER_SIZE XI_PRM_INFO_MAX"))
+            return false;
+        errorCode = xiSetParamInt(_Camera,
+                                  XI_PRM_ACQ_TRANSPORT_BUFFER_SIZE,
+                                  max_transport_buf_size);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_ACQ_TRANSPORT_BUFFER_SIZE"))
+            return false;
     }
 
     _initialized = true;
@@ -281,7 +315,8 @@ bool XimeaCamThread::initCamera()
 }
 
 // This function starts the streaming from the camera
-bool XimeaCamThread::startCapture() {
+bool XimeaCamThread::startCapture()
+{
     auto errorCode = xiStartAcquisition(_Camera);
     if (errorCode != XI_OK)
     {
@@ -291,15 +326,15 @@ bool XimeaCamThread::startCapture() {
     return true;
 }
 
-void XimeaCamThread::run() {
+void XimeaCamThread::run()
+{
     char logfilepathFull[256];
 
-    SettingsIAC *set = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg = set->getBufferConf(_ID, 0);
-    std::string logdir = set->getValueOfParam<std::string>(
-                             IMACQUISITION::LOGDIR);
+    SettingsIAC*         set    = SettingsIAC::getInstance();
+    EncoderQualityConfig cfg    = set->getBufferConf(_ID, 0);
+    std::string          logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
 
-    const unsigned int vwidth = static_cast<unsigned int>(cfg.width);
+    const unsigned int vwidth  = static_cast<unsigned int>(cfg.width);
     const unsigned int vheight = static_cast<unsigned int>(cfg.height);
 
     ////////////////////////WINDOWS/////////////////////
@@ -308,8 +343,8 @@ void XimeaCamThread::run() {
 
     ////////////////////////LINUX/////////////////////
 #ifdef __linux__
-    //Timestamp housekeeping
-    struct timeval tv;
+    // Timestamp housekeeping
+    struct timeval  tv;
     struct timezone tz;
 
     gettimeofday(&tv, &tz);
@@ -317,22 +352,25 @@ void XimeaCamThread::run() {
 #endif
     ////////////////////////////////////////////////////
 
-    //Load a reference image for contrast analyzation
+    // Load a reference image for contrast analyzation
     cv::Mat ref;
-    if (_Calibration->doCalibration) {
-        FILE *fp = fopen("refIm.jpg", "r");
-        if (fp) {
+    if (_Calibration->doCalibration)
+    {
+        FILE* fp = fopen("refIm.jpg", "r");
+        if (fp)
+        {
             ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
             fclose(fp);
-        } else {
-            std::cout << "Warning: not found reference image refIm.jpg."
-                      << std::endl;
+        }
+        else
+        {
+            std::cout << "Warning: not found reference image refIm.jpg." << std::endl;
         }
     }
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
-    unsigned long lastCameraTimestampMicroseconds {0};
-    unsigned long lastImageSequenceNumber {0};
+    unsigned long            lastCameraTimestampMicroseconds{0};
+    unsigned long            lastImageSequenceNumber{0};
     boost::posix_time::ptime lastCameraTimestamp;
 
     // Preallocate image buffer on stack in order to safe performance later.
@@ -343,16 +381,16 @@ void XimeaCamThread::run() {
         _Dog->pulse(static_cast<int>(_ID));
 
         XI_IMG image;
-        image.size = sizeof(XI_IMG);
-        image.bp = static_cast<LPVOID> (&imageBuffer[0]);
+        image.size    = sizeof(XI_IMG);
+        image.bp      = static_cast<LPVOID>(&imageBuffer[0]);
         image.bp_size = imageBuffer.size();
 
         const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-        //Retrieve image and metadata
+        // Retrieve image and metadata
         auto returnCode = xiGetImage(_Camera, 1000 * 2, &image);
-        //Get the timestamp
+        // Get the timestamp
         const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
-        const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point end        = std::chrono::steady_clock::now();
         const unsigned long currentCameraTimestampMicroseconds = image.tsUSec;
 
         // Image sequence sanity check.
@@ -367,22 +405,24 @@ void XimeaCamThread::run() {
             std::cout << str.toStdString() << std::endl;
             generateLog(logfilepathFull, str);
 
-            for (auto &what : std::map<std::string, int> {{"Transport layer loss: ", XI_CNT_SEL_TRANSPORT_SKIPPED_FRAMES},
-                                {"API layer loss: ", XI_CNT_SEL_API_SKIPPED_FRAMES}})
+            for (auto& what : std::map<std::string, int>{
+                     {"Transport layer loss: ", XI_CNT_SEL_TRANSPORT_SKIPPED_FRAMES},
+                     {"API layer loss: ", XI_CNT_SEL_API_SKIPPED_FRAMES}})
             {
                 xiSetParamInt(_Camera, XI_PRM_COUNTER_SELECTOR, what.second);
-                int result {0};
+                int result{0};
                 xiGetParamInt(_Camera, XI_PRM_COUNTER_VALUE, &result);
                 std::cout << what.first << result << std::endl;
             }
-
         }
         lastImageSequenceNumber = image.nframe;
 
         // Reset the camera timestamp?
-        if (lastCameraTimestampMicroseconds == 0 || (lastCameraTimestampMicroseconds > currentCameraTimestampMicroseconds))
+        if (lastCameraTimestampMicroseconds == 0 ||
+            (lastCameraTimestampMicroseconds > currentCameraTimestampMicroseconds))
         {
-            if (lastCameraTimestampMicroseconds != 0 && lastCameraTimestamp > wallClockNow && loopCount > 10)
+            if (lastCameraTimestampMicroseconds != 0 && lastCameraTimestamp > wallClockNow &&
+                loopCount > 10)
             {
                 QString str("Warning: camera clock faster than wall time. Last camera time: ");
                 str.append(boost::posix_time::to_iso_extended_string(lastCameraTimestamp).c_str());
@@ -395,8 +435,9 @@ void XimeaCamThread::run() {
         }
         else
         {
-            const long microsecondDelta = static_cast<const long>(currentCameraTimestampMicroseconds - lastCameraTimestampMicroseconds);
-            assert (microsecondDelta >= 0);
+            const long microsecondDelta = static_cast<const long>(
+                currentCameraTimestampMicroseconds - lastCameraTimestampMicroseconds);
+            assert(microsecondDelta >= 0);
             lastCameraTimestamp += boost::posix_time::microseconds(microsecondDelta);
         }
         lastCameraTimestampMicroseconds = currentCameraTimestampMicroseconds;
@@ -407,9 +448,11 @@ void XimeaCamThread::run() {
             continue;
         }
 
-        //Check if processing a frame took longer than X seconds. If so, log the event.
-        const long duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-        if (duration > 2 * (1000000 / 6)) {
+        // Check if processing a frame took longer than X seconds. If so, log the event.
+        const long duration =
+            std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+        if (duration > 2 * (1000000 / 6))
+        {
             QString str("Warning: Processing time too long: ");
             str.append(std::to_string(duration).c_str());
             str.append(" on camera ");
@@ -418,39 +461,55 @@ void XimeaCamThread::run() {
             generateLog(logfilepathFull, str);
         }
 
-        //In case an error occurs, simply log it and restart the application.
-        //Sometimes fetching images starts to fail and cameras need to be re-initialized.
-        //However, this will solve the issue in the general case
-        if (returnCode != XI_OK) {
-            const std::string message = "Aquisition failed with error code " + std::to_string(returnCode);
+        // In case an error occurs, simply log it and restart the application.
+        // Sometimes fetching images starts to fail and cameras need to be re-initialized.
+        // However, this will solve the issue in the general case
+        if (returnCode != XI_OK)
+        {
+            const std::string message = "Aquisition failed with error code " +
+                                        std::to_string(returnCode);
             logCriticalError(message, message);
             std::exit(1);
         }
 
-
-        //converts the time in seconds to local time
-        const std::time_t timestamp { image.tsSec };
-        const struct tm *timeinfo { localtime(&timestamp) };
+        // converts the time in seconds to local time
+        const std::time_t timestamp{image.tsSec};
+        const struct tm*  timeinfo{localtime(&timestamp)};
 
         localCounter(oldTime, timeinfo->tm_sec);
         oldTime = timeinfo->tm_sec;
 
-        //Not in calibration mode. Move image to buffer for further procession
-        if (!_Calibration->doCalibration) {
+        // Not in calibration mode. Move image to buffer for further procession
+        if (!_Calibration->doCalibration)
+        {
             // Crop the image to the expected size (e.g. 4000x3000).
-            // This is necessary, because the encoder/codec requires the image sizes to be some multiple of X.
-            cv::Mat wholeImageMatrix(cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)), CV_8UC1, image.bp, cv::Mat::AUTO_STEP);
-            const unsigned int marginToBeCroppedX = (image.width > vwidth) ? image.width - vwidth : 0;
-            const unsigned int marginToBeCroppedY = (image.height > vheight) ? image.height - vheight : 0;
+            // This is necessary, because the encoder/codec requires the image sizes to be
+            // some multiple of X.
+            cv::Mat wholeImageMatrix(
+                cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)),
+                CV_8UC1,
+                image.bp,
+                cv::Mat::AUTO_STEP);
+            const unsigned int marginToBeCroppedX = (image.width > vwidth) ? image.width - vwidth
+                                                                           : 0;
+            const unsigned int marginToBeCroppedY = (image.height > vheight)
+                                                        ? image.height - vheight
+                                                        : 0;
             if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
             {
-                const int cropLeft = marginToBeCroppedX / 2;
-                const int cropTop = marginToBeCroppedY / 2;
-                cv::Mat croppedImageMatrix = wholeImageMatrix(cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
+                const int cropLeft           = marginToBeCroppedX / 2;
+                const int cropTop            = marginToBeCroppedY / 2;
+                cv::Mat   croppedImageMatrix = wholeImageMatrix(cv::Rect(cropLeft,
+                                                                       cropTop,
+                                                                       static_cast<int>(vwidth),
+                                                                       static_cast<int>(vheight)));
                 croppedImageMatrix.copyTo(wholeImageMatrix);
             }
-            const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(lastCameraTimestamp) + "Z";
-            auto buf = std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
+            const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
+                                                   lastCameraTimestamp) +
+                                               "Z";
+            auto buf =
+                std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
             memcpy(buf.get()->data, wholeImageMatrix.data, vwidth * vheight);
 
 #ifndef USE_ENCODER
@@ -462,23 +521,24 @@ void XimeaCamThread::run() {
             {
                 cv::Mat smallMat;
                 cv::resize(wholeImageMatrix, smallMat, cv::Size(400, 300));
-                cv::imshow("Display window", smallMat );
+                cv::imshow("Display window", smallMat);
             }
 #endif
-            //For every 50th picture create image statistics
-            //if (loopCount % 50 == 0)
+            // For every 50th picture create image statistics
+            // if (loopCount % 50 == 0)
             //_AnalysisBuffer->push(buf);
         }
-        //Calibrating cameras only
-        else if (loopCount % 3 == 0) {
+        // Calibrating cameras only
+        else if (loopCount % 3 == 0)
+        {
 
-            //Analyze image properties
+            // Analyze image properties
             assert(false);
-            //analyzeImage(_ID, &cimg, &ref, _Calibration);
+            // analyzeImage(_ID, &cimg, &ref, _Calibration);
         }
     }
     // This code will never be executed.
-    assert (false);
+    assert(false);
     auto errorCode = xiStopAcquisition(_Camera);
     checkReturnCode(errorCode, "xiStopAcquisition");
     errorCode = xiCloseDevice(_Camera);
@@ -510,14 +570,14 @@ void XimeaCamThread::logCriticalError(cv::Error e) {
 }
 */
 
-void XimeaCamThread::logCriticalError(const std::string &shortMsg, const std::string &message) {
+void XimeaCamThread::logCriticalError(const std::string& shortMsg, const std::string& message)
+{
     if (!message.empty())
     {
-        char logfilepathFull[256];
+        char              logfilepathFull[256];
         std::stringstream str;
-        SettingsIAC *set = SettingsIAC::getInstance();
-        std::string logdir = set->getValueOfParam<std::string>(
-                                 IMACQUISITION::LOGDIR);
+        SettingsIAC*      set    = SettingsIAC::getInstance();
+        std::string       logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
         sprintf(logfilepathFull, logdir.c_str(), _ID);
         generateLog(logfilepathFull, message.c_str());
     }
@@ -539,51 +599,62 @@ void XimeaCamThread::PrintCameraInfo(CameraInfo *pCamInfo) {
                    + QString(pCamInfo->firmwareBuildTime) + "\n" + "\n");
 }*/
 
-bool XimeaCamThread::checkReturnCode(XI_RETURN errorCode, const std::string &operation) {
-    if (errorCode != XI_OK) {
+bool XimeaCamThread::checkReturnCode(XI_RETURN errorCode, const std::string& operation)
+{
+    if (errorCode != XI_OK)
+    {
         sendLogMessage(1,
-                       "[" + QString::fromStdString(operation) + "] error code " + QString::number(errorCode));
+                       "[" + QString::fromStdString(operation) + "] error code " +
+                           QString::number(errorCode));
         return false;
     }
     return true;
 }
 
-void XimeaCamThread::sendLogMessage(int logLevel, QString message) {
+void XimeaCamThread::sendLogMessage(int logLevel, QString message)
+{
     emit logMessage(logLevel, "Cam " + QString::number(_ID) + " : " + message);
 }
-void XimeaCamThread::sendLogMessage(int logLevel, std::string message) {
+void XimeaCamThread::sendLogMessage(int logLevel, std::string message)
+{
     sendLogMessage(logLevel, QString::fromStdString(message));
 }
-void XimeaCamThread::sendLogMessage(int logLevel, const char *message) {
+void XimeaCamThread::sendLogMessage(int logLevel, const char* message)
+{
     sendLogMessage(logLevel, QString(message));
 }
 
-void XimeaCamThread::cleanFolder(QString path, QString message) {
+void XimeaCamThread::cleanFolder(QString path, QString message)
+{
     QDir dir(path);
     dir.setNameFilters(QStringList() << "*.jpeg");
     dir.setFilter(QDir::Files);
-    for (const auto & dirFile : dir.entryList()) {
+    for (const auto& dirFile : dir.entryList())
+    {
         dir.remove(dirFile);
     }
     QString filename = (path + "log.txt");
-    QFile file(filename);
+    QFile   file(filename);
     file.open(QIODevice::Append);
     QTextStream stream(&file);
     stream << message << "\r\n";
     file.close();
 }
 
-void XimeaCamThread::generateLog(QString path, QString message) {
+void XimeaCamThread::generateLog(QString path, QString message)
+{
     QString filename = (path + "log.txt");
-    QFile file(filename);
+    QFile   file(filename);
     file.open(QIODevice::Append);
     QTextStream stream(&file);
     stream << QString(getTimestamp().c_str()) << ": " << message << "\r\n";
     file.close();
 }
 
-void XimeaCamThread::localCounter(int oldTime, int newTime) {
-    if (oldTime != newTime) {
+void XimeaCamThread::localCounter(int oldTime, int newTime)
+{
+    if (oldTime != newTime)
+    {
         _LocalCounter = 0;
     }
     _LocalCounter++;

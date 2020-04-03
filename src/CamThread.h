@@ -4,16 +4,18 @@
 #include <QThread>
 #include <mutex>
 
-// 
-struct CalibrationInfo {
-    bool        doCalibration;
-    double      calibrationData[4][4];
-    std::mutex  dataAccess;
+//
+struct CalibrationInfo
+{
+    bool       doCalibration;
+    double     calibrationData[4][4];
+    std::mutex dataAccess;
 };
 
 // Forward declare not-required types.
 class Watchdog;
-namespace beeCompress {
+namespace beeCompress
+{
     class MutexBuffer;
 }
 
@@ -23,10 +25,11 @@ namespace beeCompress {
  */
 class CamThread : public QThread
 {
-    Q_OBJECT   // generates the MOC
+    Q_OBJECT
 
 protected:
     CamThread() = default;
+
 public:
     virtual ~CamThread();
 
@@ -39,10 +42,12 @@ public:
      * @param Pointer to calibration data storeage
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
-    virtual bool initialize(unsigned int id, beeCompress::MutexBuffer *pBuffer,
-                                   beeCompress::MutexBuffer *pSharedMemBuffer, CalibrationInfo *calib,
-                                   Watchdog *dog) = 0;  //here goes the camera ID (from 0 to 3)
-    virtual bool isInitialized() const = 0;
+    virtual bool initialize(unsigned int              id,
+                            beeCompress::MutexBuffer* pBuffer,
+                            beeCompress::MutexBuffer* pSharedMemBuffer,
+                            CalibrationInfo*          calib,
+                            Watchdog* dog) = 0; // here goes the camera ID (from 0 to 3)
+    virtual bool isInitialized() const     = 0;
 
 signals:
     void logMessage(int logLevel, QString message);

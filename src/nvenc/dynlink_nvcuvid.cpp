@@ -9,69 +9,64 @@
  *
  */
 
-
 #include <stdio.h>
 #include "dynlink_nvcuvid.h"
 
-tcuvidCreateVideoSource               *cuvidCreateVideoSource;
-tcuvidCreateVideoSourceW              *cuvidCreateVideoSourceW;
-tcuvidDestroyVideoSource              *cuvidDestroyVideoSource;
-tcuvidSetVideoSourceState             *cuvidSetVideoSourceState;
-tcuvidGetVideoSourceState             *cuvidGetVideoSourceState;
-tcuvidGetSourceVideoFormat            *cuvidGetSourceVideoFormat;
-tcuvidGetSourceAudioFormat            *cuvidGetSourceAudioFormat;
+tcuvidCreateVideoSource*    cuvidCreateVideoSource;
+tcuvidCreateVideoSourceW*   cuvidCreateVideoSourceW;
+tcuvidDestroyVideoSource*   cuvidDestroyVideoSource;
+tcuvidSetVideoSourceState*  cuvidSetVideoSourceState;
+tcuvidGetVideoSourceState*  cuvidGetVideoSourceState;
+tcuvidGetSourceVideoFormat* cuvidGetSourceVideoFormat;
+tcuvidGetSourceAudioFormat* cuvidGetSourceAudioFormat;
 
-tcuvidCreateVideoParser               *cuvidCreateVideoParser;
-tcuvidParseVideoData                  *cuvidParseVideoData;
-tcuvidDestroyVideoParser              *cuvidDestroyVideoParser;
+tcuvidCreateVideoParser*  cuvidCreateVideoParser;
+tcuvidParseVideoData*     cuvidParseVideoData;
+tcuvidDestroyVideoParser* cuvidDestroyVideoParser;
 
-tcuvidCreateDecoder                   *cuvidCreateDecoder;
-tcuvidDestroyDecoder                  *cuvidDestroyDecoder;
-tcuvidDecodePicture                   *cuvidDecodePicture;
+tcuvidCreateDecoder*  cuvidCreateDecoder;
+tcuvidDestroyDecoder* cuvidDestroyDecoder;
+tcuvidDecodePicture*  cuvidDecodePicture;
 
-tcuvidMapVideoFrame                   *cuvidMapVideoFrame;
-tcuvidUnmapVideoFrame                 *cuvidUnmapVideoFrame;
+tcuvidMapVideoFrame*   cuvidMapVideoFrame;
+tcuvidUnmapVideoFrame* cuvidUnmapVideoFrame;
 
 #if defined(WIN64) || defined(_WIN64) || defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
-tcuvidMapVideoFrame64                 *cuvidMapVideoFrame64;
-tcuvidUnmapVideoFrame64               *cuvidUnmapVideoFrame64;
+tcuvidMapVideoFrame64*   cuvidMapVideoFrame64;
+tcuvidUnmapVideoFrame64* cuvidUnmapVideoFrame64;
 #endif
 
-//tcuvidGetVideoFrameSurface            *cuvidGetVideoFrameSurface;
-tcuvidCtxLockCreate                   *cuvidCtxLockCreate;
-tcuvidCtxLockDestroy                  *cuvidCtxLockDestroy;
-tcuvidCtxLock                         *cuvidCtxLock;
-tcuvidCtxUnlock                       *cuvidCtxUnlock;
-
+// tcuvidGetVideoFrameSurface            *cuvidGetVideoFrameSurface;
+tcuvidCtxLockCreate*  cuvidCtxLockCreate;
+tcuvidCtxLockDestroy* cuvidCtxLockDestroy;
+tcuvidCtxLock*        cuvidCtxLock;
+tcuvidCtxUnlock*      cuvidCtxUnlock;
 
 // Auto-lock helper for C++ applications
-CCtxAutoLock::CCtxAutoLock(CUvideoctxlock ctx) 
-    : m_ctx(ctx) 
+CCtxAutoLock::CCtxAutoLock(CUvideoctxlock ctx)
+: m_ctx(ctx)
 {
-    cuvidCtxLock(m_ctx, 0); 
+    cuvidCtxLock(m_ctx, 0);
 }
 CCtxAutoLock::~CCtxAutoLock()
-{ 
-    cuvidCtxUnlock(m_ctx, 0); 
+{
+    cuvidCtxUnlock(m_ctx, 0);
 }
-
-
 
 #define STRINGIFY(X) #X
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-#include <Windows.h>
+    #include <Windows.h>
 
-#ifdef UNICODE
-   static LPCWSTR __DriverLibName = L"nvcuvid.dll";
-#else
-   static LPCSTR __DriverLibName = "nvcuvid.dll";
-#endif
-
+    #ifdef UNICODE
+static LPCWSTR __DriverLibName = L"nvcuvid.dll";
+    #else
+static LPCSTR __DriverLibName = "nvcuvid.dll";
+    #endif
 
 typedef HMODULE DLLDRIVER;
 
-static CUresult LOAD_LIBRARY(DLLDRIVER *pInstance)
+static CUresult LOAD_LIBRARY(DLLDRIVER* pInstance)
 {
     *pInstance = LoadLibrary(__DriverLibName);
 
@@ -84,31 +79,33 @@ static CUresult LOAD_LIBRARY(DLLDRIVER *pInstance)
     return CUDA_SUCCESS;
 }
 
-#define GET_PROC_EX(name, alias, required)                     \
-    alias = (t##name *)GetProcAddress(DriverLib, #name);               \
-    if (alias == NULL && required) {                                    \
-        printf("Failed to find required function \"%s\" in %s\n",       \
-               #name, __DriverLibName);                                  \
-        return CUDA_ERROR_UNKNOWN;                                      \
-    }
+    #define GET_PROC_EX(name, alias, required)                                                    \
+        alias = (t##name*) GetProcAddress(DriverLib, #name);                                      \
+        if (alias == NULL && required)                                                            \
+        {                                                                                         \
+            printf("Failed to find required function \"%s\" in %s\n", #name, __DriverLibName);    \
+            return CUDA_ERROR_UNKNOWN;                                                            \
+        }
 
-#define GET_PROC_EX_V2(name, alias, required)                           \
-    alias = (t##name *)GetProcAddress(DriverLib, STRINGIFY(name##_v2));\
-    if (alias == NULL && required) {                                    \
-        printf("Failed to find required function \"%s\" in %s\n",       \
-               STRINGIFY(name##_v2), __DriverLibName);                       \
-        return CUDA_ERROR_UNKNOWN;                                      \
-    }
+    #define GET_PROC_EX_V2(name, alias, required)                                                 \
+        alias = (t##name*) GetProcAddress(DriverLib, STRINGIFY(name##_v2));                       \
+        if (alias == NULL && required)                                                            \
+        {                                                                                         \
+            printf("Failed to find required function \"%s\" in %s\n",                             \
+                   STRINGIFY(name##_v2),                                                          \
+                   __DriverLibName);                                                              \
+            return CUDA_ERROR_UNKNOWN;                                                            \
+        }
 
 #elif defined(__unix__) || defined(__APPLE__) || defined(__MACOSX)
 
-#include <dlfcn.h>
+    #include <dlfcn.h>
 
 static char __DriverLibName[] = "libnvcuvid.so";
 
-typedef void *DLLDRIVER;
+typedef void* DLLDRIVER;
 
-static CUresult LOAD_LIBRARY(DLLDRIVER *pInstance)
+static CUresult LOAD_LIBRARY(DLLDRIVER* pInstance)
 {
     *pInstance = dlopen(__DriverLibName, RTLD_NOW);
 
@@ -121,38 +118,42 @@ static CUresult LOAD_LIBRARY(DLLDRIVER *pInstance)
     return CUDA_SUCCESS;
 }
 
-#define GET_PROC_EX(name, alias, required)                              \
-    alias = (t##name *)dlsym(DriverLib, #name);                        \
-    if (alias == NULL && required) {                                    \
-        printf("Failed to find required function \"%s\" in %s\n",       \
-               #name, __DriverLibName);                                  \
-        return CUDA_ERROR_UNKNOWN;                                      \
-    }
+    #define GET_PROC_EX(name, alias, required)                                                    \
+        alias = (t##name*) dlsym(DriverLib, #name);                                               \
+        if (alias == NULL && required)                                                            \
+        {                                                                                         \
+            printf("Failed to find required function \"%s\" in %s\n", #name, __DriverLibName);    \
+            return CUDA_ERROR_UNKNOWN;                                                            \
+        }
 
-#define GET_PROC_EX_V2(name, alias, required)                           \
-    alias = (t##name *)dlsym(DriverLib, STRINGIFY(name##_v2));         \
-    if (alias == NULL && required) {                                    \
-        printf("Failed to find required function \"%s\" in %s\n",       \
-               STRINGIFY(name##_v2), __DriverLibName);                    \
-        return CUDA_ERROR_UNKNOWN;                                      \
-    }
+    #define GET_PROC_EX_V2(name, alias, required)                                                 \
+        alias = (t##name*) dlsym(DriverLib, STRINGIFY(name##_v2));                                \
+        if (alias == NULL && required)                                                            \
+        {                                                                                         \
+            printf("Failed to find required function \"%s\" in %s\n",                             \
+                   STRINGIFY(name##_v2),                                                          \
+                   __DriverLibName);                                                              \
+            return CUDA_ERROR_UNKNOWN;                                                            \
+        }
 
 #else
-#error unsupported platform
+    #error unsupported platform
 #endif
 
-#define CHECKED_CALL(call)              \
-    do {                                \
-        CUresult result = (call);       \
-        if (CUDA_SUCCESS != result) {   \
-            return result;              \
-        }                               \
-    } while(0)
+#define CHECKED_CALL(call)                                                                        \
+    do                                                                                            \
+    {                                                                                             \
+        CUresult result = (call);                                                                 \
+        if (CUDA_SUCCESS != result)                                                               \
+        {                                                                                         \
+            return result;                                                                        \
+        }                                                                                         \
+    } while (0)
 
-#define GET_PROC_REQUIRED(name) GET_PROC_EX(name,name,1)
-#define GET_PROC_OPTIONAL(name) GET_PROC_EX(name,name,0)
-#define GET_PROC(name)          GET_PROC_REQUIRED(name)
-#define GET_PROC_V2(name)       GET_PROC_EX_V2(name,name,1)
+#define GET_PROC_REQUIRED(name) GET_PROC_EX(name, name, 1)
+#define GET_PROC_OPTIONAL(name) GET_PROC_EX(name, name, 0)
+#define GET_PROC(name) GET_PROC_REQUIRED(name)
+#define GET_PROC_V2(name) GET_PROC_EX_V2(name, name, 1)
 
 CUresult CUDAAPI cuvidInit(unsigned int Flags)
 {
@@ -187,7 +188,7 @@ CUresult CUDAAPI cuvidInit(unsigned int Flags)
     GET_PROC(cuvidUnmapVideoFrame);
 #endif
 
-//    GET_PROC(cuvidGetVideoFrameSurface);
+    //    GET_PROC(cuvidGetVideoFrameSurface);
     GET_PROC(cuvidCtxLockCreate);
     GET_PROC(cuvidCtxLockDestroy);
     GET_PROC(cuvidCtxLock);

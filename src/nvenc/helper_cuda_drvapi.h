@@ -9,7 +9,8 @@
  *
  */
 
-// Helper functions for CUDA Driver API error handling (make sure that CUDA_H or the DYNLINK API version is included in your projects)
+// Helper functions for CUDA Driver API error handling (make sure that CUDA_H or the DYNLINK API
+// version is included in your projects)
 #ifndef HELPER_CUDA_DRVAPI_H
 #define HELPER_CUDA_DRVAPI_H
 
@@ -22,66 +23,79 @@
 #include "helper_string.h"
 
 #ifndef __CUDA_API_VERSION
-#define __CUDA_API_VERSION 4000
+    #define __CUDA_API_VERSION 4000
 #endif
 
 #ifndef MAX
-#define MAX(a,b) (a > b ? a : b)
+    #define MAX(a, b) (a > b ? a : b)
 #endif
 
 #ifndef EXIT_WAIVED
-#define EXIT_WAIVED 2
+    #define EXIT_WAIVED 2
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
 
-// add a level of protection to the CUDA SDK samples, let's force samples to explicitly include CUDA.H
-#ifdef  __cuda_cuda_h__
-// This will output the proper CUDA error strings in the event that a CUDA host call returns an error
-#ifndef checkCudaErrors
-#define checkCudaErrors(err)  __checkCudaErrors (err, __FILE__, __LINE__)
+// add a level of protection to the CUDA SDK samples, let's force samples to explicitly include
+// CUDA.H
+#ifdef __cuda_cuda_h__
+    // This will output the proper CUDA error strings in the event that a CUDA host call returns an
+    // error
+    #ifndef checkCudaErrors
+        #define checkCudaErrors(err) __checkCudaErrors(err, __FILE__, __LINE__)
 
 // These are the inline versions for all of the SDK helper functions
-inline void __checkCudaErrors(CUresult err, const char *file, const int line)
+inline void __checkCudaErrors(CUresult err, const char* file, const int line)
 {
     if (CUDA_SUCCESS != err)
     {
-        fprintf(stderr, "checkCudaErrors() Driver API error = %04d \"%s\" from file <%s>, line %i.\n",
-                err, getCudaDrvErrorString(err), file, line);
+        fprintf(stderr,
+                "checkCudaErrors() Driver API error = %04d \"%s\" from file <%s>, line %i.\n",
+                err,
+                getCudaDrvErrorString(err),
+                file,
+                line);
         exit(EXIT_FAILURE);
     }
 }
-#endif
+    #endif
 
-#ifdef getLastCudaDrvErrorMsg
-#undef getLastCudaDrvErrorMsg
-#endif
+    #ifdef getLastCudaDrvErrorMsg
+        #undef getLastCudaDrvErrorMsg
+    #endif
 
-#define getLastCudaDrvErrorMsg(msg)           __getLastCudaDrvErrorMsg  (msg, __FILE__, __LINE__)
+    #define getLastCudaDrvErrorMsg(msg) __getLastCudaDrvErrorMsg(msg, __FILE__, __LINE__)
 
-inline void __getLastCudaDrvErrorMsg(const char *msg, const char *file, const int line)
+inline void __getLastCudaDrvErrorMsg(const char* msg, const char* file, const int line)
 {
     CUresult err = cuCtxSynchronize();
 
     if (CUDA_SUCCESS != err)
     {
         fprintf(stderr, "getLastCudaDrvErrorMsg -> %s", msg);
-        fprintf(stderr, "getLastCudaDrvErrorMsg -> cuCtxSynchronize API error = %04d \"%s\" in file <%s>, line %i.\n",
-                err, getCudaDrvErrorString(err), file, line);
+        fprintf(stderr,
+                "getLastCudaDrvErrorMsg -> cuCtxSynchronize API error = %04d \"%s\" in file <%s>, "
+                "line %i.\n",
+                err,
+                getCudaDrvErrorString(err),
+                file,
+                line);
         exit(EXIT_FAILURE);
     }
 }
 
 // This function wraps the CUDA Driver API into a template function
-template <class T>
-inline void getCudaAttribute(T *attribute, CUdevice_attribute device_attribute, int device)
+template<class T>
+inline void getCudaAttribute(T* attribute, CUdevice_attribute device_attribute, int device)
 {
     CUresult error_result = cuDeviceGetAttribute(attribute, device_attribute, device);
 
     if (error_result != CUDA_SUCCESS)
     {
-        printf("cuDeviceGetAttribute returned %d\n-> %s\n", (int)error_result, getCudaDrvErrorString(error_result));
+        printf("cuDeviceGetAttribute returned %d\n-> %s\n",
+               (int) error_result,
+               getCudaDrvErrorString(error_result));
         exit(EXIT_SUCCESS);
     }
 }
@@ -97,22 +111,19 @@ inline int _ConvertSMVer2CoresDRV(int major, int minor)
         int Cores;
     } sSMtoCores;
 
-    sSMtoCores nGpuArchCoresPerSM[] =
-    {
-        { 0x10,  8 }, // Tesla Generation (SM 1.0) G80 class
-        { 0x11,  8 }, // Tesla Generation (SM 1.1) G8x class
-        { 0x12,  8 }, // Tesla Generation (SM 1.2) G9x class
-        { 0x13,  8 }, // Tesla Generation (SM 1.3) GT200 class
-        { 0x20, 32 }, // Fermi Generation (SM 2.0) GF100 class
-        { 0x21, 48 }, // Fermi Generation (SM 2.1) GF10x class
-        { 0x30, 192}, // Kepler Generation (SM 3.0) GK10x class
-        { 0x32, 192}, // Kepler Generation (SM 3.2) GK10x class
-        { 0x35, 192}, // Kepler Generation (SM 3.5) GK11x class
-        { 0x37, 192}, // Kepler Generation (SM 3.7) GK21x class
-        { 0x50, 128}, // Maxwell Generation (SM 5.0) GM10x class
-        { 0x52, 128}, // Maxwell Generation (SM 5.2) GM20x class
-        {   -1, -1 }
-    };
+    sSMtoCores nGpuArchCoresPerSM[] = {{0x10, 8},   // Tesla Generation (SM 1.0) G80 class
+                                       {0x11, 8},   // Tesla Generation (SM 1.1) G8x class
+                                       {0x12, 8},   // Tesla Generation (SM 1.2) G9x class
+                                       {0x13, 8},   // Tesla Generation (SM 1.3) GT200 class
+                                       {0x20, 32},  // Fermi Generation (SM 2.0) GF100 class
+                                       {0x21, 48},  // Fermi Generation (SM 2.1) GF10x class
+                                       {0x30, 192}, // Kepler Generation (SM 3.0) GK10x class
+                                       {0x32, 192}, // Kepler Generation (SM 3.2) GK10x class
+                                       {0x35, 192}, // Kepler Generation (SM 3.5) GK11x class
+                                       {0x37, 192}, // Kepler Generation (SM 3.7) GK21x class
+                                       {0x50, 128}, // Maxwell Generation (SM 5.0) GM10x class
+                                       {0x52, 128}, // Maxwell Generation (SM 5.2) GM20x class
+                                       {-1, -1}};
 
     int index = 0;
 
@@ -127,18 +138,21 @@ inline int _ConvertSMVer2CoresDRV(int major, int minor)
     }
 
     // If we don't find the values, we default use the previous one to run properly
-    printf("MapSMtoCores for SM %d.%d is undefined.  Default to use %d Cores/SM\n", major, minor, nGpuArchCoresPerSM[index-1].Cores);
-    return nGpuArchCoresPerSM[index-1].Cores;
+    printf("MapSMtoCores for SM %d.%d is undefined.  Default to use %d Cores/SM\n",
+           major,
+           minor,
+           nGpuArchCoresPerSM[index - 1].Cores);
+    return nGpuArchCoresPerSM[index - 1].Cores;
 }
 // end of GPU Architecture definitions
 
 #ifdef __cuda_cuda_h__
 // General GPU Device CUDA Initialization
-inline int gpuDeviceInitDRV(int ARGC, const char **ARGV)
+inline int gpuDeviceInitDRV(int ARGC, const char** ARGV)
 {
-    int cuDevice = 0;
-    int deviceCount = 0;
-    CUresult err = cuInit(0, __CUDA_API_VERSION, NULL);
+    int      cuDevice    = 0;
+    int      deviceCount = 0;
+    CUresult err         = cuInit(0, __CUDA_API_VERSION, NULL);
 
     if (CUDA_SUCCESS == err)
     {
@@ -152,14 +166,14 @@ inline int gpuDeviceInitDRV(int ARGC, const char **ARGV)
     }
 
     int dev = 0;
-    dev = getCmdLineArgumentInt(ARGC, (const char **) ARGV, "device=");
+    dev     = getCmdLineArgumentInt(ARGC, (const char**) ARGV, "device=");
 
     if (dev < 0)
     {
         dev = 0;
     }
 
-    if (dev > deviceCount-1)
+    if (dev > deviceCount - 1)
     {
         fprintf(stderr, "\n");
         fprintf(stderr, ">> %d CUDA capable GPU device(s) detected. <<\n", deviceCount);
@@ -177,11 +191,13 @@ inline int gpuDeviceInitDRV(int ARGC, const char **ARGV)
 
     if (computeMode == CU_COMPUTEMODE_PROHIBITED)
     {
-        fprintf(stderr, "Error: device is running in <CU_COMPUTEMODE_PROHIBITED>, no threads can use this CUDA Device.\n");
+        fprintf(stderr,
+                "Error: device is running in <CU_COMPUTEMODE_PROHIBITED>, no threads can use this "
+                "CUDA Device.\n");
         return -1;
     }
 
-    if (checkCmdLineFlag(ARGC, (const char **) ARGV, "quiet") == false)
+    if (checkCmdLineFlag(ARGC, (const char**) ARGV, "quiet") == false)
     {
         printf("gpuDeviceInitDRV() Using CUDA Device [%d]: %s\n", dev, name);
     }
@@ -193,10 +209,10 @@ inline int gpuDeviceInitDRV(int ARGC, const char **ARGV)
 inline int gpuGetMaxGflopsDeviceIdDRV()
 {
     CUdevice current_device = 0, max_perf_device = 0;
-    int device_count        = 0, sm_per_multiproc = 0;
-    int max_compute_perf    = 0, best_SM_arch     = 0;
-    int major = 0, minor = 0   , multiProcessorCount, clockRate;
-    int devices_prohibited = 0;
+    int      device_count = 0, sm_per_multiproc = 0;
+    int      max_compute_perf = 0, best_SM_arch = 0;
+    int      major = 0, minor = 0, multiProcessorCount, clockRate;
+    int      devices_prohibited = 0;
 
     cuInit(0, __CUDA_API_VERSION, NULL);
     checkCudaErrors(cuDeviceGetCount(&device_count));
@@ -228,9 +244,8 @@ inline int gpuGetMaxGflopsDeviceIdDRV()
         checkCudaErrors(cuDeviceGetAttribute(&multiProcessorCount,
                                              CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT,
                                              current_device));
-        checkCudaErrors(cuDeviceGetAttribute(&clockRate,
-                                             CU_DEVICE_ATTRIBUTE_CLOCK_RATE,
-                                             current_device));
+        checkCudaErrors(
+            cuDeviceGetAttribute(&clockRate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, current_device));
         checkCudaErrors(cuDeviceComputeCapability(&major, &minor, current_device));
 
         int computeMode;
@@ -247,9 +262,9 @@ inline int gpuGetMaxGflopsDeviceIdDRV()
                 sm_per_multiproc = _ConvertSMVer2CoresDRV(major, minor);
             }
 
-            int compute_perf  = multiProcessorCount * sm_per_multiproc * clockRate;
+            int compute_perf = multiProcessorCount * sm_per_multiproc * clockRate;
 
-            if (compute_perf  > max_compute_perf)
+            if (compute_perf > max_compute_perf)
             {
                 // If we find GPU with SM major > 2, search only these
                 if (best_SM_arch > 2)
@@ -257,14 +272,14 @@ inline int gpuGetMaxGflopsDeviceIdDRV()
                     // If our device==dest_SM_arch, choose this, or else pass
                     if (major == best_SM_arch)
                     {
-                        max_compute_perf  = compute_perf;
-                        max_perf_device   = current_device;
+                        max_compute_perf = compute_perf;
+                        max_perf_device  = current_device;
                     }
                 }
                 else
                 {
-                    max_compute_perf  = compute_perf;
-                    max_perf_device   = current_device;
+                    max_compute_perf = compute_perf;
+                    max_perf_device  = current_device;
                 }
             }
         }
@@ -277,10 +292,11 @@ inline int gpuGetMaxGflopsDeviceIdDRV()
     }
 
     if (devices_prohibited == device_count)
-    {    
-        fprintf(stderr, "gpuGetMaxGflopsDeviceIdDRV error: all devices have compute mode prohibited.\n");
+    {
+        fprintf(stderr,
+                "gpuGetMaxGflopsDeviceIdDRV error: all devices have compute mode prohibited.\n");
         exit(EXIT_FAILURE);
-    }    
+    }
 
     return max_perf_device;
 }
@@ -289,12 +305,12 @@ inline int gpuGetMaxGflopsDeviceIdDRV()
 inline int gpuGetMaxGflopsGLDeviceIdDRV()
 {
     CUdevice current_device = 0, max_perf_device = 0;
-    int device_count     = 0, sm_per_multiproc = 0;
-    int max_compute_perf = 0, best_SM_arch     = 0;
-    int major = 0, minor = 0, multiProcessorCount, clockRate;
-    int bTCC = 0;
-    int devices_prohibited = 0;
-    char deviceName[256];
+    int      device_count = 0, sm_per_multiproc = 0;
+    int      max_compute_perf = 0, best_SM_arch = 0;
+    int      major = 0, minor = 0, multiProcessorCount, clockRate;
+    int      bTCC               = 0;
+    int      devices_prohibited = 0;
+    char     deviceName[256];
 
     cuInit(0, __CUDA_API_VERSION, NULL);
     checkCudaErrors(cuDeviceGetCount(&device_count));
@@ -311,9 +327,10 @@ inline int gpuGetMaxGflopsGLDeviceIdDRV()
         checkCudaErrors(cuDeviceGetName(deviceName, 256, current_device));
         checkCudaErrors(cuDeviceComputeCapability(&major, &minor, current_device));
 
-#if CUDA_VERSION >= 3020
-        checkCudaErrors(cuDeviceGetAttribute(&bTCC,  CU_DEVICE_ATTRIBUTE_TCC_DRIVER, current_device));
-#else
+    #if CUDA_VERSION >= 3020
+        checkCudaErrors(
+            cuDeviceGetAttribute(&bTCC, CU_DEVICE_ATTRIBUTE_TCC_DRIVER, current_device));
+    #else
 
         // Assume a Tesla GPU is running in TCC if we are running CUDA 3.1
         if (deviceName[0] == 'T')
@@ -321,7 +338,7 @@ inline int gpuGetMaxGflopsGLDeviceIdDRV()
             bTCC = 1;
         }
 
-#endif
+    #endif
 
         int computeMode;
         getCudaAttribute<int>(&computeMode, CU_DEVICE_ATTRIBUTE_COMPUTE_MODE, current_device);
@@ -346,7 +363,8 @@ inline int gpuGetMaxGflopsGLDeviceIdDRV()
 
     if (devices_prohibited == device_count)
     {
-        fprintf(stderr, "gpuGetMaxGflopsGLDeviceIdDRV error: all devices have compute mode prohibited.\n");
+        fprintf(stderr,
+                "gpuGetMaxGflopsGLDeviceIdDRV error: all devices have compute mode prohibited.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -358,14 +376,14 @@ inline int gpuGetMaxGflopsGLDeviceIdDRV()
         checkCudaErrors(cuDeviceGetAttribute(&multiProcessorCount,
                                              CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT,
                                              current_device));
-        checkCudaErrors(cuDeviceGetAttribute(&clockRate,
-                                             CU_DEVICE_ATTRIBUTE_CLOCK_RATE,
-                                             current_device));
+        checkCudaErrors(
+            cuDeviceGetAttribute(&clockRate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, current_device));
         checkCudaErrors(cuDeviceComputeCapability(&major, &minor, current_device));
 
-#if CUDA_VERSION >= 3020
-        checkCudaErrors(cuDeviceGetAttribute(&bTCC,  CU_DEVICE_ATTRIBUTE_TCC_DRIVER, current_device));
-#else
+    #if CUDA_VERSION >= 3020
+        checkCudaErrors(
+            cuDeviceGetAttribute(&bTCC, CU_DEVICE_ATTRIBUTE_TCC_DRIVER, current_device));
+    #else
 
         // Assume a Tesla GPU is running in TCC if we are running CUDA 3.1
         if (deviceName[0] == 'T')
@@ -373,7 +391,7 @@ inline int gpuGetMaxGflopsGLDeviceIdDRV()
             bTCC = 1;
         }
 
-#endif
+    #endif
 
         int computeMode;
         getCudaAttribute<int>(&computeMode, CU_DEVICE_ATTRIBUTE_COMPUTE_MODE, current_device);
@@ -389,12 +407,13 @@ inline int gpuGetMaxGflopsGLDeviceIdDRV()
                 sm_per_multiproc = _ConvertSMVer2CoresDRV(major, minor);
             }
 
-            // If this is a Tesla based GPU and SM 2.0, and TCC is disabled, this is a contendor
-            if (!bTCC)   // Is this GPU running the TCC driver?  If so we pass on this
+            // If this is a Tesla based GPU and SM 2.0, and TCC is disabled, this is a
+            // contendor
+            if (!bTCC) // Is this GPU running the TCC driver?  If so we pass on this
             {
-                int compute_perf  = multiProcessorCount * sm_per_multiproc * clockRate;
+                int compute_perf = multiProcessorCount * sm_per_multiproc * clockRate;
 
-                if (compute_perf  > max_compute_perf)
+                if (compute_perf > max_compute_perf)
                 {
                     // If we find GPU with SM major > 2, search only these
                     if (best_SM_arch > 2)
@@ -402,14 +421,14 @@ inline int gpuGetMaxGflopsGLDeviceIdDRV()
                         // If our device = dest_SM_arch, then we pick this one
                         if (major == best_SM_arch)
                         {
-                            max_compute_perf  = compute_perf;
-                            max_perf_device   = current_device;
+                            max_compute_perf = compute_perf;
+                            max_perf_device  = current_device;
                         }
                     }
                     else
                     {
-                        max_compute_perf  = compute_perf;
-                        max_perf_device   = current_device;
+                        max_compute_perf = compute_perf;
+                        max_perf_device  = current_device;
                     }
                 }
             }
@@ -422,13 +441,13 @@ inline int gpuGetMaxGflopsGLDeviceIdDRV()
 }
 
 // General initialization call to pick the best CUDA Device
-inline CUdevice findCudaDeviceDRV(int argc, const char **argv)
+inline CUdevice findCudaDeviceDRV(int argc, const char** argv)
 {
     CUdevice cuDevice;
-    int devID = 0;
+    int      devID = 0;
 
     // If the command-line has a device number specified, use it
-    if (checkCmdLineFlag(argc, (const char **)argv, "device"))
+    if (checkCmdLineFlag(argc, (const char**) argv, "device"))
     {
         devID = gpuDeviceInitDRV(argc, argv);
 
@@ -441,7 +460,7 @@ inline CUdevice findCudaDeviceDRV(int argc, const char **argv)
     else
     {
         // Otherwise pick the device with highest Gflops/s
-        char name[100]; 
+        char name[100];
         devID = gpuGetMaxGflopsDeviceIdDRV();
         checkCudaErrors(cuDeviceGet(&cuDevice, devID));
         cuDeviceGetName(name, 100, cuDevice);
@@ -454,15 +473,15 @@ inline CUdevice findCudaDeviceDRV(int argc, const char **argv)
 }
 
 // This function will pick the best CUDA device available with OpenGL interop
-inline CUdevice findCudaGLDeviceDRV(int argc, const char **argv)
+inline CUdevice findCudaGLDeviceDRV(int argc, const char** argv)
 {
     CUdevice cuDevice;
-    int devID = 0;
+    int      devID = 0;
 
     // If the command-line has a device number specified, use it
-    if (checkCmdLineFlag(argc, (const char **)argv, "device"))
+    if (checkCmdLineFlag(argc, (const char**) argv, "device"))
     {
-        devID = gpuDeviceInitDRV(argc, (const char **)argv);
+        devID = gpuDeviceInitDRV(argc, (const char**) argv);
 
         if (devID < 0)
         {
@@ -487,22 +506,23 @@ inline CUdevice findCudaGLDeviceDRV(int argc, const char **argv)
 inline bool checkCudaCapabilitiesDRV(int major_version, int minor_version, int devID)
 {
     CUdevice cuDevice;
-    char name[256];
-    int major = 0, minor = 0;
+    char     name[256];
+    int      major = 0, minor = 0;
 
     checkCudaErrors(cuDeviceGet(&cuDevice, devID));
     checkCudaErrors(cuDeviceGetName(name, 100, cuDevice));
     checkCudaErrors(cuDeviceComputeCapability(&major, &minor, devID));
 
-    if ((major > major_version) ||
-        (major == major_version && minor >= minor_version))
+    if ((major > major_version) || (major == major_version && minor >= minor_version))
     {
         printf("> Device %d: <%16s >, Compute SM %d.%d detected\n", devID, name, major, minor);
         return true;
     }
     else
     {
-        printf("No GPU device was found that can support CUDA compute capability %d.%d.\n", major_version, minor_version);
+        printf("No GPU device was found that can support CUDA compute capability %d.%d.\n",
+               major_version,
+               minor_version);
         return false;
     }
 }

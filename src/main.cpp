@@ -4,8 +4,8 @@
 #include "settings/utility.h"
 
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+    #include <opencv2/core/core.hpp>
+    #include <opencv2/highgui/highgui.hpp>
 #endif
 
 #include <stdio.h>
@@ -23,11 +23,13 @@ int handlecounter = 0;
 /**
  * @brief handles segmentation faults
  */
-void handler(int sig) {
-    if (handlecounter>0) exit(1);
+void handler(int sig)
+{
+    if (handlecounter > 0)
+        exit(1);
     handlecounter++;
 
-    void *array[10];
+    void*  array[10];
     size_t size;
 
     // get void*'s for all entries on the stack
@@ -40,15 +42,16 @@ void handler(int sig) {
     exit(1);
 }
 
-int main(int argc, char *argv[]) {
-    signal(SIGSEGV, handler);   // install exception handler
+int main(int argc, char* argv[])
+{
+    signal(SIGSEGV, handler); // install exception handler
     SettingsIAC::setConf("configImAcq.json");
     SettingsIAC::getInstance();
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
     cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
     cv::waitKey(100);
 #endif
-    ImgAcquisitionApp a(argc, argv);  //An instance is initialized
+    ImgAcquisitionApp a(argc, argv); // An instance is initialized
 
     return a.exec();
 }

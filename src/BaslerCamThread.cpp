@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include <QDebug>
-#include <qdir.h>       //QT stuff
+#include <qdir.h> //QT stuff
 #include <qtextstream.h>
 
 #include "Watchdog.h"
@@ -18,10 +18,10 @@
 #include <time.h>
 
 #if __linux__
-#include <unistd.h> //sleep
-#include <sys/time.h>
+    #include <unistd.h> //sleep
+    #include <sys/time.h>
 #else
-#include <stdint.h>
+    #include <stdint.h>
 #endif
 
 #include <opencv2/opencv.hpp>
@@ -40,37 +40,40 @@ using namespace Pylon;
 // Namespace for using cout.
 using namespace std;
 
-BaslerCamThread::BaslerCamThread() {
-
+BaslerCamThread::BaslerCamThread()
+{
 }
 
-BaslerCamThread::~BaslerCamThread() {
-
+BaslerCamThread::~BaslerCamThread()
+{
 }
 
-//this function reads the data input vector
-bool BaslerCamThread::initialize(unsigned int id,
-                                beeCompress::MutexBuffer *pBuffer,
-                                beeCompress::MutexBuffer *pSharedMemBuffer, CalibrationInfo *calib,
-                                Watchdog *dog) 
+// this function reads the data input vector
+bool BaslerCamThread::initialize(unsigned int              id,
+                                 beeCompress::MutexBuffer* pBuffer,
+                                 beeCompress::MutexBuffer* pSharedMemBuffer,
+                                 CalibrationInfo*          calib,
+                                 Watchdog*                 dog)
 {
     _SharedMemBuffer = pSharedMemBuffer;
-    _Buffer = pBuffer;
-    _ID = id;
-    _HWID = -1;
-    _Calibration = calib;
-    _initialized = false;
-    _Dog = dog;
+    _Buffer          = pBuffer;
+    _ID              = id;
+    _HWID            = -1;
+    _Calibration     = calib;
+    _initialized     = false;
+    _Dog             = dog;
 
-    if (initCamera()) {
+    if (initCamera())
+    {
         std::cout << "Starting capture on camera " << id << std::endl;
         _initialized = startCapture();
         if (_initialized)
             std::cout << "Done starting capture." << std::endl;
         else
             std::cout << "Error capturing." << std::endl;
-    } 
-    else {
+    }
+    else
+    {
         std::cerr << "Error on camera init " << id << std::endl;
         return false;
     }
@@ -82,8 +85,8 @@ bool BaslerCamThread::initCamera()
 {
     _initialized = false;
 
-    SettingsIAC *set            = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg    = set->getBufferConf(_ID, 0);
+    SettingsIAC*         set = SettingsIAC::getInstance();
+    EncoderQualityConfig cfg = set->getBufferConf(_ID, 0);
 
     // If the configuration entry is invalid, just skip it.
     if (cfg.serialString.empty())
@@ -94,21 +97,21 @@ bool BaslerCamThread::initCamera()
 
     try
     {
-         // Get the transport layer factory.
+        // Get the transport layer factory.
         CTlFactory& tlFactory = CTlFactory::GetInstance();
 
         // Get all attached devices and return -1 if no device is found.
         DeviceInfoList_t devices;
 
-        int n = tlFactory.EnumerateDevices(devices);        
+        int n = tlFactory.EnumerateDevices(devices);
 
         _HWID = std::numeric_limits<decltype(_HWID)>::max();
         for (int i = 0; i < n; i++)
         {
-            if (  cfg.serialString == devices[i].GetSerialNumber().c_str()  )
+            if (cfg.serialString == devices[i].GetSerialNumber().c_str())
             {
                 _HWID = i;
-                _camera.Attach( tlFactory.CreateDevice( devices[i] ));
+                _camera.Attach(tlFactory.CreateDevice(devices[i]));
 
                 _initialized = true;
 
@@ -121,43 +124,44 @@ bool BaslerCamThread::initCamera()
             sendLogMessage(0, "failed to find cam matching config serial nr: " + cfg.serialString);
             return false;
         }
-        
+
         // ToDo:
         // print additional info
         // set cam params as set in config file
     }
-    catch(GenericException e)
+    catch (GenericException e)
     {
-
     }
-    
+
     return _initialized;
 }
 
 // This function starts the streaming from the camera
-bool BaslerCamThread::startCapture() {
+bool BaslerCamThread::startCapture()
+{
 
-    try{
+    try
+    {
         _camera.StartGrabbing();
     }
-    catch(GenericException e)
+    catch (GenericException e)
     {
         return false;
     }
-    
+
     return true;
 }
 
-void BaslerCamThread::run() 
+void BaslerCamThread::run()
 {
     char logfilepathFull[256];
 
-    SettingsIAC *set            = SettingsIAC::getInstance();
+    SettingsIAC*         set    = SettingsIAC::getInstance();
     EncoderQualityConfig cfg    = set->getBufferConf(_ID, 0);
-    std::string logdir          = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+    std::string          logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
 
-    const unsigned int vwidth   = static_cast<unsigned int>(cfg.width);
-    const unsigned int vheight  = static_cast<unsigned int>(cfg.height);
+    const unsigned int vwidth  = static_cast<unsigned int>(cfg.width);
+    const unsigned int vheight = static_cast<unsigned int>(cfg.height);
 
     ////////////////////////WINDOWS/////////////////////
     int oldTime = 0;
@@ -165,36 +169,39 @@ void BaslerCamThread::run()
 
     ////////////////////////LINUX/////////////////////
 #ifdef __linux__
-    //Timestamp housekeeping
-    struct timeval tv;
+    // Timestamp housekeeping
+    struct timeval  tv;
     struct timezone tz;
 
     gettimeofday(&tv, &tz);
 #endif
     ////////////////////////////////////////////////////
 
-    //Load a reference image for contrast analyzation
+    // Load a reference image for contrast analyzation
     cv::Mat ref;
-    if (_Calibration->doCalibration) {
-        FILE *fp = fopen("refIm.jpg", "r");
-        if (fp) {
-            //ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    if (_Calibration->doCalibration)
+    {
+        FILE* fp = fopen("refIm.jpg", "r");
+        if (fp)
+        {
+            // ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
             ref = cv::imread("refIm.jpg", cv::IMREAD_GRAYSCALE);
             fclose(fp);
-        } else {
-            std::cout << "Warning: not found reference image refIm.jpg."
-                      << std::endl;
+        }
+        else
+        {
+            std::cout << "Warning: not found reference image refIm.jpg." << std::endl;
         }
     }
-    
+
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
-    unsigned long n_last_camera_tick_count               {0};
-    unsigned long n_last_frame_id                       {0};
+    unsigned long            n_last_camera_tick_count{0};
+    unsigned long            n_last_frame_id{0};
     boost::posix_time::ptime lastCameraTimestamp;
 
-    uint8_t* p_image;
-    uint img_width, img_height;
+    uint8_t*      p_image;
+    uint          img_width, img_height;
     unsigned long n_current_frame_id;
 
     for (size_t loopCount = 0; true; loopCount += 1)
@@ -210,27 +217,30 @@ void BaslerCamThread::run()
             try
             {
                 // get time before getting the data
-                const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-                
+                const std::chrono::steady_clock::time_point begin =
+                    std::chrono::steady_clock::now();
+
                 // Timeout is 5000, ToDo: add respective setting to configuration file
-                _camera.RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
+                _camera.RetrieveResult(5000, ptrGrabResult, TimeoutHandling_ThrowException);
 
                 // Image grabbed successfully?
                 if (ptrGrabResult->GrabSucceeded())
                 {
                     // get image data
-                    img_width           = ptrGrabResult->GetWidth();
-                    img_height          = ptrGrabResult->GetHeight();
-                    p_image             = (uint8_t *) ptrGrabResult->GetBuffer();
-                    n_current_frame_id  = ptrGrabResult->GetImageNumber();
+                    img_width          = ptrGrabResult->GetWidth();
+                    img_height         = ptrGrabResult->GetHeight();
+                    p_image            = (uint8_t*) ptrGrabResult->GetBuffer();
+                    n_current_frame_id = ptrGrabResult->GetImageNumber();
 
                     // get time after getting the data
                     const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
-                    const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-                    // the camera specific tick count. The Basler acA4096-30um clock freq is 1 GHz (1 tick per 1 ns)
-                    const unsigned long n_current_camera_tick_count = ptrGrabResult->GetTimeStamp(); 
+                    const std::chrono::steady_clock::time_point end =
+                        std::chrono::steady_clock::now();
+                    // the camera specific tick count. The Basler acA4096-30um
+                    // clock freq is 1 GHz (1 tick per 1 ns)
+                    const unsigned long n_current_camera_tick_count =
+                        ptrGrabResult->GetTimeStamp();
 
-                    
                     // Image sequence sanity check.
                     if (n_last_frame_id != 0 && n_current_frame_id != n_last_frame_id + 1)
                     {
@@ -239,25 +249,33 @@ void BaslerCamThread::run()
                         str.append(" last frame: #");
                         str.append(std::to_string(n_last_frame_id).c_str());
                         str.append(" timestamp: ");
-                        str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
+                        str.append(
+                            boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
                         std::cout << str.toStdString() << std::endl;
                         generateLog(logfilepathFull, str);
 
                         // add camera handling
                         // ...
-
                     }
                     n_last_frame_id = n_current_frame_id;
 
-                    // If last timestamp is later than current timestamp, we have to reset the camera timestamps.
-                    if (n_last_camera_tick_count == 0 || (n_last_camera_tick_count > n_current_camera_tick_count))
+                    // If last timestamp is later than current timestamp, we have
+                    // to reset the camera timestamps.
+                    if (n_last_camera_tick_count == 0 ||
+                        (n_last_camera_tick_count > n_current_camera_tick_count))
                     {
-                        if (n_last_camera_tick_count != 0 && lastCameraTimestamp > wallClockNow && loopCount > 10)
+                        if (n_last_camera_tick_count != 0 && lastCameraTimestamp > wallClockNow &&
+                            loopCount > 10)
                         {
-                            QString str("Warning: camera clock faster than wall time. Last camera time: ");
-                            str.append(boost::posix_time::to_iso_extended_string(lastCameraTimestamp).c_str());
+                            QString str(
+                                "Warning: camera clock faster than wall "
+                                "time. Last camera time: ");
+                            str.append(
+                                boost::posix_time::to_iso_extended_string(lastCameraTimestamp)
+                                    .c_str());
                             str.append(" wall clock: ");
-                            str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
+                            str.append(
+                                boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
                             std::cout << str.toStdString() << std::endl;
                             generateLog(logfilepathFull, str);
                         }
@@ -265,23 +283,28 @@ void BaslerCamThread::run()
                     }
                     else
                     {
-                        const long tick_delta = static_cast<const long>(n_current_camera_tick_count - n_last_camera_tick_count);
-                        assert (tick_delta >= 0);\
-                        // ToDo: add tick to microsecond conversion factor as config setting
+                        const long tick_delta = static_cast<const long>(
+                            n_current_camera_tick_count - n_last_camera_tick_count);
+                        assert(tick_delta >= 0); // ToDo: add tick to microsecond conversion
+                                                 // factor as config setting
                         lastCameraTimestamp += boost::posix_time::microseconds(tick_delta * 1000);
                     }
                     n_last_camera_tick_count = n_current_camera_tick_count;
 
-                    // Skip the first X images to allow the camera buffer to be flushed.
-                    // ToDo: is this still necessary for the Basler cameras?
+                    // Skip the first X images to allow the camera buffer to be
+                    // flushed. ToDo: is this still necessary for the Basler
+                    // cameras?
                     if (loopCount < 10)
                     {
                         continue;
                     }
 
-                    //Check if processing a frame took longer than X seconds. If so, log the event.
-                    const long duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-                    if (duration > 2 * (1000000 / 6)) {
+                    // Check if processing a frame took longer than X seconds. If
+                    // so, log the event.
+                    const long duration =
+                        std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+                    if (duration > 2 * (1000000 / 6))
+                    {
                         QString str("Warning: Processing time too long: ");
                         str.append(std::to_string(duration).c_str());
                         str.append(" on camera ");
@@ -289,56 +312,69 @@ void BaslerCamThread::run()
                         std::cout << str.toStdString() << std::endl;
                         generateLog(logfilepathFull, str);
                     }
-                    
-                    //converts the time in seconds to local time
-                    const std::time_t timestamp { static_cast<std::time_t>(n_current_camera_tick_count) };
-                    const struct tm *timeinfo { localtime(&timestamp) };
+
+                    // converts the time in seconds to local time
+                    const std::time_t timestamp{
+                        static_cast<std::time_t>(n_current_camera_tick_count)};
+                    const struct tm* timeinfo{localtime(&timestamp)};
 
                     localCounter(oldTime, timeinfo->tm_sec);
                     oldTime = timeinfo->tm_sec;
-                    
+
                 } // grab did not succeed
                 else
                 {
-                    cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription() << endl;
+                    cout << "Error: " << ptrGrabResult->GetErrorCode() << " "
+                         << ptrGrabResult->GetErrorDescription() << endl;
                 }
-                
             }
-            catch(GenericException e) // could not retrieve grab result
+            catch (GenericException e) // could not retrieve grab result
             {
                 std::cerr << e.what() << '\n';
-                
-                // ToDo: if the problem persists and we get this error repeatedly, restart application
+
+                // ToDo: if the problem persists and we get this error repeatedly,
+                // restart application
             }
         }
         else // camera not grabbing
         {
-            // although grabbing had been started, isGrabbing returned false. this means somehow the camera stopped grabbing
+            // although grabbing had been started, isGrabbing returned false. this means
+            // somehow the camera stopped grabbing
             // --> we simply log it and restart the application.
             const std::string message = "Aquisition failed with error code " + std::to_string(42);
             logCriticalError(message, message);
             std::exit(1);
         }
-    
 
-        //Not in calibration mode. Move image to buffer for further procession
-        if (!_Calibration->doCalibration) 
+        // Not in calibration mode. Move image to buffer for further procession
+        if (!_Calibration->doCalibration)
         {
             // Crop the image to the expected size (e.g. 4000x3000).
-            // This is necessary, because the encoder/codec requires the image sizes to be some multiple of X.
-            // ToDo: remove this part and add camera check if conforming with size requirements
-            cv::Mat wholeImageMatrix(cv::Size(img_width, img_height), CV_8UC1, p_image, cv::Mat::AUTO_STEP);
+            // This is necessary, because the encoder/codec requires the image sizes to be
+            // some multiple of X. ToDo: remove this part and add camera check if
+            // conforming with size requirements
+            cv::Mat            wholeImageMatrix(cv::Size(img_width, img_height),
+                                     CV_8UC1,
+                                     p_image,
+                                     cv::Mat::AUTO_STEP);
             const unsigned int marginToBeCroppedX = (img_width > vwidth) ? img_width - vwidth : 0;
-            const unsigned int marginToBeCroppedY = (img_height > vheight) ? img_height - vheight : 0;
+            const unsigned int marginToBeCroppedY = (img_height > vheight) ? img_height - vheight
+                                                                           : 0;
             if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
             {
-                const int cropLeft = marginToBeCroppedX / 2;
-                const int cropTop = marginToBeCroppedY / 2;
-                cv::Mat croppedImageMatrix = wholeImageMatrix(cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
+                const int cropLeft           = marginToBeCroppedX / 2;
+                const int cropTop            = marginToBeCroppedY / 2;
+                cv::Mat   croppedImageMatrix = wholeImageMatrix(cv::Rect(cropLeft,
+                                                                       cropTop,
+                                                                       static_cast<int>(vwidth),
+                                                                       static_cast<int>(vheight)));
                 croppedImageMatrix.copyTo(wholeImageMatrix);
             }
-            const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(lastCameraTimestamp) + "Z";
-            auto buf = std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
+            const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
+                                                   lastCameraTimestamp) +
+                                               "Z";
+            auto buf =
+                std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
             memcpy(buf.get()->data, wholeImageMatrix.data, vwidth * vheight);
 
             _Buffer->push(buf);
@@ -348,7 +384,7 @@ void BaslerCamThread::run()
             {
                 cv::Mat smallMat;
                 cv::resize(wholeImageMatrix, smallMat, cv::Size(400, 300));
-                cv::imshow("Display window", smallMat );
+                cv::imshow("Display window", smallMat);
             }
 #endif
         }
@@ -357,47 +393,57 @@ void BaslerCamThread::run()
     return;
 }
 
-void BaslerCamThread::logCriticalError(const std::string &shortMsg, const std::string &message) {
-    
+void BaslerCamThread::logCriticalError(const std::string& shortMsg, const std::string& message)
+{
     return;
 }
 
-void BaslerCamThread::sendLogMessage(int logLevel, QString message) {
+void BaslerCamThread::sendLogMessage(int logLevel, QString message)
+{
     emit logMessage(logLevel, "Cam " + QString::number(_ID) + " : " + message);
 }
-void BaslerCamThread::sendLogMessage(int logLevel, std::string message) {
+
+void BaslerCamThread::sendLogMessage(int logLevel, std::string message)
+{
     sendLogMessage(logLevel, QString::fromStdString(message));
 }
-void BaslerCamThread::sendLogMessage(int logLevel, const char *message) {
+
+void BaslerCamThread::sendLogMessage(int logLevel, const char* message)
+{
     sendLogMessage(logLevel, QString(message));
 }
 
-void BaslerCamThread::cleanFolder(QString path, QString message) {
+void BaslerCamThread::cleanFolder(QString path, QString message)
+{
     QDir dir(path);
     dir.setNameFilters(QStringList() << "*.jpeg");
     dir.setFilter(QDir::Files);
-    for (const auto & dirFile : dir.entryList()) {
+    for (const auto& dirFile : dir.entryList())
+    {
         dir.remove(dirFile);
     }
     QString filename = (path + "log.txt");
-    QFile file(filename);
+    QFile   file(filename);
     file.open(QIODevice::Append);
     QTextStream stream(&file);
     stream << message << "\r\n";
     file.close();
 }
 
-void BaslerCamThread::generateLog(QString path, QString message) {
+void BaslerCamThread::generateLog(QString path, QString message)
+{
     QString filename = (path + "log.txt");
-    QFile file(filename);
+    QFile   file(filename);
     file.open(QIODevice::Append);
     QTextStream stream(&file);
     stream << QString(getTimestamp().c_str()) << ": " << message << "\r\n";
     file.close();
 }
 
-void BaslerCamThread::localCounter(int oldTime, int newTime) {
-    if (oldTime != newTime) {
+void BaslerCamThread::localCounter(int oldTime, int newTime)
+{
+    if (oldTime != newTime)
+    {
         _LocalCounter = 0;
     }
     _LocalCounter++;

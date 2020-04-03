@@ -13,9 +13,9 @@
 #define __dynlink_cuda_gl_h__
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-#  define WINDOWS_LEAN_AND_MEAN
-#  define NOMINMAX
-#  include <windows.h>
+    #define WINDOWS_LEAN_AND_MEAN
+    #define NOMINMAX
+    #include <windows.h>
 #endif
 
 // includes, system
@@ -27,10 +27,10 @@
 // includes, GL
 #include <GL/glew.h>
 
-#if defined (__APPLE__) || defined(MACOSX)
-#include <GLUT/glut.h>
+#if defined(__APPLE__) || defined(MACOSX)
+    #include <GLUT/glut.h>
 #else
-#include <GL/freeglut.h>
+    #include <GL/freeglut.h>
 #endif
 
 /************************************
@@ -40,15 +40,19 @@
  ***********************************/
 
 // OpenGL/CUDA interop (CUDA 2.0+)
-typedef CUresult CUDAAPI tcuGLCtxCreate(CUcontext *pCtx, unsigned int Flags, CUdevice device);
-typedef CUresult CUDAAPI tcuGraphicsGLRegisterBuffer(CUgraphicsResource *pCudaResource, GLuint buffer, unsigned int Flags);
-typedef CUresult CUDAAPI tcuGraphicsGLRegisterImage(CUgraphicsResource *pCudaResource, GLuint image, GLenum target, unsigned int Flags);
+typedef CUresult CUDAAPI tcuGLCtxCreate(CUcontext* pCtx, unsigned int Flags, CUdevice device);
+typedef CUresult CUDAAPI tcuGraphicsGLRegisterBuffer(CUgraphicsResource* pCudaResource,
+                                                     GLuint              buffer,
+                                                     unsigned int        Flags);
+typedef CUresult CUDAAPI tcuGraphicsGLRegisterImage(CUgraphicsResource* pCudaResource,
+                                                    GLuint              image,
+                                                    GLenum              target,
+                                                    unsigned int        Flags);
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-#include <GL/wglext.h>
+    #include <GL/wglext.h>
 // WIN32
-typedef CUresult CUDAAPI tcuWGLGetDevice(CUdevice *pDevice, HGPUNV hGpu);
+typedef CUresult CUDAAPI tcuWGLGetDevice(CUdevice* pDevice, HGPUNV hGpu);
 #endif
 
 #endif // __dynlink_cuda_gl_h__
-

@@ -12,37 +12,39 @@
 #include <list>
 #include <memory>
 
-namespace beeCompress {
+namespace beeCompress
+{
 
-class MutexLinkedList: public MutexBuffer {
+    class MutexLinkedList : public MutexBuffer
+    {
 
-public:
+    public:
+        std::list<std::shared_ptr<ImageBuffer>> images;
 
-	std::list<std::shared_ptr<ImageBuffer>> images;
+        /**
+         * @brief _Access Mutex to modify the ringbuffer.
+         */
+        std::mutex _Access;
 
-	/**
-	 * @brief _Access Mutex to modify the ringbuffer.
-	 */
-	std::mutex _Access;
+        virtual void push(std::shared_ptr<ImageBuffer> imbuffer);
 
-	virtual void push(std::shared_ptr<ImageBuffer> imbuffer);
+        virtual std::shared_ptr<beeCompress::ImageBuffer> pop();
 
-	virtual std::shared_ptr<beeCompress::ImageBuffer> pop();
+        // Simple function to get the current size of the buffer in elements.
+        // Locks the data structure.
+        virtual int size()
+        {
+            int tsize = 0;
+            _Access.lock();
+            tsize = images.size();
+            _Access.unlock();
+            return tsize;
+        }
 
-	//Simple function to get the current size of the buffer in elements.
-	//Locks the data structure.
-	virtual int size(){
-		int tsize = 0;
-		_Access.lock();
-		tsize = images.size();
-		_Access.unlock();
-		return tsize;
-	}
+        MutexLinkedList();
 
-	MutexLinkedList();
-
-	virtual ~MutexLinkedList();
-};
+        virtual ~MutexLinkedList();
+    };
 
 } /* namespace beeCompress */
 

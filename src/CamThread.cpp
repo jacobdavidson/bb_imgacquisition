@@ -1,3 +1,5 @@
 #include "CamThread.h"
 
-CamThread::~CamThread() {}
+CamThread::~CamThread()
+{
+}

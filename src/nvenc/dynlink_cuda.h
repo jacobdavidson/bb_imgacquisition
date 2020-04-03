@@ -8,13 +8,13 @@
  * is strictly prohibited.
  *
  */
- 
+
 #ifndef __cuda_h__
 #define __cuda_h__
 
 /**
-* CUDA API version support
-*/
+ * CUDA API version support
+ */
 
 #include "dynlink_cuda_cuda.h"
 

@@ -11,9 +11,11 @@
 #include <string>
 
 /**
- * replaces every non-ASCII character in s with an escape sequence containing the hexadecimal representation of it's value.
+ * replaces every non-ASCII character in s with an escape sequence containing the hexadecimal
+ * representation of it's value.
  *
- * Additionally backslashes are escaped too, since this character is used to initiate an escape sequence.
+ * Additionally backslashes are escaped too, since this character is used to initiate an escape
+ * sequence.
  *
  * The value of a valid ASCII is [0, 127].
  *
@@ -24,8 +26,7 @@
  * ASCII     --> ASCII
  *
  */
-std::string escape_non_ascii(const std::string &s);
-
+std::string escape_non_ascii(const std::string& s);
 
 /**
  * unescapes escaped (non-)ASCII characters.
@@ -40,13 +41,12 @@ std::string escape_non_ascii(const std::string &s);
  * @see escape_non_ascii
  *
  */
-std::string unescape_non_ascii(const std::string &s);
+std::string unescape_non_ascii(const std::string& s);
 
 /**
  * @brief stem_filename
  *      stems the filename from a path
  */
-std::string stem_filename(const std::string &s);
-
+std::string stem_filename(const std::string& s);
 
 #endif /* STRINGTOOLS_H_ */

@@ -19,59 +19,59 @@
 #include <string>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64)
-  #ifndef _CRT_SECURE_NO_DEPRECATE
-  #define _CRT_SECURE_NO_DEPRECATE
-  #endif
-  #ifndef STRCASECMP
-  #define STRCASECMP  _stricmp
-  #endif
-  #ifndef STRNCASECMP
-  #define STRNCASECMP _strnicmp
-  #endif
-  #ifndef STRCPY
-  #define STRCPY(sFilePath, nLength, sPath) strcpy_s(sFilePath, nLength, sPath)
-  #endif
+    #ifndef _CRT_SECURE_NO_DEPRECATE
+        #define _CRT_SECURE_NO_DEPRECATE
+    #endif
+    #ifndef STRCASECMP
+        #define STRCASECMP _stricmp
+    #endif
+    #ifndef STRNCASECMP
+        #define STRNCASECMP _strnicmp
+    #endif
+    #ifndef STRCPY
+        #define STRCPY(sFilePath, nLength, sPath) strcpy_s(sFilePath, nLength, sPath)
+    #endif
 
-  #ifndef FOPEN
-  #define FOPEN(fHandle,filename,mode) fopen_s(&fHandle, filename, mode)
-  #endif
-  #ifndef FOPEN_FAIL
-  #define FOPEN_FAIL(result) (result != 0)
-  #endif
-  #ifndef SSCANF
-  #define SSCANF sscanf_s
-  #endif
+    #ifndef FOPEN
+        #define FOPEN(fHandle, filename, mode) fopen_s(&fHandle, filename, mode)
+    #endif
+    #ifndef FOPEN_FAIL
+        #define FOPEN_FAIL(result) (result != 0)
+    #endif
+    #ifndef SSCANF
+        #define SSCANF sscanf_s
+    #endif
 #else
-  #include <string.h>
-  #include <strings.h>
+    #include <string.h>
+    #include <strings.h>
 
-  #ifndef STRCASECMP
-  #define STRCASECMP  strcasecmp
-  #endif
-  #ifndef STRNCASECMP
-  #define STRNCASECMP strncasecmp
-  #endif
-  #ifndef STRCPY
-  #define STRCPY(sFilePath, nLength, sPath) strcpy(sFilePath, sPath)
-  #endif
+    #ifndef STRCASECMP
+        #define STRCASECMP strcasecmp
+    #endif
+    #ifndef STRNCASECMP
+        #define STRNCASECMP strncasecmp
+    #endif
+    #ifndef STRCPY
+        #define STRCPY(sFilePath, nLength, sPath) strcpy(sFilePath, sPath)
+    #endif
 
-  #ifndef FOPEN
-  #define FOPEN(fHandle,filename,mode) (fHandle = fopen(filename, mode))
-  #endif
-  #ifndef FOPEN_FAIL
-  #define FOPEN_FAIL(result) (result == NULL)
-  #endif
-  #ifndef SSCANF
-  #define SSCANF sscanf
-  #endif
+    #ifndef FOPEN
+        #define FOPEN(fHandle, filename, mode) (fHandle = fopen(filename, mode))
+    #endif
+    #ifndef FOPEN_FAIL
+        #define FOPEN_FAIL(result) (result == NULL)
+    #endif
+    #ifndef SSCANF
+        #define SSCANF sscanf
+    #endif
 #endif
 
 #ifndef EXIT_WAIVED
-#define EXIT_WAIVED 2
+    #define EXIT_WAIVED 2
 #endif
 
 // CUDA Utility Helper Functions
-inline int stringRemoveDelimiter(char delimiter, const char *string)
+inline int stringRemoveDelimiter(char delimiter, const char* string)
 {
     int string_start = 0;
 
@@ -80,7 +80,7 @@ inline int stringRemoveDelimiter(char delimiter, const char *string)
         string_start++;
     }
 
-    if (string_start >= (int)strlen(string)-1)
+    if (string_start >= (int) strlen(string) - 1)
     {
         return 0;
     }
@@ -88,40 +88,42 @@ inline int stringRemoveDelimiter(char delimiter, const char *string)
     return string_start;
 }
 
-inline int getFileExtension(char *filename, char **extension)
+inline int getFileExtension(char* filename, char** extension)
 {
-    int string_length = (int)strlen(filename);
+    int string_length = (int) strlen(filename);
 
-    while (filename[string_length--] != '.') {
+    while (filename[string_length--] != '.')
+    {
         if (string_length == 0)
             break;
     }
-    if (string_length > 0) string_length += 2;
+    if (string_length > 0)
+        string_length += 2;
 
-    if (string_length == 0) 
+    if (string_length == 0)
         *extension = NULL;
-    else 
+    else
         *extension = &filename[string_length];
 
     return string_length;
 }
 
-
-inline int checkCmdLineFlag(const int argc, const char **argv, const char *string_ref)
+inline int checkCmdLineFlag(const int argc, const char** argv, const char* string_ref)
 {
     bool bFound = false;
 
     if (argc >= 1)
     {
-        for (int i=1; i < argc; i++)
+        for (int i = 1; i < argc; i++)
         {
-            int string_start = stringRemoveDelimiter('-', argv[i]);
-            const char *string_argv = &argv[i][string_start];
+            int         string_start = stringRemoveDelimiter('-', argv[i]);
+            const char* string_argv  = &argv[i][string_start];
 
-            const char *equal_pos = strchr(string_argv, '=');
-            int argv_length = (int)(equal_pos == 0 ? strlen(string_argv) : equal_pos - string_argv);
+            const char* equal_pos   = strchr(string_argv, '=');
+            int         argv_length = (int) (equal_pos == 0 ? strlen(string_argv)
+                                                    : equal_pos - string_argv);
 
-            int length = (int)strlen(string_ref);
+            int length = (int) strlen(string_ref);
 
             if (length == argv_length && !STRNCASECMP(string_argv, string_ref, length))
             {
@@ -132,51 +134,58 @@ inline int checkCmdLineFlag(const int argc, const char **argv, const char *strin
         }
     }
 
-    return (int)bFound;
+    return (int) bFound;
 }
 
 // This function wraps the CUDA Driver API into a template function
-template <class T>
-inline bool getCmdLineArgumentValue(const int argc, const char **argv, const char *string_ref, T *value)
+template<class T>
+inline bool getCmdLineArgumentValue(const int    argc,
+                                    const char** argv,
+                                    const char*  string_ref,
+                                    T*           value)
 {
     bool bFound = false;
-    if (argc >= 1) {
-        for (int i=1; i < argc; i++) {
-            int string_start = stringRemoveDelimiter('-', argv[i]);
-            const char *string_argv = &argv[i][string_start];
-            int length = (int)strlen(string_ref);
-            if (!STRNCASECMP(string_argv, string_ref, length) ) {
-                if (length+1 <= (int)strlen(string_argv)) {
+    if (argc >= 1)
+    {
+        for (int i = 1; i < argc; i++)
+        {
+            int         string_start = stringRemoveDelimiter('-', argv[i]);
+            const char* string_argv  = &argv[i][string_start];
+            int         length       = (int) strlen(string_ref);
+            if (!STRNCASECMP(string_argv, string_ref, length))
+            {
+                if (length + 1 <= (int) strlen(string_argv))
+                {
                     int auto_inc = (string_argv[length] == '=') ? 1 : 0;
-                    *value = (T)atoi(&string_argv[length + auto_inc]);
+                    *value       = (T) atoi(&string_argv[length + auto_inc]);
                 }
                 bFound = true;
-                i=argc;
+                i      = argc;
             }
         }
     }
     return bFound;
 }
 
-inline int getCmdLineArgumentInt(const int argc, const char **argv, const char *string_ref)
+inline int getCmdLineArgumentInt(const int argc, const char** argv, const char* string_ref)
 {
     bool bFound = false;
-    int value = -1;
+    int  value  = -1;
 
     if (argc >= 1)
     {
-        for (int i=1; i < argc; i++)
+        for (int i = 1; i < argc; i++)
         {
-            int string_start = stringRemoveDelimiter('-', argv[i]);
-            const char *string_argv = &argv[i][string_start];
-            int length = (int)strlen(string_ref);
+            int         string_start = stringRemoveDelimiter('-', argv[i]);
+            const char* string_argv  = &argv[i][string_start];
+            int         length       = (int) strlen(string_ref);
 
             if (!STRNCASECMP(string_argv, string_ref, length))
             {
-                if (length+1 <= (int)strlen(string_argv))
+                if (length + 1 <= (int) strlen(string_argv))
                 {
                     int auto_inc = (string_argv[length] == '=') ? 1 : 0;
-                    value = atoi(&string_argv[length + auto_inc]);
+                    value        = atoi(&string_argv[length + auto_inc]);
                 }
                 else
                 {
@@ -199,25 +208,25 @@ inline int getCmdLineArgumentInt(const int argc, const char **argv, const char *
     }
 }
 
-inline float getCmdLineArgumentFloat(const int argc, const char **argv, const char *string_ref)
+inline float getCmdLineArgumentFloat(const int argc, const char** argv, const char* string_ref)
 {
-    bool bFound = false;
-    float value = -1;
+    bool  bFound = false;
+    float value  = -1;
 
     if (argc >= 1)
     {
-        for (int i=1; i < argc; i++)
+        for (int i = 1; i < argc; i++)
         {
-            int string_start = stringRemoveDelimiter('-', argv[i]);
-            const char *string_argv = &argv[i][string_start];
-            int length = (int)strlen(string_ref);
+            int         string_start = stringRemoveDelimiter('-', argv[i]);
+            const char* string_argv  = &argv[i][string_start];
+            int         length       = (int) strlen(string_ref);
 
             if (!STRNCASECMP(string_argv, string_ref, length))
             {
-                if (length+1 <= (int)strlen(string_argv))
+                if (length + 1 <= (int) strlen(string_argv))
                 {
                     int auto_inc = (string_argv[length] == '=') ? 1 : 0;
-                    value = (float)atof(&string_argv[length + auto_inc]);
+                    value        = (float) atof(&string_argv[length + auto_inc]);
                 }
                 else
                 {
@@ -240,23 +249,25 @@ inline float getCmdLineArgumentFloat(const int argc, const char **argv, const ch
     }
 }
 
-inline bool getCmdLineArgumentString(const int argc, const char **argv,
-                                     const char *string_ref, char **string_retval)
+inline bool getCmdLineArgumentString(const int    argc,
+                                     const char** argv,
+                                     const char*  string_ref,
+                                     char**       string_retval)
 {
     bool bFound = false;
 
     if (argc >= 1)
     {
-        for (int i=1; i < argc; i++)
+        for (int i = 1; i < argc; i++)
         {
-            int string_start = stringRemoveDelimiter('-', argv[i]);
-            char *string_argv = (char *)&argv[i][string_start];
-            int length = (int)strlen(string_ref);
+            int   string_start = stringRemoveDelimiter('-', argv[i]);
+            char* string_argv  = (char*) &argv[i][string_start];
+            int   length       = (int) strlen(string_ref);
 
             if (!STRNCASECMP(string_argv, string_ref, length))
             {
-                *string_retval = &string_argv[length+1];
-                bFound = true;
+                *string_retval = &string_argv[length + 1];
+                bFound         = true;
                 continue;
             }
         }
@@ -278,41 +289,41 @@ inline bool getCmdLineArgumentString(const int argc, const char **argv,
 //! @param filename         name of the file
 //! @param executable_path  optional absolute path of the executable
 //////////////////////////////////////////////////////////////////////////////
-inline char *sdkFindFilePath(const char *filename, const char *executable_path)
+inline char* sdkFindFilePath(const char* filename, const char* executable_path)
 {
     // <executable_name> defines a variable that is replaced with the name of the executable
 
-    // Typical relative search paths to locate needed companion files (e.g. sample input data, or JIT source files)
-    // The origin for the relative search may be the .exe file, a .bat file launching an .exe, a browser .exe launching the .exe or .bat, etc
-    const char *searchPath[] =
-    {
-        "./",                                       // same dir
-        "./data/",                                  // "/data/" subdir
-        "./<executable_name>/data/",                // "/<executable_name>/data/" subdir
-        "./inc/",                                   // "/inc/" subdir
-        "./common/video/",                          // "/common/video/" subdir
+    // Typical relative search paths to locate needed companion files (e.g. sample input data, or
+    // JIT source files) The origin for the relative search may be the .exe file, a .bat file
+    // launching an .exe, a browser .exe launching the .exe or .bat, etc
+    const char* searchPath[] = {
+        "./",                        // same dir
+        "./data/",                   // "/data/" subdir
+        "./<executable_name>/data/", // "/<executable_name>/data/" subdir
+        "./inc/",                    // "/inc/" subdir
+        "./common/video/",           // "/common/video/" subdir
 
-        "../",                                      // up 1 in tree
-        "../data/",                                 // up 1 in tree, "/data/" subdir
-        "../<executable_name>/data/",               // up 1 in tree, "/<executable_name>/data/" subdir
-        "../inc/",                                  // up 1 in tree, "/inc/" subdir
-        "../common/video/",                         // up 1 in tree, "/common/video/" subdir
+        "../",                        // up 1 in tree
+        "../data/",                   // up 1 in tree, "/data/" subdir
+        "../<executable_name>/data/", // up 1 in tree, "/<executable_name>/data/" subdir
+        "../inc/",                    // up 1 in tree, "/inc/" subdir
+        "../common/video/",           // up 1 in tree, "/common/video/" subdir
 
-        "../../",                                   // up 2 in tree
-        "../../data/",                              // up 2 in tree, "/data/" subdir
-        "../../<executable_name>/data/",            // up 2 in tree, "/<executable_name>/data/" subdir
-        "../../inc/",                               // up 2 in tree, "/inc/" subdir
-        "../../common/video/",                      // up 2 in tree, "/common/video/" subdir
+        "../../",                        // up 2 in tree
+        "../../data/",                   // up 2 in tree, "/data/" subdir
+        "../../<executable_name>/data/", // up 2 in tree, "/<executable_name>/data/" subdir
+        "../../inc/",                    // up 2 in tree, "/inc/" subdir
+        "../../common/video/",           // up 2 in tree, "/common/video/" subdir
 
-        "../../../",                                // up 3 in tree
-        "../../../data/",                           // up 3 in tree, "../../../data/" subdir
-        "../../../<executable_name>/data/",         // up 3 in tree, "/<executable_name>/data/" subdir
-        "../../../common/video/",                   // up 3 in tree, "/common/video/" subdir
+        "../../../",                        // up 3 in tree
+        "../../../data/",                   // up 3 in tree, "../../../data/" subdir
+        "../../../<executable_name>/data/", // up 3 in tree, "/<executable_name>/data/" subdir
+        "../../../common/video/",           // up 3 in tree, "/common/video/" subdir
 
-        "../../../../",                             // up 4 in tree
-        "../../../../data/",                        // up 4 in tree, "../../../data/" subdir    
-        "../../../../<executable_name>/data/",      // up 4 in tree, "/<executable_name>/data/" subdir
-        "../../../../common/video/",                // up 4 in tree, "/common/video/" subdir
+        "../../../../",                        // up 4 in tree
+        "../../../../data/",                   // up 4 in tree, "../../../data/" subdir
+        "../../../../<executable_name>/data/", // up 4 in tree, "/<executable_name>/data/" subdir
+        "../../../../common/video/",           // up 4 in tree, "/common/video/" subdir
     };
 
     // Extract the executable name
@@ -336,15 +347,15 @@ inline char *sdkFindFilePath(const char *filename, const char *executable_path)
 #else
         // Linux & OSX path delimiter
         size_t delimiter_pos = executable_name.find_last_of('/');
-        executable_name.erase(0,delimiter_pos+1);
+        executable_name.erase(0, delimiter_pos + 1);
 #endif
     }
 
     // Loop over all search paths and return the first hit
-    for (unsigned int i = 0; i < sizeof(searchPath)/sizeof(char *); ++i)
+    for (unsigned int i = 0; i < sizeof(searchPath) / sizeof(char*); ++i)
     {
         std::string path(searchPath[i]);
-        size_t executable_name_pos = path.find("<executable_name>");
+        size_t      executable_name_pos = path.find("<executable_name>");
 
         // If there is executable_name variable in the searchPath
         // replace it with the value
@@ -367,7 +378,7 @@ inline char *sdkFindFilePath(const char *filename, const char *executable_path)
 
         // Test if the file exists
         path.append(filename);
-        FILE *fp;
+        FILE* fp;
         FOPEN(fp, path.c_str(), "rb");
 
         if (fp != NULL)
@@ -375,7 +386,7 @@ inline char *sdkFindFilePath(const char *filename, const char *executable_path)
             fclose(fp);
             // File found
             // returning an allocated array here for backwards compatibility reasons
-            char *file_path = (char *) malloc(path.length() + 1);
+            char* file_path = (char*) malloc(path.length() + 1);
             STRCPY(file_path, path.length() + 1, path.c_str());
             return file_path;
         }
