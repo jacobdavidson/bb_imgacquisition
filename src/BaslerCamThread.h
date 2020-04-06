@@ -126,10 +126,9 @@ private:
      * Logs are written to the logfile specified as per
      * JSON configuration.
      *
-     * @param The error object
+     * @param The error message
      */
-    // void logCriticalError(Error e);
-    void logCriticalError(const std::string& shortMsg, const std::string& message);
+    void logCriticalError(const std::string& message);
 
     // Pylon camera object
     Pylon::CBaslerUsbInstantCamera _camera;

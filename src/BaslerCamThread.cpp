@@ -340,7 +340,7 @@ void BaslerCamThread::run()
             // somehow the camera stopped grabbing
             // --> we simply log it and restart the application.
             const std::string message = "Aquisition failed with error code " + std::to_string(42);
-            logCriticalError(message, message);
+            logCriticalError(message);
             std::exit(1);
         }
 
@@ -391,9 +391,9 @@ void BaslerCamThread::run()
     return;
 }
 
-void BaslerCamThread::logCriticalError(const std::string& shortMsg, const std::string& message)
+void BaslerCamThread::logCriticalError(const std::string& message)
 {
-    return;
+    sendLogMessage(0, message);
 }
 
 void BaslerCamThread::sendLogMessage(int logLevel, QString message)
