@@ -3,12 +3,15 @@
 #ifdef WINDOWS
     #include <windows.h>
 #endif
-#include "CamThread.h"
-#include <pylon/PylonIncludes.h>
-#include "Buffer/MutexBuffer.h"
-#include "Watchdog.h"
+
 #include <mutex>
 #include <string>
+
+#include <pylon/PylonIncludes.h>
+
+#include "CamThread.h"
+#include "Buffer/MutexBuffer.h"
+#include "Watchdog.h"
 
 /*!\brief Thread object which acquires images from a camera.
  *
