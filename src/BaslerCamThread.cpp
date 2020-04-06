@@ -109,6 +109,7 @@ bool BaslerCamThread::initCamera()
             {
                 _HWID = i;
                 _camera.Attach(tlFactory.CreateDevice(devices[i]));
+                _camera.Open();
 
                 _initialized = true;
 
