@@ -95,6 +95,10 @@ target_link_libraries(${EXE_NAME} PRIVATE
 	${OpenCV_LIBRARIES}
 )
 
+if(WITH_DEBUG_IMAGE_OUTPUT)
+	target_compile_definitions(${EXE_NAME} PRIVATE WITH_DEBUG_IMAGE_OUTPUT)
+endif()
+
 if(${CAMERA_BACKEND} STREQUAL "Basler")
 	target_sources(${EXE_NAME} PRIVATE src/BaslerCamThread.h src/BaslerCamThread.cpp)
 	target_compile_definitions(${EXE_NAME} PRIVATE USE_BASLER)
