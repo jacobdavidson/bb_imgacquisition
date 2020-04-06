@@ -322,8 +322,8 @@ void BaslerCamThread::run()
                 } // grab did not succeed
                 else
                 {
-                    cout << "Error: " << ptrGrabResult->GetErrorCode() << " "
-                         << ptrGrabResult->GetErrorDescription() << endl;
+                    std::cerr << "Error: " << ptrGrabResult->GetErrorCode() << " "
+                              << ptrGrabResult->GetErrorDescription() << endl;
                 }
             }
             catch (GenericException e) // could not retrieve grab result
