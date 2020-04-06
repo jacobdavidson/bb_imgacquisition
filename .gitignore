@@ -216,6 +216,7 @@ _deps
 ### Application ###
 memory*.txt
 tmp
+out
 
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
