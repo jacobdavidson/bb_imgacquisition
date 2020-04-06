@@ -213,6 +213,10 @@ _deps
 !.vscode/launch.json
 !.vscode/extensions.json
 
+### Application ###
+memory*.txt
+tmp
+
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
 .history
