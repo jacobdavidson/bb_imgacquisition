@@ -64,7 +64,7 @@ namespace beeCompress
             double contrast = avgHistDifference(ref, mat);
             double noise    = noiseEstimate(mat);
             sprintf(outstr,
-                    "Cam_%d_%s: %f,\t%f,\t%f,\t%f,\t%f\n",
+                    "Cam_%d_%s: %f,\t%f,\t%f,\t%f\n",
                     img->camid,
                     img->timestamp.c_str(),
                     smd,
