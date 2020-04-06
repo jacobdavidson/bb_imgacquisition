@@ -111,6 +111,10 @@ namespace beeCompress
         int memsize = height * width + 32 + 64 + sizeof(boost::interprocess::interprocess_mutex);
 
         std::string ftopkFile = "memory" + std::to_string(id) + ".txt";
+        if (!boost::filesystem::exists({ftopkFile}))
+        {
+            auto f = boost::filesystem::ofstream{ftopkFile};
+        }
         /* make the key: */
         if ((*key = ftok(ftopkFile.c_str(), 'R')) == -1) /*Here the file must exist */
         {

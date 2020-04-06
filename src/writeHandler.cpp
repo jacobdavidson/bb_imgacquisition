@@ -36,6 +36,7 @@ namespace beeCompress
                 0);
         sprintf(exdirFilepath, edir.c_str(), _camId, 0);
 
+        boost::filesystem::create_directories({filepath});
         std::string tmp = filepath;
         _exchangedir    = exdirFilepath;
         _lockfile       = tmp + ".lck";
