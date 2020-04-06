@@ -8,6 +8,7 @@
 #include <string>
 
 #include <pylon/PylonIncludes.h>
+#include <pylon/usb/BaslerUsbInstantCamera.h>
 
 #include "CamThread.h"
 #include "Buffer/MutexBuffer.h"
@@ -130,7 +131,7 @@ private:
     void logCriticalError(const std::string& shortMsg, const std::string& message);
 
     // Pylon camera object
-    Pylon::CInstantCamera _camera;
+    Pylon::CBaslerUsbInstantCamera _camera;
 
     //! ... to enumerate each image in a second
     unsigned int _LocalCounter;
