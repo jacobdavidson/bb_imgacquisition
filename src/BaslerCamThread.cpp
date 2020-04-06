@@ -118,6 +118,9 @@ bool BaslerCamThread::initCamera()
 
         if (_HWID)
         {
+            std::ostringstream msg;
+            msg << "Resolution: " << _camera.Width() << "x" << _camera.Height();
+            sendLogMessage(0, msg.str());
             // ToDo:
             // print additional info
             // set cam params as set in config file
