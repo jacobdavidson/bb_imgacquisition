@@ -945,7 +945,7 @@ int CNvEncoder::EncodeMain(double*                    elapsedTimeP,
     nvStatus = EncodeFrame(NULL, true, encodeConfig.width, encodeConfig.height);
     if (nvStatus != NV_ENC_SUCCESS)
     {
-        std::cout << "ENCODER ERROR: " << nvStatus << std::endl;
+        std::cerr << "ENCODER ERROR: " << nvStatus << std::endl;
         bError = true;
         goto exit;
     }

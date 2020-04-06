@@ -193,7 +193,7 @@ void BaslerCamThread::run()
         }
         else
         {
-            std::cout << "Warning: not found reference image refIm.jpg." << std::endl;
+            std::cerr << "Warning: not found reference image refIm.jpg." << std::endl;
         }
     }
 
@@ -253,7 +253,7 @@ void BaslerCamThread::run()
                         str.append(" timestamp: ");
                         str.append(
                             boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-                        std::cout << str.toStdString() << std::endl;
+                        std::cerr << str.toStdString() << std::endl;
                         generateLog(logfilepathFull, str);
 
                         // add camera handling
@@ -278,7 +278,7 @@ void BaslerCamThread::run()
                             str.append(" wall clock: ");
                             str.append(
                                 boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-                            std::cout << str.toStdString() << std::endl;
+                            std::cerr << str.toStdString() << std::endl;
                             generateLog(logfilepathFull, str);
                         }
                         lastCameraTimestamp = wallClockNow;
@@ -311,7 +311,7 @@ void BaslerCamThread::run()
                         str.append(std::to_string(duration).c_str());
                         str.append(" on camera ");
                         str.append(std::to_string(_ID).c_str());
-                        std::cout << str.toStdString() << std::endl;
+                        std::cerr << str.toStdString() << std::endl;
                         generateLog(logfilepathFull, str);
                     }
 

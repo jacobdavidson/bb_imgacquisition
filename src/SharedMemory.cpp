@@ -56,10 +56,10 @@ namespace beeCompress
                 _mutex[id] = new (_data[id] + lockpos) boost::interprocess::interprocess_mutex();
                 _mutex[id]->lock();
 
-                std::cout << "Created new lock to prevent starvation." << std::endl;
+                std::cerr << "Created new lock to prevent starvation." << std::endl;
             }
             // else
-            //  std::cout << "locked"<<std::endl;
+            //  std::cerr << "locked"<<std::endl;
         }
     }
 
@@ -67,7 +67,7 @@ namespace beeCompress
     {
         if (_mutex[id] == 0)
         {
-            std::cout << "Error: Unlocking null pointer mutex " << id << std::endl;
+            std::cerr << "Error: Unlocking null pointer mutex " << id << std::endl;
         }
         else
         {

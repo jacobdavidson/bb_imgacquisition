@@ -34,7 +34,7 @@ namespace beeCompress
         uint64_t h = imbuffer->height;
         if (s * w * h / 1024 / 1024 > BUFFER_HARDLIMIT)
         {
-            std::cout << "ERROR: Buffer exceeds hardlimit (" << BUFFER_HARDLIMIT
+            std::cerr << "ERROR: Buffer exceeds hardlimit (" << BUFFER_HARDLIMIT
                       << " MB). Exiting. " << std::endl;
             std::exit(1);
         }
@@ -56,7 +56,7 @@ namespace beeCompress
         }
         _Access.unlock();
 
-        std::cout << "Warning: pop used on an empty buffer" << std::endl;
+        std::cerr << "Warning: pop used on an empty buffer" << std::endl;
         std::shared_ptr<ImageBuffer> dummy(new beeCompress::ImageBuffer(0, 0, 0, ""));
         return dummy;
     }

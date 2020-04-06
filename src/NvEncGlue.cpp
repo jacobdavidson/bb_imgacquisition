@@ -139,7 +139,7 @@ namespace beeCompress
                                      encCfgPrev);
             if (ret <= 0)
             {
-                std::cout << "ENCODER ERROR! " << std::endl;
+                std::cerr << "ENCODER ERROR! " << std::endl;
             }
             else
             {

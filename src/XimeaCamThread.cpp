@@ -364,7 +364,7 @@ void XimeaCamThread::run()
         }
         else
         {
-            std::cout << "Warning: not found reference image refIm.jpg." << std::endl;
+            std::cerr << "Warning: not found reference image refIm.jpg." << std::endl;
         }
     }
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
@@ -402,7 +402,7 @@ void XimeaCamThread::run()
             str.append(std::to_string(lastImageSequenceNumber).c_str());
             str.append(" timestamp: ");
             str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-            std::cout << str.toStdString() << std::endl;
+            std::cerr << str.toStdString() << std::endl;
             generateLog(logfilepathFull, str);
 
             for (auto& what : std::map<std::string, int>{
@@ -412,7 +412,7 @@ void XimeaCamThread::run()
                 xiSetParamInt(_Camera, XI_PRM_COUNTER_SELECTOR, what.second);
                 int result{0};
                 xiGetParamInt(_Camera, XI_PRM_COUNTER_VALUE, &result);
-                std::cout << what.first << result << std::endl;
+                std::cerr << what.first << result << std::endl;
             }
         }
         lastImageSequenceNumber = image.nframe;
@@ -428,7 +428,7 @@ void XimeaCamThread::run()
                 str.append(boost::posix_time::to_iso_extended_string(lastCameraTimestamp).c_str());
                 str.append(" wall clock: ");
                 str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-                std::cout << str.toStdString() << std::endl;
+                std::cerr << str.toStdString() << std::endl;
                 generateLog(logfilepathFull, str);
             }
             lastCameraTimestamp = wallClockNow;
@@ -457,7 +457,7 @@ void XimeaCamThread::run()
             str.append(std::to_string(duration).c_str());
             str.append(" on camera ");
             str.append(std::to_string(_ID).c_str());
-            std::cout << str.toStdString() << std::endl;
+            std::cerr << str.toStdString() << std::endl;
             generateLog(logfilepathFull, str);
         }
 
@@ -544,7 +544,7 @@ void XimeaCamThread::run()
     errorCode = xiCloseDevice(_Camera);
     checkReturnCode(errorCode, "xiCloseDevice");
 
-    std::cout << "done" << std::endl;
+    std::cerr << "done" << std::endl;
     return;
 }
 /*

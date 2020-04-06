@@ -46,21 +46,21 @@ namespace beeCompress
         _lock = fopen(_lockfile.c_str(), "wb");
         if (_lock == nullptr)
         {
-            std::cout << "Lock file could not be opened!" << std::endl;
+            std::cerr << "Lock file could not be opened!" << std::endl;
             assert(false);
             exit(1);
         }
         _video = fopen(_videofile.c_str(), "wb");
         if (_video == nullptr)
         {
-            std::cout << "Video file could not be opened!" << std::endl;
+            std::cerr << "Video file could not be opened!" << std::endl;
             assert(false);
             exit(1);
         }
         _frames = fopen(_framesfile.c_str(), "wb");
         if (_frames == nullptr)
         {
-            std::cout << "Timestamps file could not be opened!" << std::endl;
+            std::cerr << "Timestamps file could not be opened!" << std::endl;
             assert(false);
             exit(1);
         }

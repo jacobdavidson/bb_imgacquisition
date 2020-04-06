@@ -47,7 +47,7 @@ namespace beeCompress
         }
         else
         {
-            std::cout << "Warning: not found reference image refIm.jpg." << std::endl;
+            std::cerr << "Warning: not found reference image refIm.jpg." << std::endl;
         }
 
         while (true)
@@ -238,7 +238,7 @@ namespace beeCompress
         Mat dif(noisy.size(), cv::DataType<double>::type);
         subtract(ideal, noisy, dif);
         double total = cv::sum(cv::abs(dif))[0] / 256.0; // TODO SSD!?
-        // std::cout << total << std::endl;
+        // std::cerr << total << std::endl;
         return total;
     }
 

@@ -651,7 +651,7 @@ void Flea3CamThread::run()
         int duration = std::chrono::duration_cast<std::chrono::microseconds>(begin - end).count();
         if (duration > 333333)
         {
-            std::cout << "Warning: Processing time too long:  " << duration << "\n";
+            std::cerr << "Warning: Processing time too long:  " << duration << "\n";
             QString str("Warning: Processing time too long: ");
             str.append(std::to_string(duration).c_str());
             str.append(" on camera ");

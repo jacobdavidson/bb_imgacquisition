@@ -29,7 +29,7 @@ public:
                 uint64_t now = time(NULL);
                 if (now - _timestamps[i] > 60)
                 {
-                    std::cout << "Error: process dead! " << i << std::endl;
+                    std::cerr << "Error: process dead! " << i << std::endl;
                     std::exit(1);
                 }
             }
