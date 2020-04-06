@@ -58,7 +58,6 @@ bool BaslerCamThread::initialize(unsigned int              id,
     _SharedMemBuffer = pSharedMemBuffer;
     _Buffer          = pBuffer;
     _ID              = id;
-    _HWID            = -1;
     _Calibration     = calib;
     _initialized     = false;
     _Dog             = dog;
@@ -103,10 +102,8 @@ bool BaslerCamThread::initCamera()
         // Get all attached devices and return -1 if no device is found.
         DeviceInfoList_t devices;
 
-        int n = tlFactory.EnumerateDevices(devices);
-
-        _HWID = std::numeric_limits<decltype(_HWID)>::max();
-        for (int i = 0; i < n; i++)
+        tlFactory.EnumerateDevices(devices);
+        for (size_t i = 0; i < devices.size(); i++)
         {
             if (cfg.serialString == devices[i].GetSerialNumber().c_str())
             {
@@ -115,22 +112,24 @@ bool BaslerCamThread::initCamera()
 
                 _initialized = true;
 
-                return true;
+                break;
             }
         }
 
-        if (_HWID == std::numeric_limits<decltype(_HWID)>::max())
+        if (_HWID)
+        {
+            // ToDo:
+            // print additional info
+            // set cam params as set in config file
+        }
+        else
         {
             sendLogMessage(0, "failed to find cam matching config serial nr: " + cfg.serialString);
-            return false;
         }
-
-        // ToDo:
-        // print additional info
-        // set cam params as set in config file
     }
     catch (GenericException e)
     {
+        sendLogMessage(0, e.what());
     }
 
     return _initialized;

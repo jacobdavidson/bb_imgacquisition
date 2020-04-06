@@ -6,6 +6,7 @@
 
 #include <mutex>
 #include <string>
+#include <optional>
 
 #include <pylon/PylonIncludes.h>
 #include <pylon/usb/BaslerUsbInstantCamera.h>
@@ -55,8 +56,8 @@ public:
     unsigned int _ID;
 
     //! Hardware ID (id in bus order) of the camera. (used internally)
-    unsigned int    _HWID;
-    Pylon::String_t _SerialNumber;
+    std::optional<unsigned int> _HWID;
+    Pylon::String_t             _SerialNumber;
 
     //! Serial number of the camera
     std::string _Serial;
