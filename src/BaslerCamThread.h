@@ -18,6 +18,9 @@ class BaslerCamThread : public CamThread
 {
     Q_OBJECT
 
+private:
+    Pylon::PylonAutoInitTerm pylon;
+
 public:
     BaslerCamThread();          // constructor
     virtual ~BaslerCamThread(); // destructor
