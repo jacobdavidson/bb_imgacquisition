@@ -114,7 +114,8 @@ namespace beeCompress
 
         boost::filesystem::create_directories(boost::filesystem::path{newvideofile}.parent_path());
         rename(_videofile.c_str(), newvideofile.c_str());
-        boost::filesystem::create_directories(boost::filesystem::path{newframesfile}.parent_path());
+        boost::filesystem::create_directories(
+            boost::filesystem::path{newframesfile}.parent_path());
         rename(_framesfile.c_str(), newframesfile.c_str());
 
         // This process runs as root. Set correct rights so others can work with the files.
