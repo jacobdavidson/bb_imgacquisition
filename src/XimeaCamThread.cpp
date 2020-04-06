@@ -624,23 +624,6 @@ void XimeaCamThread::sendLogMessage(int logLevel, const char* message)
     sendLogMessage(logLevel, QString(message));
 }
 
-void XimeaCamThread::cleanFolder(QString path, QString message)
-{
-    QDir dir(path);
-    dir.setNameFilters(QStringList() << "*.jpeg");
-    dir.setFilter(QDir::Files);
-    for (const auto& dirFile : dir.entryList())
-    {
-        dir.remove(dirFile);
-    }
-    QString filename = (path + "log.txt");
-    QFile   file(filename);
-    file.open(QIODevice::Append);
-    QTextStream stream(&file);
-    stream << message << "\r\n";
-    file.close();
-}
-
 void XimeaCamThread::generateLog(QString path, QString message)
 {
     QString filename = (path + "log.txt");

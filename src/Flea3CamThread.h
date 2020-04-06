@@ -91,16 +91,6 @@ private:
     void sendLogMessage(int logLevel, QString message);
 
     /**
-     * @brief Clears acquired files (deprecated)
-     *
-     * Previously used to prevent running out of memory. (Ramdisk)
-     *
-     * @param Folder which to clear
-     * @param Message to write to log file (deleted files)
-     */
-    void cleanFolder(QString path, QString message);
-
-    /**
      * @brief Generates a log message to log.txt in the given path.
      *
      * @param Path to the log.txt file

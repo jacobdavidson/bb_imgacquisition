@@ -802,23 +802,6 @@ void Flea3CamThread::sendLogMessage(int logLevel, QString message)
     emit logMessage(logLevel, "Cam " + QString::number(_ID) + " : " + message);
 }
 
-void Flea3CamThread::cleanFolder(QString path, QString message)
-{
-    QDir dir(path);
-    dir.setNameFilters(QStringList() << "*.jpeg");
-    dir.setFilter(QDir::Files);
-    foreach (QString dirFile, dir.entryList())
-    {
-        dir.remove(dirFile);
-    }
-    QString filename = (path + "log.txt");
-    QFile   file(filename);
-    file.open(QIODevice::Append);
-    QTextStream stream(&file);
-    stream << message << "\r\n";
-    file.close();
-}
-
 void Flea3CamThread::generateLog(QString path, QString message)
 {
     QString filename = (path + "log.txt");
