@@ -328,11 +328,12 @@ bool XimeaCamThread::startCapture()
 
 void XimeaCamThread::run()
 {
-    char logfilepathFull[256];
+    SettingsIAC*         set = SettingsIAC::getInstance();
+    EncoderQualityConfig cfg = set->getBufferConf(_ID, 0);
 
-    SettingsIAC*         set    = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg    = set->getBufferConf(_ID, 0);
-    std::string          logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+    char        logfilepathFull[256];
+    std::string logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+    sprintf(logfilepathFull, logdir.c_str(), _ID);
 
     const unsigned int vwidth  = static_cast<unsigned int>(cfg.width);
     const unsigned int vheight = static_cast<unsigned int>(cfg.height);

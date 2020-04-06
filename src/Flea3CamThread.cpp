@@ -570,11 +570,13 @@ void Flea3CamThread::run()
 {
     struct tm* timeinfo;
     char       timeresult[32];
-    char       logfilepathFull[256];
 
-    SettingsIAC*         set    = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg    = set->getBufferConf(_ID, 0);
-    std::string          logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+    SettingsIAC*         set = SettingsIAC::getInstance();
+    EncoderQualityConfig cfg = set->getBufferConf(_ID, 0);
+
+    char        logfilepathFull[256];
+    std::string logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
+    sprintf(logfilepathFull, logdir.c_str(), _ID);
 
     int vwidth           = cfg.width;
     int vheight          = cfg.height;
@@ -590,10 +592,9 @@ void Flea3CamThread::run()
     unsigned int difTimeStampUs;
     ////////////////////////////////////////////////////
 
-    ////////////////////////Logging and timekeeping/////
+    ////////////////////////Timekeeping/////
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point end   = std::chrono::steady_clock::now();
-    sprintf(logfilepathFull, logdir.c_str(), _ID);
     ////////////////////////////////////////////////////
 
     ////////////////////////LINUX/////////////////////
@@ -801,22 +802,4 @@ void Flea3CamThread::sendLogMessage(int logLevel, QString message)
 {
     emit logMessage(logLevel, "Cam " + QString::number(_ID) + " : " + message);
 }
-
-void Flea3CamThread::generateLog(QString path, QString message)
-{
-    QString filename = (path + "log.txt");
-    QFile   file(filename);
-    file.open(QIODevice::Append);
-    QTextStream stream(&file);
-    stream << QString(getTimestamp().c_str()) << ": " << message << "\r\n";
-    file.close();
-}
-
-void Flea3CamThread::localCounter(unsigned int oldTime, unsigned int newTime)
-{
-    if (oldTime != newTime)
-    {
-        _LocalCounter = 0;
-    }
-    _LocalCounter++;
 }
