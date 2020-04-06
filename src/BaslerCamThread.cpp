@@ -195,13 +195,13 @@ void BaslerCamThread::run()
 
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
-    unsigned long            n_last_camera_tick_count{0};
-    unsigned long            n_last_frame_id{0};
+    uint64_t                 n_last_camera_tick_count{0};
+    uint64_t                 n_last_frame_id{0};
     boost::posix_time::ptime lastCameraTimestamp;
 
-    uint8_t*      p_image;
-    uint          img_width, img_height;
-    unsigned long n_current_frame_id;
+    uint8_t* p_image;
+    uint     img_width, img_height;
+    uint64_t n_current_frame_id;
 
     for (size_t loopCount = 0; true; loopCount += 1)
     {
@@ -237,8 +237,7 @@ void BaslerCamThread::run()
                         std::chrono::steady_clock::now();
                     // the camera specific tick count. The Basler acA4096-30um
                     // clock freq is 1 GHz (1 tick per 1 ns)
-                    const unsigned long n_current_camera_tick_count =
-                        ptrGrabResult->GetTimeStamp();
+                    const uint64_t n_current_camera_tick_count = ptrGrabResult->GetTimeStamp();
 
                     // Image sequence sanity check.
                     if (n_last_frame_id != 0 && n_current_frame_id != n_last_frame_id + 1)
@@ -282,7 +281,7 @@ void BaslerCamThread::run()
                     }
                     else
                     {
-                        const long tick_delta = static_cast<const long>(
+                        const int64_t tick_delta = static_cast<const int64_t>(
                             n_current_camera_tick_count - n_last_camera_tick_count);
                         assert(tick_delta >= 0); // ToDo: add tick to microsecond conversion
                                                  // factor as config setting
@@ -300,7 +299,7 @@ void BaslerCamThread::run()
 
                     // Check if processing a frame took longer than X seconds. If
                     // so, log the event.
-                    const long duration =
+                    const int64_t duration =
                         std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
                     if (duration > 2 * (1000000 / 6))
                     {

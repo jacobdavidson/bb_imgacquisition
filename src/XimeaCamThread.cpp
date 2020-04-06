@@ -369,8 +369,8 @@ void XimeaCamThread::run()
     }
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
-    unsigned long            lastCameraTimestampMicroseconds{0};
-    unsigned long            lastImageSequenceNumber{0};
+    uint64_t                 lastCameraTimestampMicroseconds{0};
+    uint64_t                 lastImageSequenceNumber{0};
     boost::posix_time::ptime lastCameraTimestamp;
 
     // Preallocate image buffer on stack in order to safe performance later.
@@ -390,8 +390,8 @@ void XimeaCamThread::run()
         auto returnCode = xiGetImage(_Camera, 1000 * 2, &image);
         // Get the timestamp
         const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
-        const std::chrono::steady_clock::time_point end        = std::chrono::steady_clock::now();
-        const unsigned long currentCameraTimestampMicroseconds = image.tsUSec;
+        const std::chrono::steady_clock::time_point end   = std::chrono::steady_clock::now();
+        const uint64_t currentCameraTimestampMicroseconds = image.tsUSec;
 
         // Image sequence sanity check.
         if (lastImageSequenceNumber != 0 && image.nframe != lastImageSequenceNumber + 1)
@@ -435,7 +435,7 @@ void XimeaCamThread::run()
         }
         else
         {
-            const long microsecondDelta = static_cast<const long>(
+            const int64_t microsecondDelta = static_cast<const int64_t>(
                 currentCameraTimestampMicroseconds - lastCameraTimestampMicroseconds);
             assert(microsecondDelta >= 0);
             lastCameraTimestamp += boost::posix_time::microseconds(microsecondDelta);
@@ -449,7 +449,7 @@ void XimeaCamThread::run()
         }
 
         // Check if processing a frame took longer than X seconds. If so, log the event.
-        const long duration =
+        const int64_t duration =
             std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
         if (duration > 2 * (1000000 / 6))
         {

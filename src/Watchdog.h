@@ -12,7 +12,7 @@ public:
     int _camActive[6];
 
     //! Timestamp when x was seen alive last time.
-    unsigned long int _timestamps[6];
+    uint64_t _timestamps[6];
 
     /**
      * @brief Check all slots for a timeout.
@@ -26,7 +26,7 @@ public:
         {
             if (_camActive[i] == 1)
             {
-                unsigned long int now = time(NULL);
+                uint64_t now = time(NULL);
                 if (now - _timestamps[i] > 60)
                 {
                     std::cout << "Error: process dead! " << i << std::endl;

@@ -29,9 +29,9 @@ namespace beeCompress
         _Access.lock();
 
         images.push_back(imbuffer);
-        unsigned long s = images.size();
-        unsigned long w = imbuffer->width;
-        unsigned long h = imbuffer->height;
+        uint64_t s = images.size();
+        uint64_t w = imbuffer->width;
+        uint64_t h = imbuffer->height;
         if (s * w * h / 1024 / 1024 > BUFFER_HARDLIMIT)
         {
             std::cout << "ERROR: Buffer exceeds hardlimit (" << BUFFER_HARDLIMIT

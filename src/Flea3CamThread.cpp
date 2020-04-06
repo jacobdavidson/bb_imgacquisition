@@ -505,7 +505,7 @@ int flycapTo420(uint8_t* outputImage, FlyCapture2::Image* inputImage)
 
     int bytesRead;
 #if HALIDE
-    unsigned long long           time, time2;
+    uint64_t                     time, time2;
     unsigned char*               prtM = inputImage->GetData();
     unsigned int                 rows, cols, stride;
     FlyCapture2::PixelFormat     pixFmt;
@@ -603,7 +603,7 @@ void Flea3CamThread::run()
     struct timeval  tv;
     struct timezone tz;
     int             cs;
-    long int        startTime;
+    int64_t         startTime;
 
     gettimeofday(&tv, &tz);
     startTime = tv.tv_sec; // Note: using this method the start might be shifted by <1sec

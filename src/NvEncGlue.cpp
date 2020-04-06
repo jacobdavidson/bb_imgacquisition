@@ -55,14 +55,10 @@ namespace beeCompress
         while (1)
         {
             // Select a buffer to work on. Largest first.
-            long long unsigned int c1 = _Buffer1->size() *
-                                        (long long unsigned int) (cfgC1.width * cfgC1.height);
-            long long unsigned int c2 = _Buffer2->size() *
-                                        (long long unsigned int) (cfgC2.width * cfgC2.height);
-            long long unsigned int c1p = _Buffer1_preview->size() *
-                                         (long long unsigned int) (cfgP1.width * cfgP1.height);
-            long long unsigned int c2p = _Buffer2_preview->size() *
-                                         (long long unsigned int) (cfgP2.width * cfgP2.height);
+            uint64_t c1  = _Buffer1->size() * (uint64_t)(cfgC1.width * cfgC1.height);
+            uint64_t c2  = _Buffer2->size() * (uint64_t)(cfgC2.width * cfgC2.height);
+            uint64_t c1p = _Buffer1_preview->size() * (uint64_t)(cfgP1.width * cfgP1.height);
+            uint64_t c2p = _Buffer2_preview->size() * (uint64_t)(cfgP2.width * cfgP2.height);
 
             int                  currentCam = 0;
             MutexBuffer*         currentCamBuffer;
@@ -70,7 +66,7 @@ namespace beeCompress
             EncoderQualityConfig encCfg;
             EncoderQualityConfig encCfgPrev;
 
-            long long unsigned int maxSize = mymax(mymax(mymax(c1, c2), c1p), c2p);
+            uint64_t maxSize = mymax(mymax(mymax(c1, c2), c1p), c2p);
 
             // If all are empty, check again later.
             if (maxSize == 0)
