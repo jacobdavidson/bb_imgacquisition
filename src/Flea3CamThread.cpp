@@ -802,4 +802,14 @@ void Flea3CamThread::sendLogMessage(int logLevel, QString message)
 {
     emit logMessage(logLevel, "Cam " + QString::number(_ID) + " : " + message);
 }
+
+void Flea3CamThread::generateLog(QString path, QString message)
+{
+    boost::filesystem::create_directories({path.toStdString()});
+    QString filename = (path + "log.txt");
+    QFile   file(filename);
+    file.open(QIODevice::Append);
+    QTextStream stream(&file);
+    stream << QString(getTimestamp().c_str()) << ": " << message << "\r\n";
+    file.close();
 }
