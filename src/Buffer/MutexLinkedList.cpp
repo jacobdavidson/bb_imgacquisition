@@ -35,7 +35,7 @@ namespace beeCompress
         if (s * w * h / 1024 / 1024 > BUFFER_HARDLIMIT)
         {
             std::cerr << "ERROR: Buffer exceeds hardlimit (" << BUFFER_HARDLIMIT
-                      << " MB). Exiting. " << std::endl;
+                      << " MiB). Exiting. " << std::endl;
             std::exit(1);
         }
 
