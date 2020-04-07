@@ -627,6 +627,7 @@ void XimeaCamThread::sendLogMessage(int logLevel, const char* message)
 
 void XimeaCamThread::generateLog(QString path, QString message)
 {
+    boost::filesystem::create_directories({path.toStdString()});
     QString filename = (path + "log.txt");
     QFile   file(filename);
     file.open(QIODevice::Append);
