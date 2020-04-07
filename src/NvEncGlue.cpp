@@ -143,7 +143,7 @@ namespace beeCompress
             }
             else
             {
-                std::cout << "Encoded " << ret / 1024 / 1024 << " MB" << std::endl;
+                std::cout << "Encoded " << ret << " byte" << std::endl;
             }
         }
 #else
