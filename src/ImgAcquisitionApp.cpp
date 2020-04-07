@@ -194,11 +194,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     printBuildInfo();
     resolveLocks();
 
-#ifdef USE_BASLER
-    PylonInitialize();
-    std::cout << "Pylon Initialized" << endl;
-#endif
-
     // when the number of cameras is insufficient it should interrupt the program
     numCameras = checkCameras();
 
@@ -324,9 +319,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 // destructor
 ImgAcquisitionApp::~ImgAcquisitionApp()
 {
-#ifdef USE_BASLER
-    PylonTerminate();
-#endif
 }
 
 // Just prints the library's info
@@ -372,6 +364,7 @@ int ImgAcquisitionApp::checkCameras()
 #endif
 
 #ifdef USE_BASLER
+    PylonAutoInitTerm pylon;
     try
     {
         // Get the transport layer factory.
