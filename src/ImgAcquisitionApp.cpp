@@ -31,8 +31,6 @@ using namespace FlyCapture2;
 using namespace Pylon;
 #endif
 
-using namespace std;
-
 #ifdef __linux__
 void cpsleep(int t)
 {
@@ -213,15 +211,15 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     {
 
 #ifdef USE_FLEA3
-        _threads[i] = std::unique_ptr<CamThread>{static_cast<CamThread*>(new Flea3CamThread())};
+        _threads[i] = std::make_unique<Flea3CamThread>();
 #endif
 
 #ifdef USE_XIMEA
-        _threads[i] = std::unique_ptr<CamThread>{static_cast<CamThread*>(new XimeaCamThread())};
+        _threads[i] = std::make_unique<XimeaCamThread>();
 #endif
 
 #ifdef USE_BASLER
-        _threads[i] = std::unique_ptr<CamThread>{static_cast<CamThread*>(new BaslerCamThread())};
+        _threads[i] = std::make_unique<BaslerCamThread>();
 #endif
 
         connect(_threads[i].get(),
