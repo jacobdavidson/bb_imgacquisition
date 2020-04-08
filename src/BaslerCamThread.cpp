@@ -354,7 +354,7 @@ void BaslerCamThread::run()
             // some multiple of X. ToDo: remove this part and add camera check if
             // conforming with size requirements
             cv::Mat            wholeImageMatrix(cv::Size(img_width, img_height),
-                                     CV_8UC1,
+                                     CV_8UC1, /// FIXME: This should not be hardcoded, the pixel type should be mapped from pylon to opencv
                                      p_image,
                                      cv::Mat::AUTO_STEP);
             const unsigned int marginToBeCroppedX = (img_width > vwidth) ? img_width - vwidth : 0;
