@@ -210,9 +210,6 @@ void BaslerCamThread::run()
         // signal thread is alive
         _Dog->pulse(static_cast<int>(_ID));
 
-        // grab image
-        CGrabResultPtr ptrGrabResult;
-
         if (_camera.IsGrabbing())
         {
             try
@@ -222,16 +219,16 @@ void BaslerCamThread::run()
                     std::chrono::steady_clock::now();
 
                 // Timeout is 5000, ToDo: add respective setting to configuration file
-                _camera.RetrieveResult(5000, ptrGrabResult, TimeoutHandling_ThrowException);
+                _camera.RetrieveResult(5000, _grabbed, TimeoutHandling_Return);
 
                 // Image grabbed successfully?
-                if (ptrGrabResult->GrabSucceeded())
+                if (_grabbed)
                 {
                     // get image data
-                    img_width          = ptrGrabResult->GetWidth();
-                    img_height         = ptrGrabResult->GetHeight();
-                    p_image            = (uint8_t*) ptrGrabResult->GetBuffer();
-                    n_current_frame_id = ptrGrabResult->GetImageNumber();
+                    img_width          = _grabbed->GetWidth();
+                    img_height         = _grabbed->GetHeight();
+                    p_image            = (uint8_t*) _grabbed->GetBuffer();
+                    n_current_frame_id = _grabbed->GetImageNumber();
 
                     // get time after getting the data
                     const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
@@ -239,7 +236,7 @@ void BaslerCamThread::run()
                         std::chrono::steady_clock::now();
                     // the camera specific tick count. The Basler acA4096-30um
                     // clock freq is 1 GHz (1 tick per 1 ns)
-                    const uint64_t n_current_camera_tick_count = ptrGrabResult->GetTimeStamp();
+                    const uint64_t n_current_camera_tick_count = _grabbed->GetTimeStamp();
 
                     // Image sequence sanity check.
                     if (n_last_frame_id != 0 && n_current_frame_id != n_last_frame_id + 1)
@@ -324,8 +321,8 @@ void BaslerCamThread::run()
                 } // grab did not succeed
                 else
                 {
-                    std::cerr << "Error: " << ptrGrabResult->GetErrorCode() << " "
-                              << ptrGrabResult->GetErrorDescription() << endl;
+                    std::cerr << "Error: " << _grabbed->GetErrorCode() << " "
+                              << _grabbed->GetErrorDescription() << endl;
                 }
             }
             catch (GenericException e) // could not retrieve grab result
