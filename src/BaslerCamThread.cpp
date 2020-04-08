@@ -368,7 +368,7 @@ void BaslerCamThread::run()
                                                                        cropTop,
                                                                        static_cast<int>(vwidth),
                                                                        static_cast<int>(vheight)));
-                croppedImageMatrix.copyTo(wholeImageMatrix);
+                wholeImageMatrix = croppedImageMatrix;
             }
             const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
                                                    lastCameraTimestamp) +
