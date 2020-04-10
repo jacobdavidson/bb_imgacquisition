@@ -127,6 +127,12 @@ bool BaslerCamThread::initCamera()
         {
             sendLogMessage(0, "failed to find cam matching config serial nr: " + cfg.serialString);
         }
+
+        if (!cfg.hwtrigger)
+        {
+            _camera.AcquisitionFrameRateEnable = 1;
+            _camera.AcquisitionFrameRate = cfg.fps;
+        }
     }
     catch (GenericException e)
     {
@@ -376,6 +382,8 @@ void BaslerCamThread::run()
 
             _Buffer->push(buf);
             _SharedMemBuffer->push(buf);
+
+            //std::cerr << "Buffer: " << _Buffer->size() << ", Shared Buffer: " << _SharedMemBuffer->size() << std::endl;
 
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
             {
