@@ -294,14 +294,6 @@ void BaslerCamThread::run()
                     }
                     n_last_camera_tick_count = n_current_camera_tick_count;
 
-                    // Skip the first X images to allow the camera buffer to be
-                    // flushed. ToDo: is this still necessary for the Basler
-                    // cameras?
-                    if (loopCount < 10)
-                    {
-                        continue;
-                    }
-
                     // Check if processing a frame took longer than X seconds. If
                     // so, log the event.
                     const int64_t duration =
