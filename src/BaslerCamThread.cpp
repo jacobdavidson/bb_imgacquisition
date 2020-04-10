@@ -320,7 +320,7 @@ void BaslerCamThread::run()
                 else
                 {
                     std::cerr << "Error: " << _grabbed->GetErrorCode() << " "
-                              << _grabbed->GetErrorDescription() << endl;
+                              << _grabbed->GetErrorDescription() << std::endl;
                 }
             }
             catch (GenericException e) // could not retrieve grab result

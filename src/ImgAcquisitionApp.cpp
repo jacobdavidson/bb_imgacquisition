@@ -228,7 +228,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
                 SLOT(logMessage(int, QString)));
     }
 
-    std::cout << "Connected " << numCameras << " cameras." << endl;
+    std::cout << "Connected " << numCameras << " cameras." << std::endl;
 
     // the threads are initialized as a private variable of the class ImgAcquisitionApp
     _threads[0]->initialize(0, (_glue1._Buffer1), _smthread->_Buffer, &calib, &dog);
@@ -242,7 +242,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     _glue2._CamBuffer1 = 1;
     _glue2._CamBuffer2 = 3;
 
-    std::cout << "Initialized " << numCameras << " cameras." << endl;
+    std::cout << "Initialized " << numCameras << " cameras." << std::endl;
 
     // execute run() function, spawns cam readers
     for (int i = 0; i < 4; i++)
@@ -254,7 +254,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         }
     }
 
-    std::cout << "Started " << camsStarted << " camera threads." << endl;
+    std::cout << "Started " << camsStarted << " camera threads." << std::endl;
 
     // Start encoder threads
     // The if(numCameras>=2) is not required here. If only one camera is present,
@@ -262,14 +262,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     _glue1.start();
     _glue2.start();
 
-    std::cout << "Started the encoder threads." << endl;
+    std::cout << "Started the encoder threads." << std::endl;
 
     // While normal recording, start analysis thread to
     // log image statistics
     if (!calib.doCalibration)
     {
         _smthread->start();
-        std::cout << "Started shared memory thread." << endl;
+        std::cout << "Started shared memory thread." << std::endl;
     }
 
     // Do output for calibration process
@@ -303,7 +303,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     {
         dog.check();
 
-        std::cout << "BOOM" << endl;
+        std::cout << "BOOM" << std::endl;
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
 
         for (int i = 0; i < 5 * 1000; ++i)
@@ -327,15 +327,15 @@ void ImgAcquisitionApp::printBuildInfo()
     Utilities::GetLibraryVersion(&fc2Version);
 
     std::cout << "FlyCapture2 library version: " << fc2Version.major << "." << fc2Version.minor
-              << "." << fc2Version.type << "." << fc2Version.build << endl
-              << endl;
+              << "." << fc2Version.type << "." << fc2Version.build << std::endl
+              << std::endl;
 #endif
 
 #ifdef USE_BASLER
 
 #endif
 
-    std::cout << "Application build date: " << __DATE__ << ", " << __TIME__ << endl << endl;
+    std::cout << "Application build date: " << __DATE__ << ", " << __TIME__ << std::endl << std::endl;
 }
 
 // This function checks that at least one camera is connected
@@ -385,7 +385,7 @@ int ImgAcquisitionApp::checkCameras()
 
             // Print the model name and serial number of the camera(s).
             std::cout << "Cam #" << i << ": " << cameras[i].GetDeviceInfo().GetModelName()
-                      << ", SN:" << cameras[i].GetDeviceInfo().GetSerialNumber() << endl;
+                      << ", SN:" << cameras[i].GetDeviceInfo().GetSerialNumber() << std::endl;
         }
 
         // Detach cameras in array
@@ -397,7 +397,7 @@ int ImgAcquisitionApp::checkCameras()
     }
 #endif
 
-    qDebug() << "Number of cameras detected: " << _numCameras << endl << endl;
+    qDebug() << "Number of cameras detected: " << _numCameras;
 
     // print cam serial numbers
     for (int i = 0; i < 4; i++)
@@ -433,7 +433,7 @@ int ImgAcquisitionApp::checkCameras()
 
     if (_numCameras < 1)
     {
-        std::cerr << "Insufficient number of cameras... press Enter to exit." << endl;
+        std::cerr << "Insufficient number of cameras... press Enter to exit." << std::endl;
         logMessage(1, "Insufficient number of cameras ...");
         getchar();
         return -1;
