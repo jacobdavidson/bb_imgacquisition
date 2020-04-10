@@ -16,6 +16,8 @@
 #endif
 #define PI 3.14159265
 
+#include "Buffer/ImageBuffer.h"
+
 namespace beeCompress
 {
     using namespace cv;
@@ -57,8 +59,7 @@ namespace beeCompress
 
             std::shared_ptr<beeCompress::ImageBuffer> imgptr = _Buffer->pop();
             beeCompress::ImageBuffer*                 img    = imgptr.get();
-            cv::Mat mat(img->height, img->width, cv::DataType<uint8_t>::type);
-            mat.data        = img->data;
+            cv::Mat mat(img->height, img->width, cv::DataType<uint8_t>::type, &img->data[0]);
             double smd      = sumModulusDifference(&mat);
             double variance = getVariance(mat);
             double contrast = avgHistDifference(ref, mat);

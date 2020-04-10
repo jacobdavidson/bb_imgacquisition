@@ -10,7 +10,9 @@
 #include "Watchdog.h"
 #include "settings/Settings.h"
 #include "settings/utility.h"
+#include "Buffer/ImageBuffer.h"
 #include "ImageAnalysis.h"
+
 #include <sstream> //stringstreams
 
 #include <array>
@@ -370,7 +372,7 @@ void BaslerCamThread::run()
                                                "Z";
             auto buf =
                 std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
-            memcpy(buf.get()->data, wholeImageMatrix.data, vwidth * vheight);
+            memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
             _Buffer->push(buf);
             _SharedMemBuffer->push(buf);

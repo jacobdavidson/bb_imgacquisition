@@ -39,6 +39,8 @@ add_executable(${EXE_NAME}
 	src/SharedMemory.cpp
 	src/main.cpp
 	src/writeHandler.cpp
+	src/Buffer/ImageBuffer.h
+	src/Buffer/ImageBuffer.cpp
 	src/Buffer/MutexLinkedList.cpp
 	src/Buffer/MutexBuffer.h
 	src/Buffer/MutexLinkedList.h

@@ -24,6 +24,7 @@
     #include <stdint.h>
 #endif
 #include "../settings/Settings.h"
+#include "../Buffer/ImageBuffer.h"
 
 #if HALIDE
     #include "halideYuv420Conv.h"
@@ -696,7 +697,7 @@ std::shared_ptr<beeCompress::ImageBuffer> scaleImage(beeCompress::ImageBuffer* i
     {
 
         cv::Mat imageWithData =
-            cv::Mat(encodeConfig.width * encodeConfig.height, 1, 0 /*CV_8U*/, img->data).clone();
+            cv::Mat(encodeConfig.width * encodeConfig.height, 1, 0 /*CV_8U*/, &img->data[0]).clone();
         cv::Mat  reshapedImage = imageWithData.reshape(1, encodeConfig.height);
         cv::Size size(encPrevCfg.width, encPrevCfg.height); // the dst image size,e.g.100x100
         cv::Mat  dst;                                       // dst image
@@ -908,11 +909,11 @@ int CNvEncoder::EncodeMain(double*                    elapsedTimeP,
 
         // Fill data structure for the encoder
         rawTo420NoHalide(temporaryBuffer.data(),
-                         img->data,
+                         &img->data[0],
                          encodeConfig.height,
                          encodeConfig.width);
         stEncodeFrame.yuv[0] = temporaryBuffer.data();
-        // memcpy(stEncodeFrame.yuv[0], img->data, encodeConfig.height*encodeConfig.width);
+        // memcpy(stEncodeFrame.yuv[0], &img->data[0], encodeConfig.height*encodeConfig.width);
         // stEncodeFrame.yuv[0] = yuv[0];
         stEncodeFrame.yuv[1] = yuv[1];
         stEncodeFrame.yuv[2] = yuv[2];

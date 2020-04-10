@@ -85,7 +85,7 @@ namespace beeCompress
             beeCompress::ImageBuffer*                 img    = imgptr.get();
 
             doLock(img->camid);
-            memcpy(_data[img->camid], img->data, img->width * img->height);
+            memcpy(_data[img->camid], &img->data[0], img->width * img->height);
             doUnlock(img->camid);
         }
 

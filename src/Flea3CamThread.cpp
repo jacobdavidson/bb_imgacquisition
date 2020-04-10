@@ -11,7 +11,9 @@
 #include "Watchdog.h"
 #include "settings/Settings.h"
 #include "settings/utility.h"
+#include "Buffer/ImageBuffer.h"
 #include "ImageAnalysis.h"
+
 #include <sstream> //stringstreams
 
 #include <ctime> //get time
@@ -705,8 +707,8 @@ void Flea3CamThread::run()
             std::shared_ptr<beeCompress::ImageBuffer> buf =
                 std::shared_ptr<beeCompress::ImageBuffer>(
                     new beeCompress::ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
-            // int numBytesRead = flycapTo420(buf.get()->data, &cimg);
-            memcpy(buf.get()->data, cimg.GetData(), vwidth * vheight);
+            // int numBytesRead = flycapTo420(&buf.get()->data[0], &cimg);
+            memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 
 #ifndef USE_ENCODER
             _Buffer->push(buf);

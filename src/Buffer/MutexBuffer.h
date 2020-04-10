@@ -12,6 +12,7 @@
 #include <string>
 #include <memory>
 #include "Semaphore.h"
+#include "ImageBuffer.h"
 
 // Hard limit in MiB a buffer shall never exceed
 #define BUFFER_HARDLIMIT 5000
@@ -19,42 +20,7 @@
 namespace beeCompress
 {
 
-    class ImageBuffer
-    {
-    public:
-        std::string timestamp;
-        int         width;
-        int         height;
-        int         camid;
-        uint8_t*    data;
 
-        ImageBuffer(int w, int h, int cid, std::string t)
-        {
-            timestamp = t;
-            height    = h;
-            width     = w;
-            camid     = cid;
-            if (w > 0 && h > 0)
-            {
-                data = new uint8_t[w * h];
-                // TODO malloc data ok?
-            }
-        }
-
-        ImageBuffer(const beeCompress::ImageBuffer& b)
-        {
-            timestamp = b.timestamp;
-            height    = b.height;
-            width     = b.width;
-            camid     = b.camid;
-            data      = b.data;
-        }
-
-        ~ImageBuffer()
-        {
-            delete[] data;
-        }
-    };
 
     /* LIFO Queue */
     class MutexBuffer
