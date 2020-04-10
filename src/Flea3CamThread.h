@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef FLEA3CAMTHREAD_H
 #define FLEA3CAMTHREAD_H
 

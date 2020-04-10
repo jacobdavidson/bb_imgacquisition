@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef IMGACQUISITIONAPP_H
 #define IMGACQUISITIONAPP_H
 
