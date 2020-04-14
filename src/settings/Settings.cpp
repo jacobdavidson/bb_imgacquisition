@@ -118,8 +118,8 @@ EncoderQualityConfig SettingsIAC::setFromNode(boost::property_tree::ptree node)
         cfg.gainauto        = node.get<int>(IMACQUISITION::BUFFERCONF::GAINAUTO);
         cfg.whitebalance    = node.get<int>(IMACQUISITION::BUFFERCONF::WHITEBALANCE);
         cfg.hwtrigger       = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGER);
-        cfg.hwtriggerparam  = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGER);
-        cfg.hwtriggersrc    = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGER);
+        cfg.hwtriggerparam  = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGERPARAM);
+        cfg.hwtriggersrc    = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGERSOURCE);
     }
     return cfg;
 }
