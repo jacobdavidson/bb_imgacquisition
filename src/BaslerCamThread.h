@@ -125,7 +125,7 @@ private:
     // Pylon camera object
     Pylon::CBaslerUsbInstantCamera _camera;
     // Pylon camera capture result
-    Pylon::CGrabResultPtr          _grabbed;
+    Pylon::CGrabResultPtr _grabbed;
 
     //! ... to enumerate each image in a second
     unsigned int _LocalCounter;

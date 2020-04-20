@@ -305,7 +305,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     {
         dog.check();
 
-        std::cout << "BOOM" << std::endl;
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
 
         for (int i = 0; i < 5 * 1000; ++i)
@@ -337,7 +336,8 @@ void ImgAcquisitionApp::printBuildInfo()
 
 #endif
 
-    std::cout << "Application build date: " << __DATE__ << ", " << __TIME__ << std::endl << std::endl;
+    std::cout << "Application build date: " << __DATE__ << ", " << __TIME__ << std::endl
+              << std::endl;
 }
 
 // This function checks that at least one camera is connected

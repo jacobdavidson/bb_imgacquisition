@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-
 #ifndef NVENCGLUE_H_
 #define NVENCGLUE_H_
 

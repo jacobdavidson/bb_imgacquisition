@@ -495,19 +495,15 @@ void XimeaCamThread::run()
                 CV_8UC1,
                 image.bp,
                 cv::Mat::AUTO_STEP);
-            const unsigned int marginToBeCroppedX = (image.width > vwidth) ? image.width - vwidth
-                                                                           : 0;
-            const unsigned int marginToBeCroppedY = (image.height > vheight)
-                                                        ? image.height - vheight
+        const unsigned int marginToBeCroppedX = (image.width > vwidth) ? image.width - vwidth : 0;
+        const unsigned int marginToBeCroppedY = (image.height > vheight) ? image.height - vheight
                                                         : 0;
             if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
             {
                 const int cropLeft           = marginToBeCroppedX / 2;
                 const int cropTop            = marginToBeCroppedY / 2;
-                cv::Mat   croppedImageMatrix = wholeImageMatrix(cv::Rect(cropLeft,
-                                                                       cropTop,
-                                                                       static_cast<int>(vwidth),
-                                                                       static_cast<int>(vheight)));
+            cv::Mat   croppedImageMatrix = wholeImageMatrix(
+                cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
                 croppedImageMatrix.copyTo(wholeImageMatrix);
             }
             const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(

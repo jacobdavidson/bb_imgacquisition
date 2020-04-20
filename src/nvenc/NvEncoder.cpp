@@ -697,7 +697,8 @@ std::shared_ptr<beeCompress::ImageBuffer> scaleImage(beeCompress::ImageBuffer* i
     {
 
         cv::Mat imageWithData =
-            cv::Mat(encodeConfig.width * encodeConfig.height, 1, 0 /*CV_8U*/, &img->data[0]).clone();
+            cv::Mat(encodeConfig.width * encodeConfig.height, 1, 0 /*CV_8U*/, &img->data[0])
+                .clone();
         cv::Mat  reshapedImage = imageWithData.reshape(1, encodeConfig.height);
         cv::Size size(encPrevCfg.width, encPrevCfg.height); // the dst image size,e.g.100x100
         cv::Mat  dst;                                       // dst image

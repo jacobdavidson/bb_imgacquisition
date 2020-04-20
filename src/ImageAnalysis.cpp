@@ -62,10 +62,10 @@ namespace beeCompress
             std::shared_ptr<beeCompress::ImageBuffer> imgptr = _Buffer->pop();
             beeCompress::ImageBuffer*                 img    = imgptr.get();
             cv::Mat mat(img->height, img->width, cv::DataType<uint8_t>::type, &img->data[0]);
-            double smd      = sumModulusDifference(&mat);
-            double variance = getVariance(mat);
-            double contrast = avgHistDifference(ref, mat);
-            double noise    = noiseEstimate(mat);
+            double  smd      = sumModulusDifference(&mat);
+            double  variance = getVariance(mat);
+            double  contrast = avgHistDifference(ref, mat);
+            double  noise    = noiseEstimate(mat);
             sprintf(outstr,
                     "Cam_%d_%s: %f,\t%f,\t%f,\t%f\n",
                     img->camid,

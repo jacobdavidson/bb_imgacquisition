@@ -22,8 +22,6 @@
 namespace beeCompress
 {
 
-
-
     /* LIFO Queue */
     class MutexBuffer
     {
