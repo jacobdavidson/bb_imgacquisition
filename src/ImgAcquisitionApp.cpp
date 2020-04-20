@@ -255,7 +255,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     watchdogTimer->setSingleShot(false);
     watchdogTimer->start();
     connect(watchdogTimer, &QTimer::timeout, this, [this](){
-        qDebug() << "watchdog";
         _watchdog.check();
     });
 }
