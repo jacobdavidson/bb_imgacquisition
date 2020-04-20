@@ -261,8 +261,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     _smthread->start();
     std::cout << "Started shared memory thread." << std::endl;
 
-    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
-
     while (true)
     {
         dog.check();
