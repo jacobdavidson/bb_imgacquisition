@@ -9,7 +9,6 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-#include "stringTools.h" // (un)escape_non_ascii
 #include "ParamNames.h"
 
 #include <string>
@@ -163,7 +162,7 @@ public:
     template<typename T>
     void setParam(std::string const& paramName, T&& paramValue)
     {
-        _ptree.put(paramName, preprocess_value(std::forward<T>(paramValue)));
+        _ptree.put(paramName, std::forward<T>(paramValue));
         boost::property_tree::write_json(CONFIGPARAM::CONFIGURATION_FILE, _ptree);
     }
 
@@ -195,7 +194,7 @@ public:
     typename std::enable_if<!is_specialization<T, std::vector>::value, T>::type getValueOfParam(
         const std::string& paramName) const
     {
-        return postprocess_value(_ptree.get<T>(paramName));
+        return _ptree.get<T>(paramName);
     }
 
     /**
@@ -213,7 +212,7 @@ public:
         T result;
         for (auto& item : _ptree.get_child(paramName))
         {
-            result.push_back(postprocess_value(item.second.get_value<typename T::value_type>()));
+            result.push_back(item.second.get_value<typename T::value_type>());
         }
         return result;
     }
@@ -258,56 +257,4 @@ private:
     EncoderQualityConfig setFromNode(boost::property_tree::ptree node);
 
     static const boost::property_tree::ptree getDefaultParams();
-
-    /**
-     * preprocesses paramValue before it's stored in the boost config tree
-     *
-     * default implementation: forward value
-     *
-     */
-    template<typename T>
-    static T preprocess_value(T&& paramValue)
-    {
-        return std::forward<T>(paramValue);
-    }
-
-    /**
-     * postprocesses paramValue after it's extracted from the boost config tree
-     *
-     * default implementation: forward value
-     *
-     */
-    template<typename T>
-    static T postprocess_value(T&& paramValue)
-    {
-        return std::forward<T>(paramValue);
-    }
 };
-
-/**
- * std::string specialisation as a workaround for a bug in boost's config tree
- *
- * this function escapes every non-ASCII character
- *
- * (the tree correctly escapes non-ASCII characters and stores them
- *  as "\u00XX" where XX is the character's hex value, but it can't read these
- *  values correctly)
- *
- */
-template<>
-inline std::string SettingsIAC::preprocess_value(std::string&& paramValue)
-{
-    return escape_non_ascii(paramValue);
-}
-
-/**
- * std::string specialisation as a workaround for a bug in boost's config tree
- *
- * (the tree converts escaped non-ASCII characters ("\u00XX") to "\xFF")
- *
- */
-template<>
-inline std::string SettingsIAC::postprocess_value(std::string&& paramValue)
-{
-    return unescape_non_ascii(paramValue);
-}

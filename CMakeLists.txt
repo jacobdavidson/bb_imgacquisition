@@ -13,10 +13,10 @@ find_package(Threads REQUIRED)
 find_package(Qt5 COMPONENTS Core REQUIRED)
 
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost COMPONENTS system filesystem program_options date_time QUIET)
+find_package(Boost 1.65 COMPONENTS system filesystem program_options date_time QUIET)
 if(NOT Boost_FOUND)
 	set(Boost_USE_STATIC_LIBS OFF)
-	find_package(Boost COMPONENTS system filesystem program_options date_time REQUIRED QUIET)
+	find_package(Boost 1.65 COMPONENTS system filesystem program_options date_time REQUIRED QUIET)
 endif()
 
 find_package(OpenCV REQUIRED)
