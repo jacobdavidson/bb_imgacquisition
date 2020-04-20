@@ -33,6 +33,8 @@ using namespace FlyCapture2;
 using namespace Pylon;
 #endif
 
+#include <opencv2/opencv.hpp>
+
 #ifdef __linux__
 void cpsleep(int t)
 {
@@ -161,17 +163,10 @@ void ImgAcquisitionApp::resolveLocks()
 ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 : QCoreApplication(argc, argv) //
 {
-    CalibrationInfo calib;
-    Watchdog        dog;
-    int             numCameras  = 0;
-    int             camsStarted = 0;
-    SettingsIAC*    set         = SettingsIAC::getInstance();
-    calib.doCalibration         = false;
-
-    // When calibrating cameras only
-    // Do not do image analysis on regular recordings
-    // analysis              = new beeCompress::ImageAnalysis(
-    //      set->getValueOfParam<std::string>(IMACQUISITION::ANALYSISFILE), &dog);
+    Watchdog     dog;
+    int          numCameras  = 0;
+    int          camsStarted = 0;
+    SettingsIAC* set         = SettingsIAC::getInstance();
 
     _smthread = new beeCompress::SharedMemory();
 
@@ -181,14 +176,9 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     {
         std::cout << "Usage: ./bb_imageacquision <Options>" << std::endl
                   << "Valid options: " << std::endl
-                  << "(none) \t\t start recording as per config." << std::endl
-                  << "--calibrate \t Camera calibration mode." << std::endl;
+                  << "(none) \t\t start recording as per config." << std::endl;
         QCoreApplication::exit(0);
         std::exit(0);
-    }
-    else if (argc > 1 && strncmp(argv[1], "--calibrate", 11) == 0)
-    {
-        calib.doCalibration = true;
     }
 
     printBuildInfo();
@@ -233,10 +223,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     std::cout << "Connected " << numCameras << " cameras." << std::endl;
 
     // the threads are initialized as a private variable of the class ImgAcquisitionApp
-    _threads[0]->initialize(0, (_glue1._Buffer1), _smthread->_Buffer, &calib, &dog);
-    _threads[1]->initialize(1, (_glue2._Buffer1), _smthread->_Buffer, &calib, &dog);
-    _threads[2]->initialize(2, (_glue1._Buffer2), _smthread->_Buffer, &calib, &dog);
-    _threads[3]->initialize(3, (_glue2._Buffer2), _smthread->_Buffer, &calib, &dog);
+    _threads[0]->initialize(0, (_glue1._Buffer1), _smthread->_Buffer, &dog);
+    _threads[1]->initialize(1, (_glue2._Buffer1), _smthread->_Buffer, &dog);
+    _threads[2]->initialize(2, (_glue1._Buffer2), _smthread->_Buffer, &dog);
+    _threads[3]->initialize(3, (_glue2._Buffer2), _smthread->_Buffer, &dog);
 
     // Map the buffers to camera id's
     _glue1._CamBuffer1 = 0;
@@ -268,36 +258,8 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 
     // While normal recording, start analysis thread to
     // log image statistics
-    if (!calib.doCalibration)
-    {
-        _smthread->start();
-        std::cout << "Started shared memory thread." << std::endl;
-    }
-
-    // Do output for calibration process
-    while (calib.doCalibration)
-    {
-#ifdef __linux__
-        system("clear");
-#else
-        system("cls");
-#endif
-        std::cout << "*************************************" << std::endl
-                  << "*** Doing camera calibration only ***" << std::endl
-                  << "*************************************" << std::endl;
-        printf("CamId,\tSMD,\tVar,\tCont,\tNoise\n");
-        calib.dataAccess.lock();
-        for (int i = 0; i < 4; i++)
-            printf("Cam %d: %f,\t%f,\t%f,\t%f\n",
-                   i,
-                   calib.calibrationData[i][0],
-                   calib.calibrationData[i][1],
-                   calib.calibrationData[i][2],
-                   calib.calibrationData[i][3]);
-
-        calib.dataAccess.unlock();
-        cpsleep(500 * 1000);
-    }
+    _smthread->start();
+    std::cout << "Started shared memory thread." << std::endl;
 
     cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
 

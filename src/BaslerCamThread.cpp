@@ -13,7 +13,6 @@
 #include "settings/Settings.h"
 #include "settings/utility.h"
 #include "Buffer/ImageBuffer.h"
-#include "ImageAnalysis.h"
 
 #include <sstream> //stringstreams
 
@@ -53,13 +52,11 @@ BaslerCamThread::~BaslerCamThread()
 bool BaslerCamThread::initialize(unsigned int              id,
                                  beeCompress::MutexBuffer* pBuffer,
                                  beeCompress::MutexBuffer* pSharedMemBuffer,
-                                 CalibrationInfo*          calib,
                                  Watchdog*                 dog)
 {
     _SharedMemBuffer = pSharedMemBuffer;
     _Buffer          = pBuffer;
     _ID              = id;
-    _Calibration     = calib;
     _initialized     = false;
     _Dog             = dog;
 
@@ -221,23 +218,6 @@ void BaslerCamThread::run()
 #endif
     ////////////////////////////////////////////////////
 
-    // Load a reference image for contrast analyzation
-    cv::Mat ref;
-    if (_Calibration->doCalibration)
-    {
-        FILE* fp = fopen("refIm.jpg", "r");
-        if (fp)
-        {
-            // ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-            ref = cv::imread("refIm.jpg", cv::IMREAD_GRAYSCALE);
-            fclose(fp);
-        }
-        else
-        {
-            std::cerr << "Warning: not found reference image refIm.jpg." << std::endl;
-        }
-    }
-
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
     uint64_t                 n_last_camera_tick_count{0};
@@ -279,91 +259,87 @@ void BaslerCamThread::run()
                 const std::chrono::steady_clock::time_point begin =
                     std::chrono::steady_clock::now();
 
-                    // get image data
-                    img_width          = _grabbed->GetWidth();
-                    img_height         = _grabbed->GetHeight();
-                    p_image            = (uint8_t*) _grabbed->GetBuffer();
-                    n_current_frame_id = _grabbed->GetImageNumber();
+                // get image data
+                img_width          = _grabbed->GetWidth();
+                img_height         = _grabbed->GetHeight();
+                p_image            = (uint8_t*) _grabbed->GetBuffer();
+                n_current_frame_id = _grabbed->GetImageNumber();
 
-                    // get time after getting the data
-                    const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
-                    const std::chrono::steady_clock::time_point end =
-                        std::chrono::steady_clock::now();
-                    // the camera specific tick count. The Basler acA4096-30um
-                    // clock freq is 1 GHz (1 tick per 1 ns)
-                    const uint64_t n_current_camera_tick_count = _grabbed->GetTimeStamp();
+                // get time after getting the data
+                const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
+                const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+                // the camera specific tick count. The Basler acA4096-30um
+                // clock freq is 1 GHz (1 tick per 1 ns)
+                const uint64_t n_current_camera_tick_count = _grabbed->GetTimeStamp();
 
-                    // Image sequence sanity check.
-                    if (n_last_frame_id != 0 && n_current_frame_id != n_last_frame_id + 1)
+                // Image sequence sanity check.
+                if (n_last_frame_id != 0 && n_current_frame_id != n_last_frame_id + 1)
+                {
+                    QString str("Warning: Camera lost frame: This frame: #");
+                    str.append(std::to_string(n_current_frame_id).c_str());
+                    str.append(" last frame: #");
+                    str.append(std::to_string(n_last_frame_id).c_str());
+                    str.append(" timestamp: ");
+                    str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
+                    std::cerr << str.toStdString() << std::endl;
+                    generateLog(logfilepathFull, str);
+
+                    // add camera handling
+                    // ...
+                }
+                n_last_frame_id = n_current_frame_id;
+
+                // If last timestamp is later than current timestamp, we have
+                // to reset the camera timestamps.
+                if (n_last_camera_tick_count == 0 ||
+                    (n_last_camera_tick_count > n_current_camera_tick_count))
+                {
+                    if (n_last_camera_tick_count != 0 && lastCameraTimestamp > wallClockNow &&
+                        loopCount > 10)
                     {
-                        QString str("Warning: Camera lost frame: This frame: #");
-                        str.append(std::to_string(n_current_frame_id).c_str());
-                        str.append(" last frame: #");
-                        str.append(std::to_string(n_last_frame_id).c_str());
-                        str.append(" timestamp: ");
+                        QString str(
+                            "Warning: camera clock faster than wall "
+                            "time. Last camera time: ");
+                        str.append(boost::posix_time::to_iso_extended_string(lastCameraTimestamp)
+                                       .c_str());
+                        str.append(" wall clock: ");
                         str.append(
                             boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
                         std::cerr << str.toStdString() << std::endl;
                         generateLog(logfilepathFull, str);
-
-                        // add camera handling
-                        // ...
                     }
-                    n_last_frame_id = n_current_frame_id;
+                    lastCameraTimestamp = wallClockNow;
+                }
+                else
+                {
+                    const int64_t tick_delta = static_cast<const int64_t>(
+                        n_current_camera_tick_count - n_last_camera_tick_count);
+                    assert(tick_delta >= 0); // ToDo: add tick to microsecond conversion
+                                             // factor as config setting
+                    lastCameraTimestamp += boost::posix_time::microseconds(tick_delta * 1000);
+                }
+                n_last_camera_tick_count = n_current_camera_tick_count;
 
-                    // If last timestamp is later than current timestamp, we have
-                    // to reset the camera timestamps.
-                    if (n_last_camera_tick_count == 0 ||
-                        (n_last_camera_tick_count > n_current_camera_tick_count))
-                    {
-                        if (n_last_camera_tick_count != 0 && lastCameraTimestamp > wallClockNow &&
-                            loopCount > 10)
-                        {
-                            QString str(
-                                "Warning: camera clock faster than wall "
-                                "time. Last camera time: ");
-                            str.append(
-                                boost::posix_time::to_iso_extended_string(lastCameraTimestamp)
-                                    .c_str());
-                            str.append(" wall clock: ");
-                            str.append(
-                                boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-                            std::cerr << str.toStdString() << std::endl;
-                            generateLog(logfilepathFull, str);
-                        }
-                        lastCameraTimestamp = wallClockNow;
-                    }
-                    else
-                    {
-                        const int64_t tick_delta = static_cast<const int64_t>(
-                            n_current_camera_tick_count - n_last_camera_tick_count);
-                        assert(tick_delta >= 0); // ToDo: add tick to microsecond conversion
-                                                 // factor as config setting
-                        lastCameraTimestamp += boost::posix_time::microseconds(tick_delta * 1000);
-                    }
-                    n_last_camera_tick_count = n_current_camera_tick_count;
+                // Check if processing a frame took longer than X seconds. If
+                // so, log the event.
+                const int64_t duration =
+                    std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+                if (duration > 2 * (1000000 / 6))
+                {
+                    QString str("Warning: Processing time too long: ");
+                    str.append(std::to_string(duration).c_str());
+                    str.append(" on camera ");
+                    str.append(std::to_string(_ID).c_str());
+                    std::cerr << str.toStdString() << std::endl;
+                    generateLog(logfilepathFull, str);
+                }
 
-                    // Check if processing a frame took longer than X seconds. If
-                    // so, log the event.
-                    const int64_t duration =
-                        std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-                    if (duration > 2 * (1000000 / 6))
-                    {
-                        QString str("Warning: Processing time too long: ");
-                        str.append(std::to_string(duration).c_str());
-                        str.append(" on camera ");
-                        str.append(std::to_string(_ID).c_str());
-                        std::cerr << str.toStdString() << std::endl;
-                        generateLog(logfilepathFull, str);
-                    }
+                // converts the time in seconds to local time
+                const std::time_t timestamp{static_cast<std::time_t>(n_current_camera_tick_count)};
+                const struct tm*  timeinfo{localtime(&timestamp)};
 
-                    // converts the time in seconds to local time
-                    const std::time_t timestamp{
-                        static_cast<std::time_t>(n_current_camera_tick_count)};
-                    const struct tm* timeinfo{localtime(&timestamp)};
-
-                    localCounter(oldTime, timeinfo->tm_sec);
-                    oldTime = timeinfo->tm_sec;
+                localCounter(oldTime, timeinfo->tm_sec);
+                oldTime = timeinfo->tm_sec;
             }
             catch (GenericException e) // could not retrieve grab result
             {
@@ -383,48 +359,43 @@ void BaslerCamThread::run()
             std::exit(1);
         }
 
-        // Not in calibration mode. Move image to buffer for further procession
-        if (!_Calibration->doCalibration)
+        // Move image to buffer for further procession
+        // Crop the image to the expected size (e.g. 4000x3000).
+        // This is necessary, because the encoder/codec requires the image sizes to be
+        // some multiple of X. ToDo: remove this part and add camera check if
+        // conforming with size requirements
+        cv::Mat            wholeImageMatrix(cv::Size(img_width, img_height),
+                                 CV_8UC1, /// FIXME: This should not be hardcoded, the pixel
+                                          /// type should be mapped from pylon to opencv
+                                 p_image,
+                                 cv::Mat::AUTO_STEP);
+        const unsigned int marginToBeCroppedX = (img_width > vwidth) ? img_width - vwidth : 0;
+        const unsigned int marginToBeCroppedY = (img_height > vheight) ? img_height - vheight : 0;
+        if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
         {
-            // Crop the image to the expected size (e.g. 4000x3000).
-            // This is necessary, because the encoder/codec requires the image sizes to be
-            // some multiple of X. ToDo: remove this part and add camera check if
-            // conforming with size requirements
-            cv::Mat            wholeImageMatrix(cv::Size(img_width, img_height),
-                                     CV_8UC1, /// FIXME: This should not be hardcoded, the pixel type should be mapped from pylon to opencv
-                                     p_image,
-                                     cv::Mat::AUTO_STEP);
-            const unsigned int marginToBeCroppedX = (img_width > vwidth) ? img_width - vwidth : 0;
-            const unsigned int marginToBeCroppedY = (img_height > vheight) ? img_height - vheight
-                                                                           : 0;
-            if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
-            {
-                const int cropLeft           = marginToBeCroppedX / 2;
-                const int cropTop            = marginToBeCroppedY / 2;
-                cv::Mat   croppedImageMatrix = wholeImageMatrix(cv::Rect(cropLeft,
-                                                                       cropTop,
-                                                                       static_cast<int>(vwidth),
-                                                                       static_cast<int>(vheight)));
-                wholeImageMatrix = croppedImageMatrix;
-            }
-            const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
-                                                   lastCameraTimestamp) +
-                                               "Z";
-            auto buf =
-                std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
-            memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
+            const int cropLeft           = marginToBeCroppedX / 2;
+            const int cropTop            = marginToBeCroppedY / 2;
+            cv::Mat   croppedImageMatrix = wholeImageMatrix(
+                cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
+            wholeImageMatrix = croppedImageMatrix;
+        }
+        const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
+                                               lastCameraTimestamp) +
+                                           "Z";
+        auto buf =
+            std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
+        memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
-            _Buffer->push(buf);
-            _SharedMemBuffer->push(buf);
+        _Buffer->push(buf);
+        _SharedMemBuffer->push(buf);
 
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
-            {
-                cv::Mat smallMat;
-                cv::resize(wholeImageMatrix, smallMat, cv::Size(400, 300));
-                cv::imshow("Display window", smallMat);
-            }
-#endif
+        {
+            cv::Mat smallMat;
+            cv::resize(wholeImageMatrix, smallMat, cv::Size(400, 300));
+            cv::imshow("Display window", smallMat);
         }
+#endif
     }
 
     return;

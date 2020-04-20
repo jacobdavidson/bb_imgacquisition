@@ -14,7 +14,6 @@
 #include "settings/Settings.h"
 #include "settings/utility.h"
 #include "Buffer/ImageBuffer.h"
-#include "ImageAnalysis.h"
 
 #include <sstream> //stringstreams
 
@@ -53,14 +52,12 @@ Flea3CamThread::~Flea3CamThread()
 bool Flea3CamThread::initialize(unsigned int              id,
                                 beeCompress::MutexBuffer* pBuffer,
                                 beeCompress::MutexBuffer* pSharedMemBuffer,
-                                CalibrationInfo*          calib,
                                 Watchdog*                 dog)
 {
     _SharedMemBuffer = pSharedMemBuffer;
     _Buffer          = pBuffer;
     _ID              = id;
     _HWID            = -1;
-    _Calibration     = calib;
     _initialized     = false;
     _Dog             = dog;
 
@@ -539,36 +536,6 @@ int flycapTo420(uint8_t* outputImage, FlyCapture2::Image* inputImage)
     return bytesRead;
 }
 
-void analyzeImage(int camid, FlyCapture2::Image* cimg, cv::Mat* ref, CalibrationInfo* c)
-{
-    beeCompress::ImageAnalysis ia("", NULL);
-
-    // Create CV Matrix and make it use the flycap image ptr
-    unsigned char*               prtM = cimg->GetData();
-    unsigned int                 rows, cols, stride;
-    FlyCapture2::PixelFormat     pixFmt;
-    FlyCapture2::BayerTileFormat bayerFormat;
-    cimg->GetDimensions(&rows, &cols, &stride, &pixFmt, &bayerFormat);
-    cv::Mat mat(rows, cols, cv::DataType<uint8_t>::type);
-    mat.data = prtM;
-
-    // Analyze image quality
-    double smd      = ia.sumModulusDifference(&mat);
-    double variance = ia.getVariance(mat);
-    double contrast = ia.avgHistDifference(*ref, mat);
-    double noise    = ia.noiseEstimate(mat);
-
-    // Write results to mutex datastructure
-    c->dataAccess.lock();
-    c->calibrationData[camid][0] = smd;
-    c->calibrationData[camid][1] = variance;
-    c->calibrationData[camid][2] = contrast;
-    c->calibrationData[camid][3] = noise;
-    c->dataAccess.unlock();
-
-    // printf("Cam %d: %f,\t%f,\t%f,\t%f,\t%f\n",camid,smd,variance,contrast,noise);
-}
-
 // this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
@@ -622,22 +589,6 @@ void Flea3CamThread::run()
     }
 #endif
     ////////////////////////////////////////////////////
-
-    // Load a reference image for contrast analyzation
-    cv::Mat ref;
-    if (_Calibration->doCalibration)
-    {
-        FILE* fp = fopen("refIm.jpg", "r");
-        if (fp)
-        {
-            ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-            fclose(fp);
-        }
-        else
-        {
-            std::cout << "Warning: not found reference image refIm.jpg." << std::endl;
-        }
-    }
 
     while (1)
     {
@@ -703,31 +654,20 @@ void Flea3CamThread::run()
         // Prepare and put the image into the buffer
         // std::string currentTimestamp(timeresult);
 
-        // Not in calibration mode. Move image to buffer for further procession
-        if (!_Calibration->doCalibration)
-        {
-            std::shared_ptr<beeCompress::ImageBuffer> buf =
-                std::shared_ptr<beeCompress::ImageBuffer>(
-                    new beeCompress::ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
-            // int numBytesRead = flycapTo420(&buf.get()->data[0], &cimg);
-            memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
+        // Move image to buffer for further procession
+        std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>(
+            new beeCompress::ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
+        // int numBytesRead = flycapTo420(&buf.get()->data[0], &cimg);
+        memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 
 #ifndef USE_ENCODER
-            _Buffer->push(buf);
+        _Buffer->push(buf);
 #endif
-            _SharedMemBuffer->push(buf);
+        _SharedMemBuffer->push(buf);
 
-            // For every 50th picture create image statistics
-            // if (loopCount % 50 == 0)
-            //_AnalysisBuffer->push(buf);
-        }
-        // Calibrating cameras only
-        else if (loopCount % 3 == 0)
-        {
-
-            // Analyze image properties
-            analyzeImage(_ID, &cimg, &ref, _Calibration);
-        }
+        // For every 50th picture create image statistics
+        // if (loopCount % 50 == 0)
+        //_AnalysisBuffer->push(buf);
 
         loopCount++;
     }

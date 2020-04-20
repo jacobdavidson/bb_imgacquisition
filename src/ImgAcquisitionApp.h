@@ -6,7 +6,6 @@
 #include <QCoreApplication>
 #include <QtGui/QKeyEvent>
 #include "CamThread.h"
-#include "ImageAnalysis.h"
 #include "NvEncGlue.h"
 #include "SharedMemory.h"
 #include <memory>
@@ -20,7 +19,7 @@ public:
     /**
      * @brief Initializes acquisition/shared memory threads and runs them.
      *
-     * Also runs a watchdog or calibration indefinately. DOES NOT RETURN.
+     * Also runs a watchdog indefinately. DOES NOT RETURN.
      *
      * @param Process argc
      * @param Process argv

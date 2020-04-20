@@ -30,13 +30,11 @@ public:
      * @param Virtual ID of the camera (0 to 3)
      * @param Buffer shared with the encoder thread
      * @param Buffer shared with the shared memory thread
-     * @param Pointer to calibration data storeage
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
     virtual bool initialize(unsigned int              id,
                             beeCompress::MutexBuffer* pBuffer,
                             beeCompress::MutexBuffer* pSharedMemBuffer,
-                            CalibrationInfo*          calib,
                             Watchdog* dog) override; // here goes the camera ID (from 0 to 3)
 
     //! Object has been initialized using "initialize"
@@ -54,9 +52,6 @@ public:
 
     //! Serial number of the camera
     std::string _Serial;
-
-    //! Pointer to calibration data storeage (set by initialize)
-    CalibrationInfo* _Calibration;
 
     //! Watchdog to notifiy each acquisition loop (set by initialize)
     Watchdog* _Dog;

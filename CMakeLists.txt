@@ -33,7 +33,6 @@ set(EXE_NAME bb_ImageAcquistion)
 
 add_executable(${EXE_NAME}
 	src/CamThread.cpp
-	src/ImageAnalysis.cpp
 	src/ImgAcquisitionApp.cpp
 	src/NvEncGlue.cpp
 	src/SharedMemory.cpp
@@ -55,7 +54,6 @@ add_executable(${EXE_NAME}
 	src/settings/stringTools.cpp
 	src/settings/utility.cpp
 	src/CamThread.h
-	src/ImageAnalysis.h
 	src/ImgAcquisitionApp.h
 	src/NvEncGlue.h
 	src/SharedMemory.h

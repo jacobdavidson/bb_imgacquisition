@@ -13,7 +13,6 @@
 #include "settings/Settings.h"
 #include "settings/utility.h"
 #include "Buffer/ImageBuffer.h"
-#include "ImageAnalysis.h"
 
 #include <sstream> //stringstreams
 
@@ -57,14 +56,12 @@ XimeaCamThread::~XimeaCamThread()
 bool XimeaCamThread::initialize(unsigned int              id,
                                 beeCompress::MutexBuffer* pBuffer,
                                 beeCompress::MutexBuffer* pSharedMemBuffer,
-                                CalibrationInfo*          calib,
                                 Watchdog*                 dog)
 {
     _SharedMemBuffer = pSharedMemBuffer;
     _Buffer          = pBuffer;
     _ID              = id;
     _HWID            = -1;
-    _Calibration     = calib;
     _initialized     = false;
     _Dog             = dog;
 
@@ -357,21 +354,6 @@ void XimeaCamThread::run()
 #endif
     ////////////////////////////////////////////////////
 
-    // Load a reference image for contrast analyzation
-    cv::Mat ref;
-    if (_Calibration->doCalibration)
-    {
-        FILE* fp = fopen("refIm.jpg", "r");
-        if (fp)
-        {
-            ref = cv::imread("refIm.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-            fclose(fp);
-        }
-        else
-        {
-            std::cerr << "Warning: not found reference image refIm.jpg." << std::endl;
-        }
-    }
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
     uint64_t                 lastCameraTimestampMicroseconds{0};
@@ -484,59 +466,47 @@ void XimeaCamThread::run()
         localCounter(oldTime, timeinfo->tm_sec);
         oldTime = timeinfo->tm_sec;
 
-        // Not in calibration mode. Move image to buffer for further procession
-        if (!_Calibration->doCalibration)
-        {
-            // Crop the image to the expected size (e.g. 4000x3000).
-            // This is necessary, because the encoder/codec requires the image sizes to be
-            // some multiple of X.
-            cv::Mat wholeImageMatrix(
-                cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)),
-                CV_8UC1,
-                image.bp,
-                cv::Mat::AUTO_STEP);
+        // Crop the image to the expected size (e.g. 4000x3000).
+        // This is necessary, because the encoder/codec requires the image sizes to be
+        // some multiple of X.
+        cv::Mat wholeImageMatrix(
+            cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)),
+            CV_8UC1,
+            image.bp,
+            cv::Mat::AUTO_STEP);
         const unsigned int marginToBeCroppedX = (image.width > vwidth) ? image.width - vwidth : 0;
         const unsigned int marginToBeCroppedY = (image.height > vheight) ? image.height - vheight
-                                                        : 0;
-            if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
-            {
-                const int cropLeft           = marginToBeCroppedX / 2;
-                const int cropTop            = marginToBeCroppedY / 2;
+                                                                         : 0;
+        if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
+        {
+            const int cropLeft           = marginToBeCroppedX / 2;
+            const int cropTop            = marginToBeCroppedY / 2;
             cv::Mat   croppedImageMatrix = wholeImageMatrix(
                 cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
-                croppedImageMatrix.copyTo(wholeImageMatrix);
-            }
-            const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
-                                                   lastCameraTimestamp) +
-                                               "Z";
-            auto buf =
-                std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
-            memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
+            croppedImageMatrix.copyTo(wholeImageMatrix);
+        }
+        const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
+                                               lastCameraTimestamp) +
+                                           "Z";
+        auto buf =
+            std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
+        memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
 #ifndef USE_ENCODER
-            _Buffer->push(buf);
+        _Buffer->push(buf);
 #endif
-            _SharedMemBuffer->push(buf);
+        _SharedMemBuffer->push(buf);
 
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
-            {
-                cv::Mat smallMat;
-                cv::resize(wholeImageMatrix, smallMat, cv::Size(400, 300));
-                cv::imshow("Display window", smallMat);
-            }
-#endif
-            // For every 50th picture create image statistics
-            // if (loopCount % 50 == 0)
-            //_AnalysisBuffer->push(buf);
-        }
-        // Calibrating cameras only
-        else if (loopCount % 3 == 0)
         {
-
-            // Analyze image properties
-            assert(false);
-            // analyzeImage(_ID, &cimg, &ref, _Calibration);
+            cv::Mat smallMat;
+            cv::resize(wholeImageMatrix, smallMat, cv::Size(400, 300));
+            cv::imshow("Display window", smallMat);
         }
+#endif
+        // For every 50th picture create image statistics
+        // if (loopCount % 50 == 0)
+        //_AnalysisBuffer->push(buf);
     }
     // This code will never be executed.
     assert(false);
