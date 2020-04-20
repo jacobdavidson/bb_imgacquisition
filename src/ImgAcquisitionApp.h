@@ -11,7 +11,6 @@
 #include "CamThread.h"
 #include "NvEncGlue.h"
 #include "SharedMemory.h"
-#include <memory>
 
 // inherits from QCoreApplication
 class ImgAcquisitionApp : public QCoreApplication
