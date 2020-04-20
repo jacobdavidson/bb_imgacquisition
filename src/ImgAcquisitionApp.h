@@ -3,8 +3,11 @@
 #ifndef IMGACQUISITIONAPP_H
 #define IMGACQUISITIONAPP_H
 
+#include <memory>
+
 #include <QCoreApplication>
 #include <QtGui/QKeyEvent>
+
 #include "CamThread.h"
 #include "NvEncGlue.h"
 #include "SharedMemory.h"
