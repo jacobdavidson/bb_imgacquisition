@@ -24,11 +24,6 @@
 #endif
 #include "writeHandler.h"
 
-unsigned int mymax(unsigned int a, unsigned int b)
-{
-    return (a > b ? a : b);
-}
-
 void NvEncGlue::run()
 {
 
@@ -65,7 +60,7 @@ void NvEncGlue::run()
         EncoderQualityConfig encCfg;
         EncoderQualityConfig encCfgPrev;
 
-        uint64_t maxSize = mymax(mymax(mymax(c1, c2), c1p), c2p);
+        auto maxSize = std::max({c1, c2, c1p, c2p});
 
         // If all are empty, check again later.
         if (maxSize == 0)
