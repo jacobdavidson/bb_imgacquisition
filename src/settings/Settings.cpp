@@ -69,11 +69,11 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams()
     }
 
     pt.put(IMACQUISITION::DO_PREVIEWS, 1);
-    pt.put(IMACQUISITION::LOGDIR, "./log/Cam_%d/");
-    pt.put(IMACQUISITION::IMDIR, "./tmp/Cam_%u/Cam_%u_%s--%s");
-    pt.put(IMACQUISITION::EXCHANGEDIR, "./out/Cam_%u/");
-    pt.put(IMACQUISITION::IMDIRPREVIEW, "./tmpPrev/Cam_%u/Cam_%u_%s--%s");
-    pt.put(IMACQUISITION::EXCHANGEDIRPREVIEW, "./outPrev/Cam_%u/");
+    pt.put(IMACQUISITION::LOGDIR, "./data/log/Cam_%d/");
+    pt.put(IMACQUISITION::IMDIR, "./data/tmp/Cam_%u/Cam_%u_%s--%s");
+    pt.put(IMACQUISITION::EXCHANGEDIR, "./data/out/Cam_%u/");
+    pt.put(IMACQUISITION::IMDIRPREVIEW, "./data/tmpPrev/Cam_%u/Cam_%u_%s--%s");
+    pt.put(IMACQUISITION::EXCHANGEDIRPREVIEW, "./data/outPrev/Cam_%u/");
     pt.put(IMACQUISITION::CAMCOUNT, 2);
 
     return pt;
