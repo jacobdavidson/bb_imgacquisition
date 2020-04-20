@@ -132,8 +132,41 @@ bool BaslerCamThread::initCamera()
             sendLogMessage(0, "failed to find cam matching config serial nr: " + cfg.serialString);
         }
 
-        if (!cfg.hwtrigger)
+        const auto mapTriggerSource =
+            [](int source) -> std::optional<Basler_UsbCameraParams::TriggerSourceEnums> {
+            std::cerr << "Trigger source " << source << std::endl;
+            switch (source)
+            {
+            case 1:
+                return Basler_UsbCameraParams::TriggerSource_Line1;
+            case 2:
+                return Basler_UsbCameraParams::TriggerSource_Line2;
+            case 3:
+                return Basler_UsbCameraParams::TriggerSource_Line3;
+            case 4:
+                return Basler_UsbCameraParams::TriggerSource_Line4;
+            default:
+                return std::nullopt;
+            }
+        };
+
+        if (cfg.hwtrigger)
         {
+            auto triggerSource = mapTriggerSource(cfg.hwtriggersrc);
+            if (triggerSource)
+            {
+                _camera.TriggerSelector = Basler_UsbCameraParams::TriggerSelector_FrameStart;
+                _camera.TriggerSource   = *triggerSource;
+                _camera.TriggerMode     = Basler_UsbCameraParams::TriggerMode_On;
+            }
+            else
+                throw std::runtime_error("Invalid camera hardware trigger source");
+        }
+        else
+        {
+            _camera.TriggerSelector = Basler_UsbCameraParams::TriggerSelector_FrameStart;
+            _camera.TriggerMode     = Basler_UsbCameraParams::TriggerMode_Off;
+
             _camera.AcquisitionFrameRateEnable = 1;
             _camera.AcquisitionFrameRate       = cfg.fps;
         }
@@ -224,16 +257,28 @@ void BaslerCamThread::run()
         {
             try
             {
-                // get time before getting the data
+                if (cfg.hwtrigger)
+                {
+                    // Watchdog demands heartbeats at an interval of at most 60 seconds
+                    _camera.RetrieveResult(30 * 1000, _grabbed, TimeoutHandling_Return);
+                    if (!_grabbed)
+                        continue;
+                }
+                else
+                {
+                    _camera.RetrieveResult(1000, _grabbed, TimeoutHandling_Return);
+                    if (!_grabbed)
+                    {
+                        std::cerr << "Error: " << _grabbed->GetErrorCode() << " "
+                                  << _grabbed->GetErrorDescription() << std::endl;
+                        continue;
+                    }
+                }
+
+                // get time after getting the data
                 const std::chrono::steady_clock::time_point begin =
                     std::chrono::steady_clock::now();
 
-                // Timeout is 5000, ToDo: add respective setting to configuration file
-                _camera.RetrieveResult(5000, _grabbed, TimeoutHandling_Return);
-
-                // Image grabbed successfully?
-                if (_grabbed)
-                {
                     // get image data
                     img_width          = _grabbed->GetWidth();
                     img_height         = _grabbed->GetHeight();
@@ -319,13 +364,6 @@ void BaslerCamThread::run()
 
                     localCounter(oldTime, timeinfo->tm_sec);
                     oldTime = timeinfo->tm_sec;
-
-                } // grab did not succeed
-                else
-                {
-                    std::cerr << "Error: " << _grabbed->GetErrorCode() << " "
-                              << _grabbed->GetErrorDescription() << std::endl;
-                }
             }
             catch (GenericException e) // could not retrieve grab result
             {
