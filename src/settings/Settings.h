@@ -10,7 +10,6 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include "stringTools.h" // (un)escape_non_ascii
-#include "StringTranslator.h"
 #include "ParamNames.h"
 
 #include <string>
