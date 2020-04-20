@@ -504,9 +504,6 @@ void XimeaCamThread::run()
             cv::imshow("Display window", smallMat);
         }
 #endif
-        // For every 50th picture create image statistics
-        // if (loopCount % 50 == 0)
-        //_AnalysisBuffer->push(buf);
     }
     // This code will never be executed.
     assert(false);

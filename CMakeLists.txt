@@ -50,7 +50,6 @@ add_executable(${EXE_NAME}
 	src/nvenc/dynlink_cuda.cpp
 	src/nvenc/dynlink_nvcuvid.cpp
 	src/settings/Settings.cpp
-	src/settings/stringTools.cpp
 	src/settings/utility.cpp
 	src/CamThread.h
 	src/ImgAcquisitionApp.h
@@ -80,7 +79,6 @@ add_executable(${EXE_NAME}
 	src/nvenc/nvUtils.h
 	src/settings/ParamNames.h
 	src/settings/Settings.h
-	src/settings/stringTools.h
 	src/settings/utility.h
 	src/writeHandler.h
 )

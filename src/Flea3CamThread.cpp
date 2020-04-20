@@ -665,10 +665,6 @@ void Flea3CamThread::run()
 #endif
         _SharedMemBuffer->push(buf);
 
-        // For every 50th picture create image statistics
-        // if (loopCount % 50 == 0)
-        //_AnalysisBuffer->push(buf);
-
         loopCount++;
     }
     _Camera.StopCapture();

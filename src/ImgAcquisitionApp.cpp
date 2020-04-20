@@ -245,7 +245,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 
     std::cout << "Started the encoder threads." << std::endl;
 
-    // While normal recording, start analysis thread to
+    // While normal recording, start shared memory thread to
     // log image statistics
     _smthread->start();
     std::cout << "Started shared memory thread." << std::endl;

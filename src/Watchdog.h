@@ -10,7 +10,7 @@ class Watchdog
 {
 
 public:
-    //! [x]==1 means cam x is active. x==5 is the analysis thread.
+    //! [x]==1 means cam x is active. x==5 is the shared memory thread.
     int _camActive[6];
 
     //! Timestamp when x was seen alive last time.
@@ -22,7 +22,7 @@ public:
     void check()
     {
         // Find processes which might be dead
-        // Iff the process didn't deliver something for analysis in the
+        // If the process didn't deliver something in the
         // last 60 seconds it's considered dead.
         for (int i = 0; i <= 5; i++)
         {
