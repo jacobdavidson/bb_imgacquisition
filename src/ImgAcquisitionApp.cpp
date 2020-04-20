@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <QDebug>
 #include <QDir>
+#include <QTimer>
+
 #ifdef LINUX
     #include <unistd.h>
 #endif
@@ -34,18 +36,6 @@ using namespace Pylon;
 #endif
 
 #include <opencv2/opencv.hpp>
-
-#ifdef __linux__
-void cpsleep(int t)
-{
-    usleep(t);
-}
-#else
-void cpsleep(int t)
-{
-    Sleep(t);
-}
-#endif
 
 std::string ImgAcquisitionApp::figureBasename(std::string infile)
 {
@@ -163,7 +153,6 @@ void ImgAcquisitionApp::resolveLocks()
 ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 : QCoreApplication(argc, argv) //
 {
-    Watchdog     dog;
     int          numCameras  = 0;
     int          camsStarted = 0;
     SettingsIAC* set         = SettingsIAC::getInstance();
@@ -223,10 +212,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     std::cout << "Connected " << numCameras << " cameras." << std::endl;
 
     // the threads are initialized as a private variable of the class ImgAcquisitionApp
-    _threads[0]->initialize(0, (_glue1._Buffer1), _smthread->_Buffer, &dog);
-    _threads[1]->initialize(1, (_glue2._Buffer1), _smthread->_Buffer, &dog);
-    _threads[2]->initialize(2, (_glue1._Buffer2), _smthread->_Buffer, &dog);
-    _threads[3]->initialize(3, (_glue2._Buffer2), _smthread->_Buffer, &dog);
+    _threads[0]->initialize(0, (_glue1._Buffer1), _smthread->_Buffer, &_watchdog);
+    _threads[1]->initialize(1, (_glue2._Buffer1), _smthread->_Buffer, &_watchdog);
+    _threads[2]->initialize(2, (_glue1._Buffer2), _smthread->_Buffer, &_watchdog);
+    _threads[3]->initialize(3, (_glue2._Buffer2), _smthread->_Buffer, &_watchdog);
 
     // Map the buffers to camera id's
     _glue1._CamBuffer1 = 0;
@@ -261,18 +250,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     _smthread->start();
     std::cout << "Started shared memory thread." << std::endl;
 
-    while (true)
-    {
-        dog.check();
-
-#ifdef WITH_DEBUG_IMAGE_OUTPUT
-
-        for (int i = 0; i < 5 * 1000; ++i)
-            cv::waitKey(100);
-#else
-        cpsleep(500 * 1000);
-#endif
-    }
+    auto watchdogTimer = new QTimer(this);
+    watchdogTimer->setInterval(500);
+    watchdogTimer->setSingleShot(false);
+    watchdogTimer->start();
+    connect(watchdogTimer, &QTimer::timeout, this, [this](){
+        qDebug() << "watchdog";
+        _watchdog.check();
+    });
 }
 
 // destructor

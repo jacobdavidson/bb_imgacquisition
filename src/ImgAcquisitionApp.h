@@ -11,6 +11,7 @@
 #include "CamThread.h"
 #include "NvEncGlue.h"
 #include "SharedMemory.h"
+#include "Watchdog.h"
 
 // inherits from QCoreApplication
 class ImgAcquisitionApp : public QCoreApplication
@@ -21,7 +22,7 @@ public:
     /**
      * @brief Initializes acquisition/shared memory threads and runs them.
      *
-     * Also runs a watchdog indefinately. DOES NOT RETURN.
+     * Periodically runs a watchdog monitoring thread heartbeats.
      *
      * @param Process argc
      * @param Process argv
@@ -54,6 +55,8 @@ public:
     void resolveLocks();
 
 private:
+    Watchdog     _watchdog;
+
     //! Shared memory thread pointer
     beeCompress::SharedMemory* _smthread;
 
