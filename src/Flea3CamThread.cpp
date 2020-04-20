@@ -49,10 +49,10 @@ Flea3CamThread::~Flea3CamThread()
 }
 
 // this function reads the data input vector
-bool Flea3CamThread::initialize(unsigned int              id,
-                                beeCompress::MutexBuffer* pBuffer,
-                                beeCompress::MutexBuffer* pSharedMemBuffer,
-                                Watchdog*                 dog)
+bool Flea3CamThread::initialize(unsigned int id,
+                                MutexBuffer* pBuffer,
+                                MutexBuffer* pSharedMemBuffer,
+                                Watchdog*    dog)
 {
     _SharedMemBuffer = pSharedMemBuffer;
     _Buffer          = pBuffer;
@@ -655,8 +655,8 @@ void Flea3CamThread::run()
         // std::string currentTimestamp(timeresult);
 
         // Move image to buffer for further procession
-        std::shared_ptr<beeCompress::ImageBuffer> buf = std::shared_ptr<beeCompress::ImageBuffer>(
-            new beeCompress::ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
+        std::shared_ptr<ImageBuffer> buf = std::shared_ptr<ImageBuffer>(
+            new ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
         // int numBytesRead = flycapTo420(&buf.get()->data[0], &cimg);
         memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 
@@ -750,6 +750,6 @@ void Flea3CamThread::generateLog(QString path, QString message)
     QFile   file(filename);
     file.open(QIODevice::Append);
     QTextStream stream(&file);
-    stream << QString(getTimestamp().c_str()) << ": " << message << "\r\n";
+    stream << QString::fromStdString(getTimestamp()) << ": " << message << "\r\n";
     file.close();
 }

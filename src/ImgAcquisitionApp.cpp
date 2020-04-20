@@ -157,7 +157,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     int          camsStarted = 0;
     SettingsIAC* set         = SettingsIAC::getInstance();
 
-    _smthread = new beeCompress::SharedMemory();
+    _smthread = new SharedMemory();
 
     std::cerr << "Successfully parsed config!" << std::endl;
 
@@ -254,9 +254,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     watchdogTimer->setInterval(500);
     watchdogTimer->setSingleShot(false);
     watchdogTimer->start();
-    connect(watchdogTimer, &QTimer::timeout, this, [this](){
-        _watchdog.check();
-    });
+    connect(watchdogTimer, &QTimer::timeout, this, [this]() { _watchdog.check(); });
 }
 
 // destructor

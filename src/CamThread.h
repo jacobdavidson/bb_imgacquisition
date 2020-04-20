@@ -8,10 +8,8 @@
 
 // Forward declare not-required types.
 class Watchdog;
-namespace beeCompress
-{
-    class MutexBuffer;
-}
+
+class MutexBuffer;
 
 /*!\brief Thread object which acquires images from a camera.
  *
@@ -35,10 +33,10 @@ public:
      * @param Buffer shared with the shared memory thread
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
-    virtual bool initialize(unsigned int              id,
-                            beeCompress::MutexBuffer* pBuffer,
-                            beeCompress::MutexBuffer* pSharedMemBuffer,
-                            Watchdog* dog) = 0; // here goes the camera ID (from 0 to 3)
+    virtual bool initialize(unsigned int id,
+                            MutexBuffer* pBuffer,
+                            MutexBuffer* pSharedMemBuffer,
+                            Watchdog*    dog) = 0; // here goes the camera ID (from 0 to 3)
     virtual bool isInitialized() const     = 0;
 
 signals:

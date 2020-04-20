@@ -19,26 +19,21 @@
 // Hard limit in MiB a buffer shall never exceed
 #define BUFFER_HARDLIMIT 5000
 
-namespace beeCompress
+/* LIFO Queue */
+class MutexBuffer
 {
+public:
+    Semaphore waiting;
 
-    /* LIFO Queue */
-    class MutexBuffer
-    {
-    public:
-        Semaphore waiting;
+    virtual void push(std::shared_ptr<ImageBuffer> imbuffer) = 0;
 
-        virtual void push(std::shared_ptr<ImageBuffer> imbuffer) = 0;
+    virtual std::shared_ptr<ImageBuffer> pop() = 0;
 
-        virtual std::shared_ptr<beeCompress::ImageBuffer> pop() = 0;
+    virtual int size() = 0;
 
-        virtual int size() = 0;
+    MutexBuffer(){};
 
-        MutexBuffer(){};
-
-        virtual ~MutexBuffer(){};
-    };
-
-} /* namespace beeCompress */
+    virtual ~MutexBuffer(){};
+};
 
 #endif /* MUTEXBUFFER_H_ */

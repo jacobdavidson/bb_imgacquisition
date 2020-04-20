@@ -55,10 +55,10 @@ public:
     void resolveLocks();
 
 private:
-    Watchdog     _watchdog;
+    Watchdog _watchdog;
 
     //! Shared memory thread pointer
-    beeCompress::SharedMemory* _smthread;
+    SharedMemory* _smthread;
 
     //! A vector of the class CamThread, they are accessed from the constructor
     std::unique_ptr<CamThread> _threads[4];
@@ -67,7 +67,7 @@ private:
     unsigned int _numCameras;
 
     //! Glue objects which handle encoder workers
-    beeCompress::NvEncGlue _glue1, _glue2;
+    NvEncGlue _glue1, _glue2;
 
     /**
      * @brief Helper function of resolveLocks

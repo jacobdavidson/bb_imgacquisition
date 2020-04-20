@@ -651,21 +651,18 @@ GUID getGUID(int id)
     return NV_ENC_PRESET_DEFAULT_GUID;
 }
 
-std::shared_ptr<beeCompress::ImageBuffer> scaleImage(beeCompress::ImageBuffer* img,
-                                                     EncodeConfig              encodeConfig,
-                                                     EncoderQualityConfig      encPrevCfg)
+std::shared_ptr<ImageBuffer> scaleImage(ImageBuffer*         img,
+                                        EncodeConfig         encodeConfig,
+                                        EncoderQualityConfig encPrevCfg)
 {
-    // beeCompress::ImageBuffer *newImage = new
-    // beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp);
-    std::shared_ptr<beeCompress::ImageBuffer> newImage = std::shared_ptr<beeCompress::ImageBuffer>(
-        new beeCompress::ImageBuffer(encPrevCfg.width,
-                                     encPrevCfg.height,
-                                     img->camid,
-                                     img->timestamp));
+    // ImageBuffer *newImage = new
+    // ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp);
+    std::shared_ptr<ImageBuffer> newImage = std::shared_ptr<ImageBuffer>(
+        new ImageBuffer(encPrevCfg.width, encPrevCfg.height, img->camid, img->timestamp));
 
-    /*std::shared_ptr<beeCompress::ImageBuffer> newImage =
-     std::shared_ptr<beeCompress::ImageBuffer>(new
-     beeCompress::ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp));
+    /*std::shared_ptr<ImageBuffer> newImage =
+     std::shared_ptr<ImageBuffer>(new
+     ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp));
      //TODO: Put this in a function and do smart scaling
      */
     if (encPrevCfg.width == encPrevCfg.width / 2 && encPrevCfg.height == encPrevCfg.height / 2)
@@ -778,13 +775,13 @@ int rawTo420(uint8_t* outputImage, uint8_t* inputImage, int rows, int cols)
     return bytesRead;
 }
 
-int CNvEncoder::EncodeMain(double*                    elapsedTimeP,
-                           double*                    avgtimeP,
-                           beeCompress::MutexBuffer*  buffer,
-                           beeCompress::MutexBuffer*  bufferPrev,
-                           beeCompress::writeHandler* wh,
-                           EncoderQualityConfig       encCfg,
-                           EncoderQualityConfig       encPrevCfg)
+int CNvEncoder::EncodeMain(double*              elapsedTimeP,
+                           double*              avgtimeP,
+                           MutexBuffer*         buffer,
+                           MutexBuffer*         bufferPrev,
+                           writeHandler*        wh,
+                           EncoderQualityConfig encCfg,
+                           EncoderQualityConfig encPrevCfg)
 {
     HANDLE             hInput;
     uint8_t*           yuv[3];
@@ -893,8 +890,8 @@ int CNvEncoder::EncodeMain(double*                    elapsedTimeP,
         uint32_t numBytesRead = 0;
 
         // Wait until there is a new image available (done by pop)
-        std::shared_ptr<beeCompress::ImageBuffer> imgptr = buffer->pop();
-        beeCompress::ImageBuffer*                 img    = imgptr.get();
+        std::shared_ptr<ImageBuffer> imgptr = buffer->pop();
+        ImageBuffer*                 img    = imgptr.get();
         numBytesRead = static_cast<decltype(numBytesRead)>(img->width * img->height);
 
         // Debug output TODO: remove?
@@ -937,9 +934,7 @@ int CNvEncoder::EncodeMain(double*                    elapsedTimeP,
         if (bufferPrev != NULL)
         {
 
-            std::shared_ptr<beeCompress::ImageBuffer> newImage = scaleImage(img,
-                                                                            encodeConfig,
-                                                                            encPrevCfg);
+            std::shared_ptr<ImageBuffer> newImage = scaleImage(img, encodeConfig, encPrevCfg);
             bufferPrev->push(newImage);
         }
     }

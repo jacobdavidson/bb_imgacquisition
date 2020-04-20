@@ -163,13 +163,13 @@ public:
      * 						Please note that NvEnc only supports up to 4096x4096.
      * @return 				The encoded file size or -1 in case of an error.
      */
-    int EncodeMain(double*                    elapsedTimeP,
-                   double*                    avgtimeP,
-                   beeCompress::MutexBuffer*  buffer,
-                   beeCompress::MutexBuffer*  bufferPrev,
-                   beeCompress::writeHandler* wh,
-                   EncoderQualityConfig       encCfg,
-                   EncoderQualityConfig       encPrevCfg);
+    int EncodeMain(double*              elapsedTimeP,
+                   double*              avgtimeP,
+                   MutexBuffer*         buffer,
+                   MutexBuffer*         bufferPrev,
+                   writeHandler*        wh,
+                   EncoderQualityConfig encCfg,
+                   EncoderQualityConfig encPrevCfg);
 
 protected:
     CNvHWEncoder* m_pNvHWEncoder;

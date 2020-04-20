@@ -53,10 +53,10 @@ XimeaCamThread::~XimeaCamThread()
 }
 
 // this function reads the data input vector
-bool XimeaCamThread::initialize(unsigned int              id,
-                                beeCompress::MutexBuffer* pBuffer,
-                                beeCompress::MutexBuffer* pSharedMemBuffer,
-                                Watchdog*                 dog)
+bool XimeaCamThread::initialize(unsigned int id,
+                                MutexBuffer* pBuffer,
+                                MutexBuffer* pSharedMemBuffer,
+                                Watchdog*    dog)
 {
     _SharedMemBuffer = pSharedMemBuffer;
     _Buffer          = pBuffer;
@@ -488,8 +488,7 @@ void XimeaCamThread::run()
         const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
                                                lastCameraTimestamp) +
                                            "Z";
-        auto buf =
-            std::make_shared<beeCompress::ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
+        auto buf = std::make_shared<ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
 #ifndef USE_ENCODER
@@ -599,7 +598,7 @@ void XimeaCamThread::generateLog(QString path, QString message)
     QFile   file(filename);
     file.open(QIODevice::Append);
     QTextStream stream(&file);
-    stream << QString(getTimestamp().c_str()) << ": " << message << "\r\n";
+    stream << QString::fromStdString(getTimestamp()) << ": " << message << "\r\n";
     file.close();
 }
 

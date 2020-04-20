@@ -13,54 +13,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-namespace beeCompress
+MutexLinkedList::MutexLinkedList()
 {
+    // Nothing to do here: Auto-generated constructor stub
+}
 
-    MutexLinkedList::MutexLinkedList()
+MutexLinkedList::~MutexLinkedList()
+{
+    // Nothing to do here: Auto-generated destructor stub
+}
+
+void MutexLinkedList::push(std::shared_ptr<ImageBuffer> imbuffer)
+{
+    _Access.lock();
+
+    images.push_back(imbuffer);
+    uint64_t s = images.size();
+    uint64_t w = imbuffer->width;
+    uint64_t h = imbuffer->height;
+    if (s * w * h / 1024 / 1024 > BUFFER_HARDLIMIT)
     {
-        // Nothing to do here: Auto-generated constructor stub
+        std::cerr << "ERROR: Buffer exceeds hardlimit (" << BUFFER_HARDLIMIT << " MiB). Exiting. "
+                  << std::endl;
+        std::exit(1);
     }
 
-    MutexLinkedList::~MutexLinkedList()
+    _Access.unlock();
+    waiting.notify();
+}
+
+std::shared_ptr<ImageBuffer> MutexLinkedList::pop()
+{
+    waiting.wait();
+    _Access.lock();
+    if (images.size() > 0)
     {
-        // Nothing to do here: Auto-generated destructor stub
-    }
-
-    void MutexLinkedList::push(std::shared_ptr<ImageBuffer> imbuffer)
-    {
-        _Access.lock();
-
-        images.push_back(imbuffer);
-        uint64_t s = images.size();
-        uint64_t w = imbuffer->width;
-        uint64_t h = imbuffer->height;
-        if (s * w * h / 1024 / 1024 > BUFFER_HARDLIMIT)
-        {
-            std::cerr << "ERROR: Buffer exceeds hardlimit (" << BUFFER_HARDLIMIT
-                      << " MiB). Exiting. " << std::endl;
-            std::exit(1);
-        }
-
+        std::shared_ptr<ImageBuffer> img = images.front();
+        images.pop_front();
         _Access.unlock();
-        waiting.notify();
+        return img;
     }
+    _Access.unlock();
 
-    std::shared_ptr<beeCompress::ImageBuffer> MutexLinkedList::pop()
-    {
-        waiting.wait();
-        _Access.lock();
-        if (images.size() > 0)
-        {
-            std::shared_ptr<ImageBuffer> img = images.front();
-            images.pop_front();
-            _Access.unlock();
-            return img;
-        }
-        _Access.unlock();
-
-        std::cerr << "Warning: pop used on an empty buffer" << std::endl;
-        std::shared_ptr<ImageBuffer> dummy(new beeCompress::ImageBuffer(0, 0, 0, ""));
-        return dummy;
-    }
-
-} /* namespace beeCompress */
+    std::cerr << "Warning: pop used on an empty buffer" << std::endl;
+    std::shared_ptr<ImageBuffer> dummy(new ImageBuffer(0, 0, 0, ""));
+    return dummy;
+}

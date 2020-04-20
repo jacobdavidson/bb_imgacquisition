@@ -32,10 +32,10 @@ public:
      * @param Buffer shared with the shared memory thread
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
-    virtual bool initialize(unsigned int              id,
-                            beeCompress::MutexBuffer* pBuffer,
-                            beeCompress::MutexBuffer* pSharedMemBuffer,
-                            Watchdog* dog) override; // here goes the camera ID (from 0 to 3)
+    virtual bool initialize(unsigned int id,
+                            MutexBuffer* pBuffer,
+                            MutexBuffer* pSharedMemBuffer,
+                            Watchdog*    dog) override; // here goes the camera ID (from 0 to 3)
 
     //! Object has been initialized using "initialize"
     virtual bool isInitialized() const override
@@ -119,10 +119,10 @@ private:
     unsigned int _LocalCounter;
 
     //! Buffer shared with the encoder thread
-    beeCompress::MutexBuffer* _Buffer;
+    MutexBuffer* _Buffer;
 
     //! Buffer shared with the shared memory thread
-    beeCompress::MutexBuffer* _SharedMemBuffer;
+    MutexBuffer* _SharedMemBuffer;
 
 protected:
     void run(); // this is the function that will be iterated indefinitely
