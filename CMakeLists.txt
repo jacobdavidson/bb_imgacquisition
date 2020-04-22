@@ -21,6 +21,10 @@ endif()
 
 find_package(OpenCV REQUIRED)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/src/cmake)
+
+find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
+
 set(CAMERA_BACKEND "Basler" CACHE STRING "Select a camera backend")
 set_property(CACHE CAMERA_BACKEND PROPERTY STRINGS "Basler" "Flea3" "XIMEA")
 
@@ -38,6 +42,8 @@ add_executable(${EXE_NAME}
 	src/SharedMemory.cpp
 	src/main.cpp
 	src/writeHandler.cpp
+	src/VideoWriter.cpp
+	src/VideoWriter.h
 	src/Buffer/ImageBuffer.h
 	src/Buffer/ImageBuffer.cpp
 	src/Buffer/MutexLinkedList.cpp
@@ -88,6 +94,7 @@ target_link_libraries(${EXE_NAME} PRIVATE
 	Threads::Threads
 	Qt5::Core
 	Boost::headers Boost::system Boost::filesystem Boost::program_options Boost::date_time Boost::disable_autolinking
+	FFmpeg::avformat FFmpeg::avcodec FFmpeg::avutil
 	${OpenCV_LIBRARIES}
 )
 
