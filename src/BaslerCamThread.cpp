@@ -155,6 +155,8 @@ bool BaslerCamThread::initCamera()
                 _camera.TriggerSelector = Basler_UsbCameraParams::TriggerSelector_FrameStart;
                 _camera.TriggerSource   = *triggerSource;
                 _camera.TriggerMode     = Basler_UsbCameraParams::TriggerMode_On;
+
+                _camera.AcquisitionFrameRateEnable = 0;
             }
             else
                 throw std::runtime_error("Invalid camera hardware trigger source");
