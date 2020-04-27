@@ -5,17 +5,29 @@
 #include <array>
 #include <sstream>
 #include <cstring>
+#include <string_view>
 
-#if LIBAVFORMAT_VERSION_MAJOR < 58
+#if __has_include(<ffnvcodec/nvEncodeAPI.h>)
+extern "C"
+{
+    #include <ffnvcodec/nvEncodeAPI.h>
+}
+#else
+    #define NVENC_INFINITE_GOPLENGTH 0xffffffff
+#endif
+
 struct FFmpegInitializer final
 {
     FFmpegInitializer()
     {
+
+#if LIBAVFORMAT_VERSION_MAJOR < 58
         av_register_all();
+#endif
+        av_log_set_level(AV_LOG_WARNING);
     }
 };
 static FFmpegInitializer initFFmpeg;
-#endif
 
 static const char* av_strerror(int errnum)
 {
