@@ -149,8 +149,6 @@ VideoWriter::~VideoWriter()
     }
 }
 
-static constexpr auto g_preferred_software_encoder = "libx265";
-
 VideoWriter::VideoWriter(const std::string& filename, Config config)
 : VideoWriter(config)
 {
@@ -165,11 +163,11 @@ VideoWriter::VideoWriter(const std::string& filename, Config config)
         throw std::runtime_error(msg.str());
     }
 
-    auto codec = avcodec_find_encoder_by_name(g_preferred_software_encoder);
+    const auto* codec = avcodec_find_encoder_by_name(_cfg.codec.name.c_str());
     if (!codec)
     {
         std::ostringstream msg;
-        msg << "Could not find video encoder: " << g_preferred_software_encoder;
+        msg << "Could not find video encoder: " << _cfg.codec.name;
         throw std::runtime_error(msg.str());
     }
 
@@ -207,17 +205,39 @@ VideoWriter::VideoWriter(const std::string& filename, Config config)
     _codecContext->framerate = {_cfg.framerate.num, _cfg.framerate.den};
     _codecContext->time_base = {_cfg.framerate.den, _cfg.framerate.num};
 
-    //
-    // std::min(1, av_q2d(_codecContext->framerate) / 2);
-    // AVRational{1, 2}
+    _codecContext->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    _codecContext->gop_size     = 10;
-    _codecContext->max_b_frames = 1;
-    _codecContext->pix_fmt      = AV_PIX_FMT_YUV420P;
+    const auto codecName = std::string_view(codec->name);
+    if (codecName == "nvenc_hevc")
+    {
+        throw std::runtime_error(
+            "Legacy nvenc_hevc encoder is not supported, use newer hevc_nvenc instead");
+    }
 
-    // if (codec->id == AV_CODEC_ID_H264) {
-    // 	av_opt_set(_codecContext->priv_data, "preset", "slow", 0);
-    // }
+    if (codecName == "hevc_nvenc" || codecName == "h264_nvenc")
+    {
+        _codecContext->bit_rate = 0;
+    }
+
+    for (const auto& [name, value] : _cfg.codec.options)
+    {
+        if (name == "goplength" && (codecName == "hevc_nvenc" || codecName == "h264_nvenc"))
+        {
+            if (value == "infinite")
+            {
+                _codecContext->gop_size = NVENC_INFINITE_GOPLENGTH;
+            }
+        }
+        else
+        {
+            if (auto r = av_opt_set(_codecContext->priv_data, name.c_str(), value.c_str(), 0); r < 0)
+            {
+                std::ostringstream msg;
+                msg << "Failed to set encoder option '" << name << "' to '" << value << "': " << av_strerror(r);
+                throw std::runtime_error(msg.str());
+            }
+        }
+    }
 
     if (_formatContext->oformat->flags & AVFMT_GLOBALHEADER)
     {

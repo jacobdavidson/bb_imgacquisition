@@ -888,7 +888,10 @@ int CNvEncoder::EncodeMain(double*              elapsedTimeP,
 
     VideoWriter videoWriter(std::string(wh->_videofile.c_str(), wh->_videofile.size() - 4) +
                                 ".mp4",
-                            {encCfg.width, encCfg.height, {encCfg.fps, 1}});
+                            {encCfg.width,
+                             encCfg.height,
+                             {encCfg.fps, 1},
+                             {"hevc_nvenc", {{"preset", "default"}, {"rc", "vbr_hq"}, {"cq", "25"}}}});
 
     for (int frm = 0; frm < encCfg.totalFrames; frm++)
     {

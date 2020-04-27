@@ -3,6 +3,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 extern "C"
 {
@@ -27,6 +28,12 @@ public:
             int num;
             int den;
         } framerate;
+
+        struct
+        {
+            std::string name;
+            std::unordered_map<std::string, std::string> options;
+        } codec;
     };
 
     VideoWriter(const std::string& filename, Config config);
