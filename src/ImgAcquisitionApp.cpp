@@ -192,18 +192,18 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     {
 
 #ifdef USE_FLEA3
-        _threads[i] = std::make_unique<Flea3CamThread>();
+        _cameraThreads[i] = std::make_unique<Flea3CamThread>();
 #endif
 
 #ifdef USE_XIMEA
-        _threads[i] = std::make_unique<XimeaCamThread>();
+        _cameraThreads[i] = std::make_unique<XimeaCamThread>();
 #endif
 
 #ifdef USE_BASLER
-        _threads[i] = std::make_unique<BaslerCamThread>();
+        _cameraThreads[i] = std::make_unique<BaslerCamThread>();
 #endif
 
-        connect(_threads[i].get(),
+        connect(_cameraThreads[i].get(),
                 SIGNAL(logMessage(int, QString)),
                 this,
                 SLOT(logMessage(int, QString)));
@@ -212,10 +212,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     std::cout << "Connected " << numCameras << " cameras." << std::endl;
 
     // the threads are initialized as a private variable of the class ImgAcquisitionApp
-    _threads[0]->initialize(0, (_videoWriteThread1._Buffer1), _smthread->_Buffer, &_watchdog);
-    _threads[1]->initialize(1, (_videoWriteThread2._Buffer1), _smthread->_Buffer, &_watchdog);
-    _threads[2]->initialize(2, (_videoWriteThread1._Buffer2), _smthread->_Buffer, &_watchdog);
-    _threads[3]->initialize(3, (_videoWriteThread2._Buffer2), _smthread->_Buffer, &_watchdog);
+    _cameraThreads[0]->initialize(0, (_videoWriteThread1._Buffer1), _smthread->_Buffer, &_watchdog);
+    _cameraThreads[1]->initialize(1, (_videoWriteThread2._Buffer1), _smthread->_Buffer, &_watchdog);
+    _cameraThreads[2]->initialize(2, (_videoWriteThread1._Buffer2), _smthread->_Buffer, &_watchdog);
+    _cameraThreads[3]->initialize(3, (_videoWriteThread2._Buffer2), _smthread->_Buffer, &_watchdog);
 
     // Map the buffers to camera id's
     _videoWriteThread1._CamBuffer1 = 0;
@@ -228,9 +228,9 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     // execute run() function, spawns cam readers
     for (int i = 0; i < 4; i++)
     {
-        if (_threads[i]->isInitialized())
+        if (_cameraThreads[i]->isInitialized())
         {
-            _threads[i]->start();
+            _cameraThreads[i]->start();
             camsStarted++;
         }
     }

@@ -61,7 +61,7 @@ private:
     SharedMemory* _smthread;
 
     //! A vector of the class CamThread, they are accessed from the constructor
-    std::unique_ptr<CamThread> _threads[4];
+    std::unique_ptr<CamThread> _cameraThreads[4];
 
     //! Number of detected cameras
     unsigned int _numCameras;
