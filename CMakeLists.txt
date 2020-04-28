@@ -113,6 +113,9 @@ endif()
 if(${CAMERA_BACKEND} STREQUAL "Flea3")
 	target_compile_definitions(${EXE_NAME} PRIVATE USE_FLEA3)
 	target_sources(${EXE_NAME} PRIVATE src/Flea3CamThread.h src/Flea3CamThread.cpp)
+
+	find_package(FlyCapture2 REQUIRED)
+	target_link_libraries(${EXE_NAME} PRIVATE FlyCapture2)
 endif()
 
 if(${CAMERA_BACKEND} STREQUAL "XIMEA")
@@ -122,21 +125,9 @@ endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 
-	if(${CAMERA_BACKEND} STREQUAL "Flea3")
-		target_include_directories(${EXE_NAME} PRIVATE "/usr/include/flycapture")
-		target_link_libraries(${EXE_NAME} PRIVATE flycapture)
-	endif()
-
 	if(${CAMERA_BACKEND} STREQUAL "XIMEA")
 		target_include_directories(${EXE_NAME} PRIVATE "/opt/XIMEA/include")
 		target_link_libraries(${EXE_NAME} PRIVATE m3api)
-	endif()
-elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-	if(${CAMERA_BACKEND} STREQUAL "Flea3")
-	   target_include_directories(${EXE_NAME} PRIVATE "C:\\Program Files\\Point Grey Research\\FlyCapture2\\include")
-		target_link_libraries(${EXE_NAME} PRIVATE
-			"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2.lib"
-			"C:\\Program Files\\Point Grey Research\\FlyCapture2\\lib64\\FlyCapture2_v110.lib")
 	endif()
 endif()
 
