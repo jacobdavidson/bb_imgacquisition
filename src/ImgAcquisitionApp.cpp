@@ -224,13 +224,13 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 
     std::cout << "Started " << camsStarted << " camera threads." << std::endl;
 
-    // Start encoder threads
+    // Start video writer threads
     // The if(numCameras>=2) is not required here. If only one camera is present,
     // the other glue thread will sleep most of the time.
     _videoWriteThread1.start();
     _videoWriteThread2.start();
 
-    std::cout << "Started the encoder threads." << std::endl;
+    std::cout << "Started the video writer threads." << std::endl;
 
     auto watchdogTimer = new QTimer(this);
     watchdogTimer->setInterval(500);

@@ -29,7 +29,7 @@ public:
      * @brief Initialization of cameras and configuration
      *
      * @param Virtual ID of the camera (0 to 3)
-     * @param Buffer shared with the encoder thread
+     * @param Buffer shared with the video writer thread
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
     virtual bool initialize(unsigned int id,
