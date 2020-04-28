@@ -25,7 +25,6 @@
 #endif
 #include "../settings/Settings.h"
 #include "../Buffer/ImageBuffer.h"
-#include "../VideoWriter.h"
 
 #if HALIDE
     #include "halideYuv420Conv.h"
@@ -821,13 +820,6 @@ int CNvEncoder::EncodeMain(double*              elapsedTimeP,
 
     NvQueryPerformanceCounter(&lStart);
 
-    VideoWriter videoWriter(std::string(wh->_videofile.c_str(), wh->_videofile.size() - 4) +
-                                ".mp4",
-                            {encCfg.width,
-                             encCfg.height,
-                             {encCfg.fps, 1},
-                             {"hevc_nvenc", {{"preset", "default"}, {"rc", "vbr_hq"}, {"cq", "25"}}}});
-
     for (int frm = 0; frm < encCfg.totalFrames; frm++)
     {
         uint32_t numBytesRead = 0;
@@ -844,8 +836,6 @@ int CNvEncoder::EncodeMain(double*              elapsedTimeP,
         // This should not happen
         if (numBytesRead == 0)
             break;
-
-        videoWriter.write(*img);
 
         EncodeFrameConfig stEncodeFrame;
         memset(&stEncodeFrame, 0, sizeof(stEncodeFrame));
@@ -877,7 +867,6 @@ int CNvEncoder::EncodeMain(double*              elapsedTimeP,
         wh->log(img->timestamp);
 
     }
-    videoWriter.close();
 
     nvStatus = EncodeFrame(NULL, true, encodeConfig.width, encodeConfig.height);
     if (nvStatus != NV_ENC_SUCCESS)
