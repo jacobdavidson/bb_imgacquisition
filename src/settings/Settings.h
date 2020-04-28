@@ -3,12 +3,14 @@
 #pragma once
 
 #include <type_traits>
-#include <optional>
+#include <unordered_map>
+#include <variant>
 
 #include <string>
 #include <fstream>
 #include <iostream>
 
+#include <boost/optional.hpp>
 #include <boost/filesystem.hpp>
 
 #include <boost/lexical_cast.hpp>
@@ -16,10 +18,6 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include "ParamNames.h"
-
-#include <string>
-#include <fstream>
-#include <iostream>
 
 /*rcmode		The rc (rate control) mode to use. <br>
  * 						0 = Constant quantizer parameter (default)<br>
@@ -101,6 +99,8 @@ class SettingsIAC
 {
 
 private:
+    void loadNewSettings();
+
     /* This is a singleton. Get it using something like:
      * SettingsIAC *myInstance = SettingsIAC::getInstance();
      */
@@ -115,6 +115,7 @@ private:
         if (conf.good())
         {
             boost::property_tree::read_json(confFile, _ptree);
+            loadNewSettings();
         }
         else
         {
@@ -257,8 +258,61 @@ public:
 
     EncoderQualityConfig getBufferConf(int camid, int preview);
 
+    struct VideoStream final
+    {
+        struct Camera final
+        {
+            std::string serial;
+            int         id;
+            int         width;
+            int         height;
+
+            struct HardwareTrigger final
+            {
+                int source;
+            };
+
+            struct SoftwareTrigger final
+            {
+                int framesPerSecond;
+            };
+
+            std::variant<HardwareTrigger, SoftwareTrigger> trigger;
+
+            boost::optional<int> buffersize;
+
+            boost::optional<boost::optional<int>>  brightness;
+            boost::optional<boost::optional<int>>  exposure;
+            boost::optional<boost::optional<int>>  shutter;
+            boost::optional<boost::optional<int>>  gain;
+            boost::optional<bool> whitebalance;
+        };
+
+        Camera camera;
+
+        int framesPerVideoFile;
+
+        struct
+        {
+            std::string                                  name;
+            std::unordered_map<std::string, std::string> options;
+        } encoder;
+    };
+
+    const std::vector<VideoStream>& videoStreams() const;
+
+    const std::string logDirectory() const;
+    const std::string tmpPath() const;
+    const std::string outDirectory() const;
+
 private:
     EncoderQualityConfig setFromNode(boost::property_tree::ptree node);
 
     static const boost::property_tree::ptree getDefaultParams();
+
+    std::vector<VideoStream> _videoStreams;
+
+    std::string _logDirectory;
+    std::string _tmpPath;
+    std::string _outDirectory;
 };

@@ -149,3 +149,110 @@ EncoderQualityConfig SettingsIAC::getBufferConf(int camid, int preview)
     }
     return cfg;
 }
+
+void SettingsIAC::loadNewSettings()
+{
+    for (const auto& [_, videoStreamTree] : _ptree.get_child("video_streams"))
+    {
+        VideoStream stream;
+
+        const auto& cameraTree = videoStreamTree.get_child("camera");
+
+        stream.camera.serial = cameraTree.get<std::string>("serial");
+        stream.camera.id     = cameraTree.get<int>("id");
+        stream.camera.width  = cameraTree.get<int>("width");
+        stream.camera.height = cameraTree.get<int>("height");
+
+        const auto& triggerTree = cameraTree.get_child("trigger");
+
+        const auto triggerType = triggerTree.get<std::string>("type");
+        if (triggerType == "hardware")
+        {
+            VideoStream::Camera::HardwareTrigger trigger;
+            trigger.source        = triggerTree.get<int>("source");
+            stream.camera.trigger = trigger;
+        }
+        else if (triggerType == "software")
+        {
+            VideoStream::Camera::SoftwareTrigger trigger;
+            trigger.framesPerSecond = triggerTree.get<int>("frames_per_second");
+            stream.camera.trigger   = trigger;
+        }
+        else
+        {
+            std::ostringstream msg;
+            msg << "Invalid camera trigger type: " << triggerType;
+            throw std::runtime_error(msg.str());
+        }
+
+        stream.camera.buffersize = cameraTree.get_optional<int>("buffersize");
+
+        const auto parseAutoIntParam =
+            [](const boost::property_tree::ptree& tree,
+               const std::string&                 name) -> boost::optional<boost::optional<int>> {
+            if (auto strValue = tree.get_optional<std::string>(name); strValue)
+            {
+                if (*strValue == "auto")
+                {
+                    return {boost::none};
+                }
+                else if (auto intValue = tree.get_optional<int>(name); intValue)
+                {
+                    return {{intValue}};
+                }
+
+                std::ostringstream msg;
+                msg << "Invalid value for camera parameter \'" << name
+                    << "\': Expected \"auto\" or integer value";
+                throw std::runtime_error(msg.str());
+            }
+
+            return boost::none;
+        };
+
+        stream.camera.brightness = parseAutoIntParam(cameraTree, "brightness");
+        stream.camera.exposure   = parseAutoIntParam(cameraTree, "exposure");
+        stream.camera.shutter    = parseAutoIntParam(cameraTree, "shutter");
+        stream.camera.gain       = parseAutoIntParam(cameraTree, "gain");
+
+        stream.camera.whitebalance = cameraTree.get_optional<bool>("whitebalance");
+
+        stream.framesPerVideoFile = videoStreamTree.get<int>("frames_per_video_file");
+
+        for (const auto& [key, value] : videoStreamTree.get_child("encoder"))
+        {
+            if (key == "name")
+            {
+                stream.encoder.name = value.get_value<std::string>();
+            }
+            else
+            {
+                stream.encoder.options.emplace(key, value.get_value<std::string>());
+            }
+        }
+
+        _videoStreams.push_back(stream);
+    }
+
+    _logDirectory = _ptree.get_value<std::string>("log_directory");
+    _tmpPath = _ptree.get_value<std::string>("tmpPath");
+    _outDirectory = _ptree.get_value<std::string>("outDirectory");
+}
+
+const std::vector<SettingsIAC::VideoStream>& SettingsIAC::videoStreams() const
+{
+    return _videoStreams;
+}
+
+const std::string SettingsIAC::logDirectory() const
+{
+    return _logDirectory;
+}
+const std::string SettingsIAC::tmpPath() const
+{
+    return _tmpPath;
+}
+const std::string SettingsIAC::outDirectory() const
+{
+    return _outDirectory;
+}

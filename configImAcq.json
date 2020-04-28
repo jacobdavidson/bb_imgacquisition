@@ -55,5 +55,33 @@
         "IMDIRPREVIEW": ".\/data\/tmpPrev\/Cam_%u\/Cam_%u_%s--%s",
         "EXCHANGEDIRPREVIEW": ".\/data\/outPrev\/Cam_%u\/",
         "CAMCOUNT": "2"
-    }
+    },
+    "video_streams": [
+        {
+            "camera" :
+            {
+                "serial": "40026484",
+                "id": 0,
+                "width": 4096,
+                "height": 2168,
+                "trigger":
+                {
+                    "type": "hardware",
+                    "source": 3
+                }
+            },
+            "frames_per_video_file": 500,
+            "encoder" :
+            {
+                "name": "hevc_nvenc",
+                "preset": "default",
+                "rc": "vbr_hq",
+                "cq": "25",
+                "goplength": "infinite"
+            }
+        }
+    ],
+    "log_directory": ".\/data\/log\/Cam_%d\/",
+    "tmp_path": ".\/data\/tmp\/Cam_%u\/Cam_%u_%s--%s",
+    "out_directory": ".\/data\/out\/Cam_%u\/"
 }
