@@ -35,7 +35,6 @@
 #endif
 
 #include <opencv2/opencv.hpp>
-using namespace cv;
 
 // Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread()
@@ -131,13 +130,11 @@ bool Flea3CamThread::initCamera()
 
     bool supported;
 
-    Error error;
-
     // Find hardware ID to serial number
     for (int i = 0; i < 4; i++)
     {
         unsigned int serial;
-        Error        error = busMgr.GetCameraSerialNumberFromIndex(i, &serial);
+        FlyCapture2::Error error = busMgr.GetCameraSerialNumberFromIndex(i, &serial);
         if (error == PGRERROR_OK && serial == cfg.serial)
         {
             _HWID = i;
@@ -539,7 +536,6 @@ int flycapTo420(uint8_t* outputImage, FlyCapture2::Image* inputImage)
 // this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
-    struct tm* timeinfo;
     char       timeresult[32];
 
     SettingsIAC*         set = SettingsIAC::getInstance();
@@ -558,7 +554,6 @@ void Flea3CamThread::run()
     PGRGuid    guid;
 
     ////////////////////////WINDOWS/////////////////////
-    int          oldTime   = 0;
     unsigned int oldTimeUs = 1000000;
     unsigned int difTimeStampUs;
     ////////////////////////////////////////////////////
@@ -597,7 +592,7 @@ void Flea3CamThread::run()
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         // Retrieve image and metadata
-        Error e = _Camera.RetrieveBuffer(&cimg);
+        FlyCapture2::Error e = _Camera.RetrieveBuffer(&cimg);
         // Get the timestamp
         std::string currentTimestamp = get_utc_time();
 
@@ -629,11 +624,6 @@ void Flea3CamThread::run()
         _FrameNumber = _ImInfo.embeddedFrameCounter;
         _TimeStamp   = cimg.GetTimeStamp();
 
-        // converts the time in seconds to local time
-        timeinfo = localtime(&_TimeStamp.seconds);
-
-        localCounter(oldTime, timeinfo->tm_sec);
-
         //////////////////////////////////////////////
 
         if (_TimeStamp.microSeconds > oldTimeUs)
@@ -648,8 +638,6 @@ void Flea3CamThread::run()
         oldTimeUs = _TimeStamp.microSeconds;
 
         ///////////////////////////////////
-
-        oldTime = timeinfo->tm_sec;
 
         // Prepare and put the image into the buffer
         // std::string currentTimestamp(timeresult);
@@ -674,7 +662,7 @@ void Flea3CamThread::run()
     return;
 }
 
-void Flea3CamThread::logCriticalError(Error e)
+void Flea3CamThread::logCriticalError(FlyCapture2::Error e)
 {
     char              logfilepathFull[256];
     std::stringstream str;
@@ -689,7 +677,7 @@ void Flea3CamThread::logCriticalError(Error e)
 
     str << "Line: " << e.GetLine() << std::endl;
     str << "ErrorType: " << e.GetType() << std::endl;
-    Error cause = e.GetCause();
+    FlyCapture2::Error cause = e.GetCause();
     str << "Cause.Type: " << cause.GetType() << std::endl;
     str << "Cause.Description: " << cause.GetDescription() << std::endl;
     str << "Cause.Filename: " << cause.GetFilename() << std::endl;
@@ -728,7 +716,7 @@ void Flea3CamThread::PrintCameraInfo(CameraInfo* pCamInfo)
                        QString(pCamInfo->firmwareBuildTime) + "\n" + "\n");
 }
 
-bool Flea3CamThread::checkReturnCode(Error error)
+bool Flea3CamThread::checkReturnCode(FlyCapture2::Error error)
 {
     if (error != PGRERROR_OK)
     {

@@ -7,7 +7,7 @@
     #include <windows.h>
 #endif
 #include "CamThread.h"
-#include "FlyCapture2.h"
+#include <FlyCapture2.h>
 #include "Buffer/MutexBuffer.h"
 #include "Watchdog.h"
 #include <mutex>
@@ -75,7 +75,7 @@ private:
      *
      * @param The error object
      */
-    bool checkReturnCode(Error error);
+    bool checkReturnCode(FlyCapture2::Error error);
 
     /**
      * @brief Sends an error message.
@@ -94,14 +94,6 @@ private:
      * @param Message to emit
      */
     void generateLog(QString path, QString message);
-
-    /**
-     * @brief Deprecated
-     *
-     * @param Deprecated
-     * @param Deprecated
-     */
-    void localCounter(unsigned int oldTime, unsigned int newTime);
 
     /**
      * @brief Logs a critical error in very detail
