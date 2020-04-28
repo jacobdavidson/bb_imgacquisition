@@ -121,14 +121,9 @@ endif()
 if(${CAMERA_BACKEND} STREQUAL "XIMEA")
 	target_sources(${EXE_NAME} PRIVATE src/XimeaCamThread.h src/XimeaCamThread.cpp)
 	target_compile_definitions(${EXE_NAME} PRIVATE USE_XIMEA)
-endif()
 
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-
-	if(${CAMERA_BACKEND} STREQUAL "XIMEA")
-		target_include_directories(${EXE_NAME} PRIVATE "/opt/XIMEA/include")
-		target_link_libraries(${EXE_NAME} PRIVATE m3api)
-	endif()
+	find_package(XIMEA REQUIRED)
+	target_link_libraries(${EXE_NAME} PRIVATE XIMEA)
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
