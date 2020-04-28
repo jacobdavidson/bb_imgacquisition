@@ -38,7 +38,7 @@ set(EXE_NAME bb_ImageAcquistion)
 add_executable(${EXE_NAME}
 	src/CamThread.cpp
 	src/ImgAcquisitionApp.cpp
-	src/NvEncGlue.cpp
+	src/VideoWriteThread.cpp
 	src/SharedMemory.cpp
 	src/main.cpp
 	src/writeHandler.cpp
@@ -59,7 +59,7 @@ add_executable(${EXE_NAME}
 	src/settings/utility.cpp
 	src/CamThread.h
 	src/ImgAcquisitionApp.h
-	src/NvEncGlue.h
+	src/VideoWriteThread.h
 	src/SharedMemory.h
 	src/Watchdog.h
 	src/nvenc/NvEncoder.h

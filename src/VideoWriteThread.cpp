@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 /*
- * NvEncGlue.cpp
+ * VideoWriteThread.cpp
  *
  *  Created on: Nov 6, 2015
  *      Author: hauke
@@ -18,13 +18,13 @@
 #include "settings/utility.h"
 #include "settings/Settings.h"
 // The order is important!
-#include "NvEncGlue.h"
+#include "VideoWriteThread.h"
 #ifndef USE_ENCODER
     #include "nvenc/NvEncoder.h"
 #endif
 #include "writeHandler.h"
 
-void NvEncGlue::run()
+void VideoWriteThread::run()
 {
 
 #ifndef USE_ENCODER
@@ -148,7 +148,7 @@ void NvEncGlue::run()
 #endif
 }
 
-NvEncGlue::NvEncGlue()
+VideoWriteThread::VideoWriteThread()
 {
 
     SettingsIAC* set = SettingsIAC::getInstance();
@@ -163,9 +163,4 @@ NvEncGlue::NvEncGlue()
 
     previewsEnabled = set->getValueOfParam<int>(IMACQUISITION::DO_PREVIEWS) == 1;
     ;
-}
-
-NvEncGlue::~NvEncGlue()
-{
-    // Auto-generated destructor stub
 }

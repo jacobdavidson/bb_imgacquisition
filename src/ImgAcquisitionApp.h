@@ -9,7 +9,7 @@
 #include <QtGui/QKeyEvent>
 
 #include "CamThread.h"
-#include "NvEncGlue.h"
+#include "VideoWriteThread.h"
 #include "SharedMemory.h"
 #include "Watchdog.h"
 
@@ -67,7 +67,8 @@ private:
     unsigned int _numCameras;
 
     //! Glue objects which handle encoder workers
-    NvEncGlue _glue1, _glue2;
+    VideoWriteThread _videoWriteThread1;
+    VideoWriteThread _videoWriteThread2;
 
     /**
      * @brief Helper function of resolveLocks

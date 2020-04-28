@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef NVENCGLUE_H_
-#define NVENCGLUE_H_
+#pragma once
 
 #include "Buffer/MutexBuffer.h"
 #include "Buffer/MutexLinkedList.h"
+
 #include <QThread>
 
 /**
- * @brief The NvEncGlue class
+ * @brief The VideoWriteThread class
  *
  * This class reads from two ringbuffers
  * and processes the leass occupied one
@@ -23,7 +23,7 @@
  * -    The resolution. Encoding may throw errors madly if 4096x4096 is exceeded.
  *      This is a Nvidia GPU encoder limitation.
  */
-class NvEncGlue : public QThread
+class VideoWriteThread final : public QThread
 {
     Q_OBJECT
 
@@ -53,12 +53,7 @@ public:
     /**
      * @brief Creates a new encoder glue. Initializes ringbuffers.
      */
-    NvEncGlue();
-
-    /**
-     * @brief Destroy the encoder glue
-     */
-    virtual ~NvEncGlue();
+    VideoWriteThread();
 
     /**
      * @brief Whether to enable previews.
@@ -84,5 +79,3 @@ protected:
      */
     bool previewsEnabled{true};
 };
-
-#endif /* NVENCGLUE_H_ */

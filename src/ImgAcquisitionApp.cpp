@@ -212,16 +212,16 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     std::cout << "Connected " << numCameras << " cameras." << std::endl;
 
     // the threads are initialized as a private variable of the class ImgAcquisitionApp
-    _threads[0]->initialize(0, (_glue1._Buffer1), _smthread->_Buffer, &_watchdog);
-    _threads[1]->initialize(1, (_glue2._Buffer1), _smthread->_Buffer, &_watchdog);
-    _threads[2]->initialize(2, (_glue1._Buffer2), _smthread->_Buffer, &_watchdog);
-    _threads[3]->initialize(3, (_glue2._Buffer2), _smthread->_Buffer, &_watchdog);
+    _threads[0]->initialize(0, (_videoWriteThread1._Buffer1), _smthread->_Buffer, &_watchdog);
+    _threads[1]->initialize(1, (_videoWriteThread2._Buffer1), _smthread->_Buffer, &_watchdog);
+    _threads[2]->initialize(2, (_videoWriteThread1._Buffer2), _smthread->_Buffer, &_watchdog);
+    _threads[3]->initialize(3, (_videoWriteThread2._Buffer2), _smthread->_Buffer, &_watchdog);
 
     // Map the buffers to camera id's
-    _glue1._CamBuffer1 = 0;
-    _glue1._CamBuffer2 = 2;
-    _glue2._CamBuffer1 = 1;
-    _glue2._CamBuffer2 = 3;
+    _videoWriteThread1._CamBuffer1 = 0;
+    _videoWriteThread1._CamBuffer2 = 2;
+    _videoWriteThread2._CamBuffer1 = 1;
+    _videoWriteThread2._CamBuffer2 = 3;
 
     std::cout << "Initialized " << numCameras << " cameras." << std::endl;
 
@@ -240,8 +240,8 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     // Start encoder threads
     // The if(numCameras>=2) is not required here. If only one camera is present,
     // the other glue thread will sleep most of the time.
-    _glue1.start();
-    _glue2.start();
+    _videoWriteThread1.start();
+    _videoWriteThread2.start();
 
     std::cout << "Started the encoder threads." << std::endl;
 
