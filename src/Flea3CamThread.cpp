@@ -648,9 +648,8 @@ void Flea3CamThread::run()
         // int numBytesRead = flycapTo420(&buf.get()->data[0], &cimg);
         memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 
-#ifndef USE_ENCODER
         _Buffer->push(buf);
-#endif
+
         _SharedMemBuffer->push(buf);
 
         loopCount++;

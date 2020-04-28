@@ -19,15 +19,14 @@
 #include "settings/Settings.h"
 // The order is important!
 #include "VideoWriteThread.h"
-#ifndef USE_ENCODER
-    #include "nvenc/NvEncoder.h"
-#endif
+
+#include "nvenc/NvEncoder.h"
+
 #include "writeHandler.h"
 
 void VideoWriteThread::run()
 {
 
-#ifndef USE_ENCODER
     SettingsIAC* set = SettingsIAC::getInstance();
 
     std::string imdir           = set->getValueOfParam<std::string>(IMACQUISITION::IMDIR);
@@ -140,12 +139,6 @@ void VideoWriteThread::run()
             std::cout << "Encoded " << ret << " byte" << std::endl;
         }
     }
-#else
-    while (true)
-    {
-        usleep(500);
-    }
-#endif
 }
 
 VideoWriteThread::VideoWriteThread()

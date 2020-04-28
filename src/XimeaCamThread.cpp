@@ -491,9 +491,8 @@ void XimeaCamThread::run()
         auto buf = std::make_shared<ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
-#ifndef USE_ENCODER
         _Buffer->push(buf);
-#endif
+
         _SharedMemBuffer->push(buf);
 
 #ifdef WITH_DEBUG_IMAGE_OUTPUT
