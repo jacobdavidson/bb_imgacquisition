@@ -3,6 +3,12 @@
 #pragma once
 
 #include <type_traits>
+#include <optional>
+
+#include <string>
+#include <fstream>
+#include <iostream>
+
 #include <boost/filesystem.hpp>
 
 #include <boost/lexical_cast.hpp>
