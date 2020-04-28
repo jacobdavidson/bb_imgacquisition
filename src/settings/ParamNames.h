@@ -28,8 +28,6 @@ namespace IMACQUISITION
         static const std::string FRAMESPERVIDEO = "FRAMESPERVIDEO";
         static const std::string FPS            = "FPS";
 
-        static const std::string OFFSETX         = "OFFSETX";
-        static const std::string OFFSETY         = "OFFSETY";
         static const std::string HWBUFSIZE       = "HWBUFSIZE";
         static const std::string EXPOSUREONOFF   = "EXPOSUREONOFF";
         static const std::string EXPOSUREAUTO    = "EXPOSUREAUTO";

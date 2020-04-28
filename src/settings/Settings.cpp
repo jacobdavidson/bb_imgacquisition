@@ -31,8 +31,6 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams()
         hd.put(IMACQUISITION::BUFFERCONF::FRAMESPERVIDEO, 500);
         hd.put(IMACQUISITION::BUFFERCONF::FPS, 3);
         hd.put(IMACQUISITION::BUFFERCONF::PRESET, 2);
-        hd.put(IMACQUISITION::BUFFERCONF::OFFSETX, 0);
-        hd.put(IMACQUISITION::BUFFERCONF::OFFSETY, 0);
         hd.put(IMACQUISITION::BUFFERCONF::HWBUFSIZE, 0);
         hd.put(IMACQUISITION::BUFFERCONF::BRIGHTNESSONOFF, 1);
         hd.put(IMACQUISITION::BUFFERCONF::BRIGHTNESSAUTO, 0);
@@ -99,8 +97,6 @@ EncoderQualityConfig SettingsIAC::setFromNode(boost::property_tree::ptree node)
 
     if (cfg.isPreview == 0)
     {
-        cfg.offsetx         = node.get<int>(IMACQUISITION::BUFFERCONF::OFFSETX);
-        cfg.offsety         = node.get<int>(IMACQUISITION::BUFFERCONF::OFFSETY);
         cfg.hwbuffersize    = node.get<int>(IMACQUISITION::BUFFERCONF::HWBUFSIZE);
         cfg.brightness      = node.get<int>(IMACQUISITION::BUFFERCONF::BRIGHTNESS);
         cfg.brightnessonoff = node.get<int>(IMACQUISITION::BUFFERCONF::BRIGHTNESSONOFF);

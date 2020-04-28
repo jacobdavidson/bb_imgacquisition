@@ -66,8 +66,6 @@ typedef struct _EncoderQualityConfig
     int         width;
     int         height;
     int         fps;
-    int         offsetx;
-    int         offsety;
     int         hwbuffersize;
     int         brightness;
     int         brightnessonoff;
