@@ -46,38 +46,12 @@ add_executable(${EXE_NAME}
 	src/Buffer/MutexBuffer.h
 	src/Buffer/MutexLinkedList.h
 	src/Buffer/Semaphore.h
-	src/nvenc/NvEncoder.cpp
-	src/nvenc/NvHWEncoder.cpp
-	src/nvenc/cudaModuleMgr.cpp
-	src/nvenc/dynlink_cuda.cpp
-	src/nvenc/dynlink_nvcuvid.cpp
 	src/settings/Settings.cpp
 	src/settings/utility.cpp
 	src/CamThread.h
 	src/ImgAcquisitionApp.h
 	src/VideoWriteThread.h
 	src/Watchdog.h
-	src/nvenc/NvEncoder.h
-	src/nvenc/NvHWEncoder.h
-	src/nvenc/cudaModuleMgr.h
-	src/nvenc/drvapi_error_string.h
-	src/nvenc/dynlink_builtin_types.h
-	src/nvenc/dynlink_cuda.h
-	src/nvenc/dynlink_cudaGL.h
-	src/nvenc/dynlink_cuda_cuda.h
-	src/nvenc/dynlink_cuda_gl.h
-	src/nvenc/dynlink_cuviddec.h
-	src/nvenc/dynlink_nvcuvid.h
-	src/nvenc/exception.h
-	src/nvenc/helper_cuda.h
-	src/nvenc/helper_cuda_drvapi.h
-	src/nvenc/helper_functions.h
-	src/nvenc/helper_string.h
-	src/nvenc/helper_timer.h
-	src/nvenc/nvCPUOPSys.h
-	src/nvenc/nvEncodeAPI.h
-	src/nvenc/nvFileIO.h
-	src/nvenc/nvUtils.h
 	src/settings/ParamNames.h
 	src/settings/Settings.h
 	src/settings/utility.h
