@@ -20,9 +20,8 @@
 // The order is important!
 #include "VideoWriteThread.h"
 
-#include "nvenc/NvEncoder.h"
-
 #include "writeHandler.h"
+#include "VideoWriter.h"
 
 void VideoWriteThread::run()
 {
@@ -35,8 +34,6 @@ void VideoWriteThread::run()
     // For logging encoding times
     double elapsedTimeP, avgtimeP;
 
-    // Encoder may be reused. Potentially saves time.
-    CNvEncoder           enc;
     EncoderQualityConfig cfgC1 = set->getBufferConf(_CamBuffer1);
     EncoderQualityConfig cfgC2 = set->getBufferConf(_CamBuffer2);
 
@@ -81,17 +78,33 @@ void VideoWriteThread::run()
 
         writeHandler wh(dir, currentCam, exdir);
 
-        // encode the frames in the buffer using given configuration
-        std::cout << "Write handler initialized!" << std::endl;
-        int ret = enc.EncodeMain(&elapsedTimeP, &avgtimeP, currentCamBuffer, &wh, encCfg);
-        if (ret <= 0)
+        VideoWriter videoWriter(
+            std::string(wh._videofile.c_str(), wh._videofile.size() - 4) + ".mp4",
+            {encCfg.width,
+             encCfg.height,
+             {encCfg.fps, 1},
+             {"hevc_nvenc", {{"preset", "default"}, {"rc", "vbr_hq"}, {"cq", "25"}}}});
+
+        for (int frm = 0; frm < encCfg.totalFrames; frm++)
         {
-            std::cerr << "ENCODER ERROR! " << std::endl;
+            uint32_t numBytesRead = 0;
+
+            // Wait until there is a new image available (done by pop)
+            auto  imgptr = currentCamBuffer->pop();
+            auto* img    = imgptr.get();
+
+            // Debug output TODO: remove?
+            if (frm % 100 == 0)
+            {
+                std::cout << "Loaded frame " << frm << std::endl;
+            }
+
+            videoWriter.write(*img);
+
+            // Log the progress to the writeHandler
+            wh.log(img->timestamp);
         }
-        else
-        {
-            std::cout << "Encoded " << ret << " byte" << std::endl;
-        }
+        videoWriter.close();
     }
 }
 

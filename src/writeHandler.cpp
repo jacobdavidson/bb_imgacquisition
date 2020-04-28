@@ -33,7 +33,7 @@ writeHandler::writeHandler(std::string imdir, int currentCam, std::string edir)
     std::string tmp = filepath;
     _exchangedir    = exdirFilepath;
     _lockfile       = tmp + ".lck";
-    _videofile      = tmp + ".avi";
+    _videofile      = tmp + ".mp4";
     _framesfile     = tmp + ".txt";
 
     // Open for writing
@@ -98,7 +98,7 @@ writeHandler::~writeHandler()
 
     // Rename the temporary files to their final names:
     std::string             tmp           = filepath;
-    std::string             newvideofile  = tmp + ".avi";
+    std::string             newvideofile  = tmp + ".mp4";
     std::string             newframesfile = tmp + ".txt";
     boost::filesystem::path video(newvideofile);
     newvideofile = _exchangedir + video.filename().string();
