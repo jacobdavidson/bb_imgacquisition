@@ -32,7 +32,6 @@ public:
      * @brief _Buffer1 The first buffer to encode
      */
     MutexLinkedList* _Buffer1;
-    MutexLinkedList* _Buffer1_preview;
 
     /**
      * @brief _CamRing1 Cam number associated with the first ringbuffer
@@ -43,7 +42,6 @@ public:
      * @brief _Buffer2 The second buffer to encode
      */
     MutexLinkedList* _Buffer2;
-    MutexLinkedList* _Buffer2_preview;
 
     /**
      * @brief _CamRing2 Cam number associated with the second ringbuffer
@@ -55,14 +53,6 @@ public:
      */
     VideoWriteThread();
 
-    /**
-     * @brief Whether to enable previews.
-     */
-    void enablePreviews(bool enable = true)
-    {
-        previewsEnabled = enable;
-    }
-
 protected:
     /**
      * @brief Run the encoding thread.
@@ -73,9 +63,4 @@ protected:
      * @param Length of the ringbuffer
      */
     void run();
-
-    /**
-     * @brief Whether to write smaller preview images into the preview buffers.
-     */
-    bool previewsEnabled{true};
 };

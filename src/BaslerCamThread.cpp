@@ -83,7 +83,7 @@ bool BaslerCamThread::initCamera()
     _initialized = false;
 
     SettingsIAC*         set = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg = set->getBufferConf(_ID, 0);
+    EncoderQualityConfig cfg = set->getBufferConf(_ID);
 
     // If the configuration entry is invalid, just skip it.
     if (cfg.serialString.empty())
@@ -197,7 +197,7 @@ bool BaslerCamThread::startCapture()
 void BaslerCamThread::run()
 {
     SettingsIAC*         set = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg = set->getBufferConf(_ID, 0);
+    EncoderQualityConfig cfg = set->getBufferConf(_ID);
 
     char        logfilepathFull[256];
     std::string logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);

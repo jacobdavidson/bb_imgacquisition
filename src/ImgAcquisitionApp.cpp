@@ -118,20 +118,12 @@ void ImgAcquisitionApp::resolveLocks()
 {
     SettingsIAC* set            = SettingsIAC::getInstance();
     std::string  imdirSet       = set->getValueOfParam<std::string>(IMACQUISITION::IMDIR);
-    std::string  imdirprevSet   = set->getValueOfParam<std::string>(IMACQUISITION::IMDIRPREVIEW);
     std::string  exchangedirSet = set->getValueOfParam<std::string>(IMACQUISITION::EXCHANGEDIR);
-    std::string  exchangedirprevSet = set->getValueOfParam<std::string>(
-        IMACQUISITION::EXCHANGEDIRPREVIEW);
 
     std::size_t found       = imdirSet.find_last_of("/\\");
     std::string imdir       = imdirSet.substr(0, found) + "/";
     found                   = exchangedirSet.find_last_of("/\\");
     std::string exchangedir = exchangedirSet.substr(0, found) + "/";
-
-    found                       = imdirprevSet.find_last_of("/\\");
-    std::string imdirprev       = imdirprevSet.substr(0, found) + "/";
-    found                       = exchangedirprevSet.find_last_of("/\\");
-    std::string exchangedirprev = exchangedirprevSet.substr(0, found) + "/";
 
     for (int i = 0; i < 4; i++)
     {
@@ -139,9 +131,6 @@ void ImgAcquisitionApp::resolveLocks()
         char dst[512];
         sprintf(src, imdir.c_str(), i, 0);
         sprintf(dst, exchangedir.c_str(), i, 0);
-        resolveLockDir(src, dst);
-        sprintf(src, imdirprev.c_str(), i, 0);
-        sprintf(dst, exchangedirprev.c_str(), i, 0);
         resolveLockDir(src, dst);
     }
 }

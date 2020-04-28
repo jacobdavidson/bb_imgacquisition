@@ -15,7 +15,6 @@ namespace IMACQUISITION
     namespace BUFFERCONF
     {
         static const std::string CAMID          = "CAMID";
-        static const std::string ISPREVIEW      = "ISPREVIEW";
         static const std::string SERIAL         = "SERIAL";
         static const std::string SERIAL_STRING  = "SERIAL_STRING";
         static const std::string ENABLED        = "ENABLED";
@@ -48,11 +47,8 @@ namespace IMACQUISITION
 
     static const std::string BUFFER = "IMACQUISITION.BUFFER";
 
-    static const std::string DO_PREVIEWS        = "IMACQUISITION.DO_PREVIEWS";
     static const std::string LOGDIR             = "IMACQUISITION.LOGDIR";
     static const std::string IMDIR              = "IMACQUISITION.IMDIR";
-    static const std::string IMDIRPREVIEW       = "IMACQUISITION.IMDIRPREVIEW";
     static const std::string EXCHANGEDIR        = "IMACQUISITION.EXCHANGEDIR";
-    static const std::string EXCHANGEDIRPREVIEW = "IMACQUISITION.EXCHANGEDIRPREVIEW";
     static const std::string CAMCOUNT           = "IMACQUISITION.CAMCOUNT";
 }

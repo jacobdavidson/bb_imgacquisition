@@ -52,7 +52,6 @@
 typedef struct _EncoderQualityConfig
 {
     int         camid;
-    int         isPreview;
     int         serial;
     std::string serialString;
     int         enabled;
@@ -256,7 +255,7 @@ public:
         }
     }
 
-    EncoderQualityConfig getBufferConf(int camid, int preview);
+    EncoderQualityConfig getBufferConf(int camid);
 
     struct VideoStream final
     {

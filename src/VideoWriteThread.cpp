@@ -29,37 +29,28 @@ void VideoWriteThread::run()
 
     SettingsIAC* set = SettingsIAC::getInstance();
 
-    std::string imdir           = set->getValueOfParam<std::string>(IMACQUISITION::IMDIR);
-    std::string imdirprev       = set->getValueOfParam<std::string>(IMACQUISITION::IMDIRPREVIEW);
-    std::string exchangedir     = set->getValueOfParam<std::string>(IMACQUISITION::EXCHANGEDIR);
-    std::string exchangedirprev = set->getValueOfParam<std::string>(
-        IMACQUISITION::EXCHANGEDIRPREVIEW);
+    std::string imdir       = set->getValueOfParam<std::string>(IMACQUISITION::IMDIR);
+    std::string exchangedir = set->getValueOfParam<std::string>(IMACQUISITION::EXCHANGEDIR);
 
     // For logging encoding times
     double elapsedTimeP, avgtimeP;
 
     // Encoder may be reused. Potentially saves time.
     CNvEncoder           enc;
-    EncoderQualityConfig cfgC1 = set->getBufferConf(_CamBuffer1, 0);
-    EncoderQualityConfig cfgC2 = set->getBufferConf(_CamBuffer2, 0);
-    EncoderQualityConfig cfgP1 = set->getBufferConf(_CamBuffer1, 1);
-    EncoderQualityConfig cfgP2 = set->getBufferConf(_CamBuffer2, 1);
+    EncoderQualityConfig cfgC1 = set->getBufferConf(_CamBuffer1);
+    EncoderQualityConfig cfgC2 = set->getBufferConf(_CamBuffer2);
 
     while (1)
     {
         // Select a buffer to work on. Largest first.
-        uint64_t c1  = _Buffer1->size() * (uint64_t)(cfgC1.width * cfgC1.height);
-        uint64_t c2  = _Buffer2->size() * (uint64_t)(cfgC2.width * cfgC2.height);
-        uint64_t c1p = _Buffer1_preview->size() * (uint64_t)(cfgP1.width * cfgP1.height);
-        uint64_t c2p = _Buffer2_preview->size() * (uint64_t)(cfgP2.width * cfgP2.height);
+        uint64_t c1 = _Buffer1->size() * (uint64_t)(cfgC1.width * cfgC1.height);
+        uint64_t c2 = _Buffer2->size() * (uint64_t)(cfgC2.width * cfgC2.height);
 
         int                  currentCam = 0;
         MutexBuffer*         currentCamBuffer;
-        MutexBuffer*         currentPreviewBuffer;
         EncoderQualityConfig encCfg;
-        EncoderQualityConfig encCfgPrev;
 
-        auto maxSize = std::max({c1, c2, c1p, c2p});
+        auto maxSize = std::max({c1, c2});
 
         // If all are empty, check again later.
         if (maxSize == 0)
@@ -71,65 +62,28 @@ void VideoWriteThread::run()
         // Configure which buffer and configuration to use
         if (c1 >= maxSize)
         {
-            currentCamBuffer     = _Buffer1;
-            currentPreviewBuffer = _Buffer1_preview;
-            currentCam           = _CamBuffer1;
-            encCfg               = cfgC1;
-            encCfgPrev           = cfgP1;
+            currentCamBuffer = _Buffer1;
+            currentCam       = _CamBuffer1;
+            encCfg           = cfgC1;
             std::cout << "Chosen: 1" << std::endl;
-        }
-        else if (c1p >= maxSize)
-        {
-            currentCamBuffer     = _Buffer1_preview;
-            currentPreviewBuffer = NULL;
-            currentCam           = _CamBuffer1;
-            encCfg               = cfgP1;
-            encCfgPrev           = cfgP1;
-            std::cout << "Chosen: 2" << std::endl;
         }
         else if (c2 >= maxSize)
         {
-            currentCamBuffer     = _Buffer2;
-            currentPreviewBuffer = _Buffer2_preview;
-            currentCam           = _CamBuffer2;
-            encCfg               = cfgC2;
-            encCfgPrev           = cfgP2;
-            std::cout << "Chosen: 3" << std::endl;
-        }
-        else if (c2p >= maxSize)
-        {
-            currentCamBuffer     = _Buffer2_preview;
-            currentPreviewBuffer = NULL;
-            currentCam           = _CamBuffer2;
-            encCfg               = cfgP2;
-            encCfgPrev           = cfgP2;
-            std::cout << "Chosen: 4" << std::endl;
+            currentCamBuffer = _Buffer2;
+            currentCam       = _CamBuffer2;
+            encCfg           = cfgC2;
+            std::cout << "Chosen: 2" << std::endl;
         }
 
         // Configure output directories
         std::string dir   = imdir;
         std::string exdir = exchangedir;
-        if (currentPreviewBuffer == NULL)
-        {
-            dir   = imdirprev;
-            exdir = exchangedirprev;
-        }
-        else // Would write into preview buffer. Disable if previews are disabled.
-        {
-            if (!previewsEnabled)
-                currentPreviewBuffer = nullptr;
-        }
+
         writeHandler wh(dir, currentCam, exdir);
 
         // encode the frames in the buffer using given configuration
         std::cout << "Write handler initialized!" << std::endl;
-        int ret = enc.EncodeMain(&elapsedTimeP,
-                                 &avgtimeP,
-                                 currentCamBuffer,
-                                 currentPreviewBuffer,
-                                 &wh,
-                                 encCfg,
-                                 encCfgPrev);
+        int ret = enc.EncodeMain(&elapsedTimeP, &avgtimeP, currentCamBuffer, &wh, encCfg);
         if (ret <= 0)
         {
             std::cerr << "ENCODER ERROR! " << std::endl;
@@ -147,13 +101,8 @@ VideoWriteThread::VideoWriteThread()
     SettingsIAC* set = SettingsIAC::getInstance();
 
     // Grab buffer size from json config and initialize buffers.
-    _Buffer1         = new MutexLinkedList();
-    _Buffer2         = new MutexLinkedList();
-    _Buffer1_preview = new MutexLinkedList();
-    _Buffer2_preview = new MutexLinkedList();
-    _CamBuffer1      = -1;
-    _CamBuffer2      = -1;
-
-    previewsEnabled = set->getValueOfParam<int>(IMACQUISITION::DO_PREVIEWS) == 1;
-    ;
+    _Buffer1    = new MutexLinkedList();
+    _Buffer2    = new MutexLinkedList();
+    _CamBuffer1 = -1;
+    _CamBuffer2 = -1;
 }

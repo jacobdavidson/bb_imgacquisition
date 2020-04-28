@@ -166,10 +166,8 @@ public:
     int EncodeMain(double*              elapsedTimeP,
                    double*              avgtimeP,
                    MutexBuffer*         buffer,
-                   MutexBuffer*         bufferPrev,
                    writeHandler*        wh,
-                   EncoderQualityConfig encCfg,
-                   EncoderQualityConfig encPrevCfg);
+                   EncoderQualityConfig encCfg);
 
 protected:
     CNvHWEncoder* m_pNvHWEncoder;

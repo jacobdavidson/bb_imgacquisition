@@ -19,7 +19,6 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams()
 
         boost::property_tree::ptree hd;
         hd.put(IMACQUISITION::BUFFERCONF::CAMID, i);
-        hd.put(IMACQUISITION::BUFFERCONF::ISPREVIEW, 0);
         hd.put(IMACQUISITION::BUFFERCONF::SERIAL, 0);
         hd.put(IMACQUISITION::BUFFERCONF::SERIAL_STRING, "");
         hd.put(IMACQUISITION::BUFFERCONF::ENABLED, 1);
@@ -50,7 +49,6 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams()
 
         boost::property_tree::ptree ld;
         ld.put(IMACQUISITION::BUFFERCONF::CAMID, i);
-        ld.put(IMACQUISITION::BUFFERCONF::ISPREVIEW, 1);
         ld.put(IMACQUISITION::BUFFERCONF::SERIAL, 0);
         ld.put(IMACQUISITION::BUFFERCONF::SERIAL_STRING, "");
         ld.put(IMACQUISITION::BUFFERCONF::ENABLED, 1);
@@ -66,12 +64,9 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams()
         pt.add_child(IMACQUISITION::BUFFER, ld);
     }
 
-    pt.put(IMACQUISITION::DO_PREVIEWS, 1);
     pt.put(IMACQUISITION::LOGDIR, "./data/log/Cam_%d/");
     pt.put(IMACQUISITION::IMDIR, "./data/tmp/Cam_%u/Cam_%u_%s--%s");
     pt.put(IMACQUISITION::EXCHANGEDIR, "./data/out/Cam_%u/");
-    pt.put(IMACQUISITION::IMDIRPREVIEW, "./data/tmpPrev/Cam_%u/Cam_%u_%s--%s");
-    pt.put(IMACQUISITION::EXCHANGEDIRPREVIEW, "./data/outPrev/Cam_%u/");
     pt.put(IMACQUISITION::CAMCOUNT, 2);
 
     return pt;
@@ -82,7 +77,6 @@ EncoderQualityConfig SettingsIAC::setFromNode(boost::property_tree::ptree node)
     EncoderQualityConfig cfg;
 
     cfg.camid        = node.get<int>(IMACQUISITION::BUFFERCONF::CAMID);
-    cfg.isPreview    = node.get<int>(IMACQUISITION::BUFFERCONF::ISPREVIEW);
     cfg.serial       = node.get<int>(IMACQUISITION::BUFFERCONF::SERIAL);
     cfg.serialString = node.get<std::string>(IMACQUISITION::BUFFERCONF::SERIAL_STRING);
     cfg.enabled      = node.get<int>(IMACQUISITION::BUFFERCONF::ENABLED);
@@ -95,52 +89,43 @@ EncoderQualityConfig SettingsIAC::setFromNode(boost::property_tree::ptree node)
     cfg.height       = node.get<int>(IMACQUISITION::BUFFERCONF::VIDEO_HEIGHT);
     cfg.fps          = node.get<int>(IMACQUISITION::BUFFERCONF::FPS);
 
-    if (cfg.isPreview == 0)
-    {
-        cfg.hwbuffersize    = node.get<int>(IMACQUISITION::BUFFERCONF::HWBUFSIZE);
-        cfg.brightness      = node.get<int>(IMACQUISITION::BUFFERCONF::BRIGHTNESS);
-        cfg.brightnessonoff = node.get<int>(IMACQUISITION::BUFFERCONF::BRIGHTNESSONOFF);
-        cfg.brightnessauto  = node.get<int>(IMACQUISITION::BUFFERCONF::BRIGHTNESSAUTO);
-        cfg.exposureonoff   = node.get<int>(IMACQUISITION::BUFFERCONF::EXPOSUREONOFF);
-        cfg.exposureauto    = node.get<int>(IMACQUISITION::BUFFERCONF::EXPOSUREAUTO);
-        cfg.shutter         = node.get<int>(IMACQUISITION::BUFFERCONF::SHUTTER);
-        cfg.shutteronoff    = node.get<int>(IMACQUISITION::BUFFERCONF::SHUTTERONOFF);
-        cfg.shutterauto     = node.get<int>(IMACQUISITION::BUFFERCONF::SHUTTERAUTO);
-        cfg.gain            = node.get<int>(IMACQUISITION::BUFFERCONF::GAIN);
-        cfg.gainonoff       = node.get<int>(IMACQUISITION::BUFFERCONF::GAINONOFF);
-        cfg.gainauto        = node.get<int>(IMACQUISITION::BUFFERCONF::GAINAUTO);
-        cfg.whitebalance    = node.get<int>(IMACQUISITION::BUFFERCONF::WHITEBALANCE);
-        cfg.hwtrigger       = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGER);
-        cfg.hwtriggerparam  = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGERPARAM);
-        cfg.hwtriggersrc    = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGERSOURCE);
-    }
+    cfg.hwbuffersize    = node.get<int>(IMACQUISITION::BUFFERCONF::HWBUFSIZE);
+    cfg.brightness      = node.get<int>(IMACQUISITION::BUFFERCONF::BRIGHTNESS);
+    cfg.brightnessonoff = node.get<int>(IMACQUISITION::BUFFERCONF::BRIGHTNESSONOFF);
+    cfg.brightnessauto  = node.get<int>(IMACQUISITION::BUFFERCONF::BRIGHTNESSAUTO);
+    cfg.exposureonoff   = node.get<int>(IMACQUISITION::BUFFERCONF::EXPOSUREONOFF);
+    cfg.exposureauto    = node.get<int>(IMACQUISITION::BUFFERCONF::EXPOSUREAUTO);
+    cfg.shutter         = node.get<int>(IMACQUISITION::BUFFERCONF::SHUTTER);
+    cfg.shutteronoff    = node.get<int>(IMACQUISITION::BUFFERCONF::SHUTTERONOFF);
+    cfg.shutterauto     = node.get<int>(IMACQUISITION::BUFFERCONF::SHUTTERAUTO);
+    cfg.gain            = node.get<int>(IMACQUISITION::BUFFERCONF::GAIN);
+    cfg.gainonoff       = node.get<int>(IMACQUISITION::BUFFERCONF::GAINONOFF);
+    cfg.gainauto        = node.get<int>(IMACQUISITION::BUFFERCONF::GAINAUTO);
+    cfg.whitebalance    = node.get<int>(IMACQUISITION::BUFFERCONF::WHITEBALANCE);
+    cfg.hwtrigger       = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGER);
+    cfg.hwtriggerparam  = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGERPARAM);
+    cfg.hwtriggersrc    = node.get<int>(IMACQUISITION::BUFFERCONF::HWTRIGGERSOURCE);
+
     return cfg;
 }
 
-EncoderQualityConfig SettingsIAC::getBufferConf(int camid, int preview)
+EncoderQualityConfig SettingsIAC::getBufferConf(int camid)
 {
     EncoderQualityConfig cfg;
-    std::stringstream    cid, prev;
+    std::stringstream    cid;
 
     cfg.camid = -1;
     cid << camid;
-    prev << preview;
 
-    // Find the subtree having the right CAMID and ISPREVIEW values
+    // Find the subtree having the right CAMID value
     BOOST_FOREACH (boost::property_tree::ptree::value_type& v, _ptree.get_child("IMACQUISITION"))
     {
         if (v.first == "BUFFER")
         {
-            int hit = 0;
             BOOST_FOREACH (boost::property_tree::ptree::value_type& w, v.second)
             {
                 std::string snd = w.second.data();
                 if (w.first == "CAMID" && snd == cid.str())
-                    hit++;
-                if (w.first == "ISPREVIEW" && snd == prev.str())
-                    hit++;
-
-                if (hit == 2)
                 {
                     return setFromNode(v.second);
                 }

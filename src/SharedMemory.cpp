@@ -48,7 +48,7 @@ void SharedMemory::doLock(int id)
         if (i == 20)
         {
             SettingsIAC*         set     = SettingsIAC::getInstance();
-            EncoderQualityConfig cfg     = set->getBufferConf(id, 0);
+            EncoderQualityConfig cfg     = set->getBufferConf(id);
             int                  width   = cfg.width;
             int                  height  = cfg.height;
             int                  lockpos = height * width;
@@ -103,7 +103,7 @@ boost::interprocess::interprocess_mutex* SharedMemory::createSharedMemory(key_t*
 {
 
     SettingsIAC*         set     = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg     = set->getBufferConf(id, 0);
+    EncoderQualityConfig cfg     = set->getBufferConf(id);
     int                  width   = cfg.width;
     int                  height  = cfg.height;
     int                  lockpos = height * width; // 32 is w,h,camid ; 64 is timestamp

@@ -2,7 +2,6 @@
     "IMACQUISITION": {
         "BUFFER": {
             "CAMID": "0",
-            "ISPREVIEW": "0",
             "SERIAL": "0",
             "SERIAL_STRING": "40026484",
             "ENABLED": "1",
@@ -33,27 +32,9 @@
             "HWTRIGGERPARAM": "0",
             "HWTRIGGERSOURCE": "3"
         },
-        "BUFFER": {
-            "CAMID": "0",
-            "ISPREVIEW": "1",
-            "SERIAL": "0",
-            "SERIAL_STRING": "40026484",
-            "ENABLED": "1",
-            "VIDEO_WIDTH": "2048",
-            "VIDEO_HEIGHT": "1084",
-            "BITRATE": "1000000",
-            "RCMODE": "0",
-            "QP": "35",
-            "FRAMESPERVIDEO": "500",
-            "FPS": "25",
-            "PRESET": "2"
-        },
-        "DO_PREVIEWS": "0",
         "LOGDIR": ".\/data\/log\/Cam_%d\/",
         "IMDIR": ".\/data\/tmp\/Cam_%u\/Cam_%u_%s--%s",
         "EXCHANGEDIR": ".\/data\/out\/Cam_%u\/",
-        "IMDIRPREVIEW": ".\/data\/tmpPrev\/Cam_%u\/Cam_%u_%s--%s",
-        "EXCHANGEDIRPREVIEW": ".\/data\/outPrev\/Cam_%u\/",
         "CAMCOUNT": "2"
     },
     "video_streams": [

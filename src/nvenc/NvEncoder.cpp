@@ -652,69 +652,6 @@ GUID getGUID(int id)
     return NV_ENC_PRESET_DEFAULT_GUID;
 }
 
-std::shared_ptr<ImageBuffer> scaleImage(ImageBuffer*         img,
-                                        EncodeConfig         encodeConfig,
-                                        EncoderQualityConfig encPrevCfg)
-{
-    // ImageBuffer *newImage = new
-    // ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp);
-    std::shared_ptr<ImageBuffer> newImage = std::shared_ptr<ImageBuffer>(
-        new ImageBuffer(encPrevCfg.width, encPrevCfg.height, img->camid, img->timestamp));
-
-    /*std::shared_ptr<ImageBuffer> newImage =
-     std::shared_ptr<ImageBuffer>(new
-     ImageBuffer(encodeConfig.width/2,encodeConfig.height/2,img->camid,img->timestamp));
-     //TODO: Put this in a function and do smart scaling
-     */
-    if (encPrevCfg.width == encPrevCfg.width / 2 && encPrevCfg.height == encPrevCfg.height / 2)
-    {
-        unsigned int x = 0, y = 0;
-        for (y = 0; y < encodeConfig.height; y += 2)
-        {
-            for (x = 0; x < encodeConfig.width; x += 2)
-            {
-                newImage->data[y / 2 * encodeConfig.width / 2 + x / 2] =
-                    img->data[y * encodeConfig.width + x];
-            }
-        }
-    }
-    else if (encPrevCfg.width == encPrevCfg.width / 4 &&
-             encPrevCfg.height == encPrevCfg.height / 4)
-    {
-        unsigned int x = 0, y = 0;
-        for (y = 0; y < encodeConfig.height; y += 4)
-        {
-            for (x = 0; x < encodeConfig.width; x += 4)
-            {
-                newImage->data[y / 4 * encodeConfig.width / 4 + x / 4] =
-                    img->data[y * encodeConfig.width + x];
-            }
-        }
-    }
-    else
-    {
-
-        cv::Mat imageWithData =
-            cv::Mat(encodeConfig.width * encodeConfig.height, 1, 0 /*CV_8U*/, &img->data[0])
-                .clone();
-        cv::Mat  reshapedImage = imageWithData.reshape(1, encodeConfig.height);
-        cv::Size size(encPrevCfg.width, encPrevCfg.height); // the dst image size,e.g.100x100
-        cv::Mat  dst;                                       // dst image
-        cv::resize(reshapedImage, dst, size);               // resize image
-
-        int x = 0, y = 0;
-        for (y = 0; y < encPrevCfg.height; y += 1)
-        {
-            for (x = 0; x < encPrevCfg.width; x += 1)
-            {
-                newImage->data[y * encPrevCfg.width + x] = dst.at<uint8_t>(y, x);
-            }
-        }
-    }
-
-    return newImage;
-}
-
 int rawTo420NoHalide(uint8_t* outputImage, uint8_t* inputImage, int rows, int cols)
 {
     /*  See:
@@ -779,10 +716,8 @@ int rawTo420(uint8_t* outputImage, uint8_t* inputImage, int rows, int cols)
 int CNvEncoder::EncodeMain(double*              elapsedTimeP,
                            double*              avgtimeP,
                            MutexBuffer*         buffer,
-                           MutexBuffer*         bufferPrev,
                            writeHandler*        wh,
-                           EncoderQualityConfig encCfg,
-                           EncoderQualityConfig encPrevCfg)
+                           EncoderQualityConfig encCfg)
 {
     HANDLE             hInput;
     uint8_t*           yuv[3];
@@ -941,12 +876,6 @@ int CNvEncoder::EncodeMain(double*              elapsedTimeP,
         // Log the progress to the writeHandler
         wh->log(img->timestamp);
 
-        if (bufferPrev != NULL)
-        {
-
-            std::shared_ptr<ImageBuffer> newImage = scaleImage(img, encodeConfig, encPrevCfg);
-            bufferPrev->push(newImage);
-        }
     }
     videoWriter.close();
 
