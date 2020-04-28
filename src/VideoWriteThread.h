@@ -11,17 +11,16 @@
  * @brief The VideoWriteThread class
  *
  * This class reads from two ringbuffers
- * and processes the leass occupied one
- * using the NvEncoder in HEVC.
- * This class should be spawned as a QThread.<br>
- * <br>
- * Warning:<br>
- * Keep in mind:<br>
- * -    The number of processors you spawn.
- *      Most consumer Nvidia GPU's are only able to spawn 2 HEVC GPU encoders.
- *      One thread will use one encoder and crash if no GPU encoder is available.<br>
- * -    The resolution. Encoding may throw errors madly if 4096x4096 is exceeded.
- *      This is a Nvidia GPU encoder limitation.
+ * and processes the least occupied one
+ * using the selected video encoder.
+ *
+ * Warning:
+ * Keep in mind when using Nvidia hardware encoders:
+ * -    The number of instances you spawn:
+ *      Most consumer Nvidia GPUs are only able to spawn a limited amount of concurrent encoders, e.g. 2 for HEVC.
+ *      One thread will use one encoder and crash if no GPU encoder is available.
+ * -    The resolution:
+ *      Encoding may not work correctly if 4096x4096 is exceeded.
  */
 class VideoWriteThread final : public QThread
 {
