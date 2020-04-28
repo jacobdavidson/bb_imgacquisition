@@ -155,6 +155,7 @@ void SettingsIAC::loadNewSettings()
         {
             VideoStream::Camera::HardwareTrigger trigger;
             trigger.source        = triggerTree.get<int>("source");
+            trigger.framesPerSecond = triggerTree.get<int>("frames_per_second");
             stream.camera.trigger = trigger;
         }
         else if (triggerType == "software")

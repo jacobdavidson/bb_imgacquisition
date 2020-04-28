@@ -269,6 +269,7 @@ public:
             struct HardwareTrigger final
             {
                 int source;
+                int framesPerSecond;
             };
 
             struct SoftwareTrigger final

@@ -48,7 +48,8 @@
                 "trigger":
                 {
                     "type": "hardware",
-                    "source": 3
+                    "source": 3,
+                    "frames_per_second": 25
                 }
             },
             "frames_per_video_file": 500,
