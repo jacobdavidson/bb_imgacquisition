@@ -50,13 +50,13 @@ endif()
 mark_as_advanced(FlyCapture2_INCLUDE_DIR FlyCapture2_LIBRARY)
 
 add_library(FlyCapture2 UNKNOWN IMPORTED)
-set_target_properties (FlyCapture2 PROPERTIES IMPORTED_LOCATION ${FlyCapture2_LIBRARY})
-set_target_properties (FlyCapture2 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${FlyCapture2_INCLUDE_DIR})
+set_target_properties(FlyCapture2 PROPERTIES IMPORTED_LOCATION ${FlyCapture2_LIBRARY})
+set_target_properties(FlyCapture2 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${FlyCapture2_INCLUDE_DIR})
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_library(FlyCapture2::Toolset UNKNOWN IMPORTED)
-    set_target_properties (FlyCapture2::Toolset PROPERTIES IMPORTED_LOCATION ${FlyCapture2_Toolset_LIBRARY})
-    set_target_properties (FlyCapture2::Toolset PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${FlyCapture2_INCLUDE_DIR})
+    set_target_properties(FlyCapture2::Toolset PROPERTIES IMPORTED_LOCATION ${FlyCapture2_Toolset_LIBRARY})
+    set_target_properties(FlyCapture2::Toolset PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${FlyCapture2_INCLUDE_DIR})
 
     target_link_libraries(FlyCapture2 INTERFACE FlyCapture2::Toolset)
 endif()

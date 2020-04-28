@@ -51,17 +51,17 @@ find_package_handle_standard_args(Pylon5 DEFAULT_MSG
 mark_as_advanced(Pylon5_INCLUDE_DIR Pylon5_Base_LIBRARY Pylon5_Utility_LIBRARY Pylon5_GenAPI_LIBRARY Pylon5_GCBase_LIBRARY)
 
 add_library(Pylon5::Base UNKNOWN IMPORTED)
-set_target_properties (Pylon5::Base PROPERTIES IMPORTED_LOCATION ${Pylon5_Base_LIBRARY})
-set_target_properties (Pylon5::Base PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${Pylon5_INCLUDE_DIR})
+set_target_properties(Pylon5::Base PROPERTIES IMPORTED_LOCATION ${Pylon5_Base_LIBRARY})
+set_target_properties(Pylon5::Base PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${Pylon5_INCLUDE_DIR})
 
 add_library(Pylon5::Utility UNKNOWN IMPORTED)
-set_target_properties (Pylon5::Utility PROPERTIES IMPORTED_LOCATION ${Pylon5_Utility_LIBRARY})
-set_target_properties (Pylon5::Utility PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${Pylon5_INCLUDE_DIR})
+set_target_properties(Pylon5::Utility PROPERTIES IMPORTED_LOCATION ${Pylon5_Utility_LIBRARY})
+set_target_properties(Pylon5::Utility PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${Pylon5_INCLUDE_DIR})
 
 add_library(Pylon5::GenAPI UNKNOWN IMPORTED)
-set_target_properties (Pylon5::GenAPI PROPERTIES IMPORTED_LOCATION ${Pylon5_GenAPI_LIBRARY})
-set_target_properties (Pylon5::GenAPI PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${Pylon5_INCLUDE_DIR})
+set_target_properties(Pylon5::GenAPI PROPERTIES IMPORTED_LOCATION ${Pylon5_GenAPI_LIBRARY})
+set_target_properties(Pylon5::GenAPI PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${Pylon5_INCLUDE_DIR})
 
 add_library(Pylon5::GCBase UNKNOWN IMPORTED)
-set_target_properties (Pylon5::GCBase PROPERTIES IMPORTED_LOCATION ${Pylon5_GCBase_LIBRARY})
-set_target_properties (Pylon5::GCBase PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${Pylon5_INCLUDE_DIR})
+set_target_properties(Pylon5::GCBase PROPERTIES IMPORTED_LOCATION ${Pylon5_GCBase_LIBRARY})
+set_target_properties(Pylon5::GCBase PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${Pylon5_INCLUDE_DIR})
