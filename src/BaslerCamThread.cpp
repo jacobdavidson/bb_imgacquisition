@@ -51,10 +51,8 @@ BaslerCamThread::~BaslerCamThread()
 // this function reads the data input vector
 bool BaslerCamThread::initialize(unsigned int id,
                                  MutexBuffer* pBuffer,
-                                 MutexBuffer* pSharedMemBuffer,
                                  Watchdog*    dog)
 {
-    _SharedMemBuffer = pSharedMemBuffer;
     _Buffer          = pBuffer;
     _ID              = id;
     _initialized     = false;
@@ -388,7 +386,6 @@ void BaslerCamThread::run()
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
         _Buffer->push(buf);
-        _SharedMemBuffer->push(buf);
     }
 
     return;

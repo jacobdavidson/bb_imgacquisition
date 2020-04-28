@@ -36,7 +36,6 @@ add_executable(${EXE_NAME}
 	src/CamThread.cpp
 	src/ImgAcquisitionApp.cpp
 	src/VideoWriteThread.cpp
-	src/SharedMemory.cpp
 	src/main.cpp
 	src/writeHandler.cpp
 	src/VideoWriter.cpp
@@ -57,7 +56,6 @@ add_executable(${EXE_NAME}
 	src/CamThread.h
 	src/ImgAcquisitionApp.h
 	src/VideoWriteThread.h
-	src/SharedMemory.h
 	src/Watchdog.h
 	src/nvenc/NvEncoder.h
 	src/nvenc/NvHWEncoder.h

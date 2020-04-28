@@ -29,12 +29,10 @@ public:
      *
      * @param Virtual ID of the camera (0 to 3)
      * @param Buffer shared with the encoder thread
-     * @param Buffer shared with the shared memory thread
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
     virtual bool initialize(unsigned int id,
                             MutexBuffer* pBuffer,
-                            MutexBuffer* pSharedMemBuffer,
                             Watchdog*    dog) override; // here goes the camera ID (from 0 to 3)
 
     //! Object has been initialized using "initialize"
@@ -120,9 +118,6 @@ private:
 
     //! Buffer shared with the encoder thread
     MutexBuffer* _Buffer;
-
-    //! Buffer shared with the shared memory thread
-    MutexBuffer* _SharedMemBuffer;
 
 protected:
     void run(); // this is the function that will be iterated indefinitely

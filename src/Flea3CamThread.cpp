@@ -50,10 +50,8 @@ Flea3CamThread::~Flea3CamThread()
 // this function reads the data input vector
 bool Flea3CamThread::initialize(unsigned int id,
                                 MutexBuffer* pBuffer,
-                                MutexBuffer* pSharedMemBuffer,
                                 Watchdog*    dog)
 {
-    _SharedMemBuffer = pSharedMemBuffer;
     _Buffer          = pBuffer;
     _ID              = id;
     _HWID            = -1;
@@ -649,8 +647,6 @@ void Flea3CamThread::run()
         memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 
         _Buffer->push(buf);
-
-        _SharedMemBuffer->push(buf);
 
         loopCount++;
     }

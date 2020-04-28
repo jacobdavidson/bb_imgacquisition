@@ -10,7 +10,7 @@ class Watchdog
 {
 
 public:
-    //! [x]==1 means cam x is active. x==5 is the shared memory thread.
+    //! [x]==1 means cam x is active.
     int _camActive[6];
 
     //! Timestamp when x was seen alive last time.

@@ -30,12 +30,10 @@ public:
      *
      * @param Virtual ID of the camera (0 to 3)
      * @param Buffer shared with the encoder thread
-     * @param Buffer shared with the shared memory thread
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
     virtual bool initialize(unsigned int id,
                             MutexBuffer* pBuffer,
-                            MutexBuffer* pSharedMemBuffer,
                             Watchdog*    dog) = 0; // here goes the camera ID (from 0 to 3)
     virtual bool isInitialized() const     = 0;
 

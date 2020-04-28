@@ -10,7 +10,6 @@
 
 #include "CamThread.h"
 #include "VideoWriteThread.h"
-#include "SharedMemory.h"
 #include "Watchdog.h"
 
 // inherits from QCoreApplication
@@ -20,7 +19,7 @@ class ImgAcquisitionApp : public QCoreApplication
 
 public:
     /**
-     * @brief Initializes acquisition/shared memory threads and runs them.
+     * @brief Initializes acquisition threads and runs them.
      *
      * Periodically runs a watchdog monitoring thread heartbeats.
      *
@@ -56,9 +55,6 @@ public:
 
 private:
     Watchdog _watchdog;
-
-    //! Shared memory thread pointer
-    SharedMemory* _smthread;
 
     //! A vector of the class CamThread, they are accessed from the constructor
     std::unique_ptr<CamThread> _cameraThreads[4];
