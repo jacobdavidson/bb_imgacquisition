@@ -389,14 +389,6 @@ void BaslerCamThread::run()
 
         _Buffer->push(buf);
         _SharedMemBuffer->push(buf);
-
-#ifdef WITH_DEBUG_IMAGE_OUTPUT
-        {
-            cv::Mat smallMat;
-            cv::resize(wholeImageMatrix, smallMat, cv::Size(400, 300));
-            cv::imshow("Display window", smallMat);
-        }
-#endif
     }
 
     return;

@@ -28,9 +28,6 @@ find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
 set(CAMERA_BACKEND "Basler" CACHE STRING "Select a camera backend")
 set_property(CACHE CAMERA_BACKEND PROPERTY STRINGS "Basler" "Flea3" "XIMEA")
 
-# This option will use OpenCV to display the captured images live - for debugging purposes.
-option(WITH_DEBUG_IMAGE_OUTPUT "Show the captured images live." OFF)
-
 message("Configuring for ${CAMERA_BACKEND} on ${CMAKE_SYSTEM_NAME}")
 
 set(EXE_NAME bb_ImageAcquistion)
@@ -97,10 +94,6 @@ target_link_libraries(${EXE_NAME} PRIVATE
 	FFmpeg::avformat FFmpeg::avcodec FFmpeg::avutil
 	${OpenCV_LIBRARIES}
 )
-
-if(WITH_DEBUG_IMAGE_OUTPUT)
-	target_compile_definitions(${EXE_NAME} PRIVATE WITH_DEBUG_IMAGE_OUTPUT)
-endif()
 
 if(${CAMERA_BACKEND} STREQUAL "Basler")
 	target_sources(${EXE_NAME} PRIVATE src/BaslerCamThread.h src/BaslerCamThread.cpp)

@@ -5,11 +5,6 @@
 #include "settings/Settings.h"
 #include "settings/utility.h"
 
-#ifdef WITH_DEBUG_IMAGE_OUTPUT
-    #include <opencv2/core/core.hpp>
-    #include <opencv2/highgui/highgui.hpp>
-#endif
-
 #include <stdio.h>
 #include <execinfo.h>
 #include <signal.h>
@@ -49,10 +44,7 @@ int main(int argc, char* argv[])
     signal(SIGSEGV, handler); // install exception handler
     SettingsIAC::setConf("configImAcq.json");
     SettingsIAC::getInstance();
-#ifdef WITH_DEBUG_IMAGE_OUTPUT
-    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
-    cv::waitKey(100);
-#endif
+
     ImgAcquisitionApp a(argc, argv); // An instance is initialized
 
     return a.exec();
