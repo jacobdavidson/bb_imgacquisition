@@ -8,7 +8,7 @@
 #endif
 #include "CamThread.h"
 #include <FlyCapture2.h>
-#include "Buffer/MutexBuffer.h"
+
 #include "Watchdog.h"
 #include <mutex>
 using namespace FlyCapture2;
@@ -33,9 +33,9 @@ public:
      * @param Buffer shared with the video writer thread
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
-    virtual bool initialize(unsigned int id,
-                            MutexBuffer* pBuffer,
-                            Watchdog*    dog) override; // here goes the camera ID (from 0 to 3)
+    virtual bool initialize(unsigned int                                   id,
+                            ConcurrentQueue<std::shared_ptr<ImageBuffer>>* pBuffer,
+                            Watchdog* dog) override; // here goes the camera ID (from 0 to 3)
 
     //! Object has been initialized using "initialize"
     virtual bool isInitialized() const override
@@ -125,7 +125,7 @@ private:
     unsigned int _LocalCounter;
 
     //! Buffer shared with the video writer thread
-    MutexBuffer* _Buffer;
+    ConcurrentQueue<std::shared_ptr<ImageBuffer>>* _Buffer;
 
 protected:
     void run(); // this is the function that will be iterated indefinitely

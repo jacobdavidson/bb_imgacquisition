@@ -40,12 +40,12 @@ void VideoWriteThread::run()
     while (1)
     {
         // Select a buffer to work on. Largest first.
-        uint64_t c1 = _Buffer1->size() * (uint64_t)(cfgC1.width * cfgC1.height);
-        uint64_t c2 = _Buffer2->size() * (uint64_t)(cfgC2.width * cfgC2.height);
+        uint64_t c1 = _Buffer1.size() * (uint64_t)(cfgC1.width * cfgC1.height);
+        uint64_t c2 = _Buffer2.size() * (uint64_t)(cfgC2.width * cfgC2.height);
 
-        int                  currentCam = 0;
-        MutexBuffer*         currentCamBuffer;
-        EncoderQualityConfig encCfg;
+        int                                            currentCam = 0;
+        ConcurrentQueue<std::shared_ptr<ImageBuffer>>* currentCamBuffer;
+        EncoderQualityConfig                           encCfg;
 
         auto maxSize = std::max({c1, c2});
 
@@ -59,14 +59,14 @@ void VideoWriteThread::run()
         // Configure which buffer and configuration to use
         if (c1 >= maxSize)
         {
-            currentCamBuffer = _Buffer1;
+            currentCamBuffer = &_Buffer1;
             currentCam       = _CamBuffer1;
             encCfg           = cfgC1;
             std::cout << "Chosen: 1" << std::endl;
         }
         else if (c2 >= maxSize)
         {
-            currentCamBuffer = _Buffer2;
+            currentCamBuffer = &_Buffer2;
             currentCam       = _CamBuffer2;
             encCfg           = cfgC2;
             std::cout << "Chosen: 2" << std::endl;
@@ -87,11 +87,8 @@ void VideoWriteThread::run()
 
         for (int frm = 0; frm < encCfg.totalFrames; frm++)
         {
-            uint32_t numBytesRead = 0;
-
-            // Wait until there is a new image available (done by pop)
-            auto  imgptr = currentCamBuffer->pop();
-            auto* img    = imgptr.get();
+            std::shared_ptr<ImageBuffer> img;
+            currentCamBuffer->pop(img);
 
             // Debug output TODO: remove?
             if (frm % 100 == 0)
@@ -109,13 +106,7 @@ void VideoWriteThread::run()
 }
 
 VideoWriteThread::VideoWriteThread()
+: _CamBuffer1(-1)
+, _CamBuffer2(-1)
 {
-
-    SettingsIAC* set = SettingsIAC::getInstance();
-
-    // Grab buffer size from json config and initialize buffers.
-    _Buffer1    = new MutexLinkedList();
-    _Buffer2    = new MutexLinkedList();
-    _CamBuffer1 = -1;
-    _CamBuffer2 = -1;
 }

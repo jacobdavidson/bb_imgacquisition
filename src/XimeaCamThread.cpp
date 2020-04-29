@@ -53,15 +53,15 @@ XimeaCamThread::~XimeaCamThread()
 }
 
 // this function reads the data input vector
-bool XimeaCamThread::initialize(unsigned int id,
-                                MutexBuffer* pBuffer,
-                                Watchdog*    dog)
+bool XimeaCamThread::initialize(unsigned int                                   id,
+                                ConcurrentQueue<std::shared_ptr<ImageBuffer>>* pBuffer,
+                                Watchdog*                                      dog)
 {
-    _Buffer          = pBuffer;
-    _ID              = id;
-    _HWID            = -1;
-    _initialized     = false;
-    _Dog             = dog;
+    _Buffer      = pBuffer;
+    _ID          = id;
+    _HWID        = -1;
+    _initialized = false;
+    _Dog         = dog;
 
     if (initCamera())
     {
@@ -490,7 +490,6 @@ void XimeaCamThread::run()
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
         _Buffer->push(buf);
-
     }
     // This code will never be executed.
     assert(false);

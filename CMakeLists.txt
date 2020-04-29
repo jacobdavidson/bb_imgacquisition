@@ -33,6 +33,7 @@ message("Configuring for ${CAMERA_BACKEND} on ${CMAKE_SYSTEM_NAME}")
 set(EXE_NAME bb_ImageAcquistion)
 
 add_executable(${EXE_NAME}
+	src/ConcurrentQueue.h
 	src/CamThread.cpp
 	src/ImgAcquisitionApp.cpp
 	src/VideoWriteThread.cpp
@@ -42,10 +43,6 @@ add_executable(${EXE_NAME}
 	src/VideoWriter.h
 	src/Buffer/ImageBuffer.h
 	src/Buffer/ImageBuffer.cpp
-	src/Buffer/MutexLinkedList.cpp
-	src/Buffer/MutexBuffer.h
-	src/Buffer/MutexLinkedList.h
-	src/Buffer/Semaphore.h
 	src/settings/Settings.cpp
 	src/settings/utility.cpp
 	src/CamThread.h

@@ -2,10 +2,12 @@
 
 #pragma once
 
-#include "Buffer/MutexBuffer.h"
-#include "Buffer/MutexLinkedList.h"
+#include <memory>
 
 #include <QThread>
+
+#include "ConcurrentQueue.h"
+#include "Buffer/ImageBuffer.h"
 
 /**
  * @brief The VideoWriteThread class
@@ -30,7 +32,7 @@ public:
     /**
      * @brief _Buffer1 The first buffer to encode
      */
-    MutexLinkedList* _Buffer1;
+    ConcurrentQueue<std::shared_ptr<ImageBuffer>> _Buffer1;
 
     /**
      * @brief _CamRing1 Cam number associated with the first ringbuffer
@@ -40,7 +42,7 @@ public:
     /**
      * @brief _Buffer2 The second buffer to encode
      */
-    MutexLinkedList* _Buffer2;
+    ConcurrentQueue<std::shared_ptr<ImageBuffer>> _Buffer2;
 
     /**
      * @brief _CamRing2 Cam number associated with the second ringbuffer

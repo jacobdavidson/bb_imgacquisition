@@ -199,10 +199,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     std::cout << "Connected " << numCameras << " cameras." << std::endl;
 
     // the threads are initialized as a private variable of the class ImgAcquisitionApp
-    _cameraThreads[0]->initialize(0, (_videoWriteThread1._Buffer1), &_watchdog);
-    _cameraThreads[1]->initialize(1, (_videoWriteThread2._Buffer1), &_watchdog);
-    _cameraThreads[2]->initialize(2, (_videoWriteThread1._Buffer2), &_watchdog);
-    _cameraThreads[3]->initialize(3, (_videoWriteThread2._Buffer2), &_watchdog);
+    _cameraThreads[0]->initialize(0, &_videoWriteThread1._Buffer1, &_watchdog);
+    _cameraThreads[1]->initialize(1, &_videoWriteThread2._Buffer1, &_watchdog);
+    _cameraThreads[2]->initialize(2, &_videoWriteThread1._Buffer2, &_watchdog);
+    _cameraThreads[3]->initialize(3, &_videoWriteThread2._Buffer2, &_watchdog);
 
     // Map the buffers to camera id's
     _videoWriteThread1._CamBuffer1 = 0;

@@ -48,15 +48,15 @@ Flea3CamThread::~Flea3CamThread()
 }
 
 // this function reads the data input vector
-bool Flea3CamThread::initialize(unsigned int id,
-                                MutexBuffer* pBuffer,
-                                Watchdog*    dog)
+bool Flea3CamThread::initialize(unsigned int                                   id,
+                                ConcurrentQueue<std::shared_ptr<ImageBuffer>>* pBuffer,
+                                Watchdog*                                      dog)
 {
-    _Buffer          = pBuffer;
-    _ID              = id;
-    _HWID            = -1;
-    _initialized     = false;
-    _Dog             = dog;
+    _Buffer      = pBuffer;
+    _ID          = id;
+    _HWID        = -1;
+    _initialized = false;
+    _Dog         = dog;
 
     if (initCamera())
     {
@@ -131,7 +131,7 @@ bool Flea3CamThread::initCamera()
     // Find hardware ID to serial number
     for (int i = 0; i < 4; i++)
     {
-        unsigned int serial;
+        unsigned int       serial;
         FlyCapture2::Error error = busMgr.GetCameraSerialNumberFromIndex(i, &serial);
         if (error == PGRERROR_OK && serial == cfg.serial)
         {
@@ -534,7 +534,7 @@ int flycapTo420(uint8_t* outputImage, FlyCapture2::Image* inputImage)
 // this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
-    char       timeresult[32];
+    char timeresult[32];
 
     SettingsIAC*         set = SettingsIAC::getInstance();
     EncoderQualityConfig cfg = set->getBufferConf(_ID);
