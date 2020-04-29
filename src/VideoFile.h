@@ -15,7 +15,7 @@ extern "C"
 
 #include "GrayscaleImage.h"
 
-class VideoWriter final
+class VideoFile final
 {
 public:
     struct Config final
@@ -36,14 +36,14 @@ public:
         } codec;
     };
 
-    VideoWriter(const std::string& filename, Config config);
-    ~VideoWriter();
+    VideoFile(const std::string& filename, Config config);
+    ~VideoFile();
 
     void write(const GrayscaleImage& image);
     void close();
 
 private:
-    VideoWriter(Config config);
+    VideoFile(Config config);
 
     Config _cfg;
 

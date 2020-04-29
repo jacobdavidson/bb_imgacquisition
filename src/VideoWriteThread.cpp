@@ -21,7 +21,7 @@
 #include "VideoWriteThread.h"
 
 #include "writeHandler.h"
-#include "VideoWriter.h"
+#include "VideoFile.h"
 
 void VideoWriteThread::run()
 {
@@ -78,12 +78,11 @@ void VideoWriteThread::run()
 
         writeHandler wh(dir, currentCam, exdir);
 
-        VideoWriter videoWriter(
-            std::string(wh._videofile.c_str(), wh._videofile.size() - 4) + ".mp4",
-            {encCfg.width,
-             encCfg.height,
-             {encCfg.fps, 1},
-             {"hevc_nvenc", {{"preset", "default"}, {"rc", "vbr_hq"}, {"cq", "25"}}}});
+        VideoFile f(std::string(wh._videofile.c_str(), wh._videofile.size() - 4) + ".mp4",
+                    {encCfg.width,
+                     encCfg.height,
+                     {encCfg.fps, 1},
+                     {"hevc_nvenc", {{"preset", "default"}, {"rc", "vbr_hq"}, {"cq", "25"}}}});
 
         for (int frm = 0; frm < encCfg.totalFrames; frm++)
         {
@@ -96,12 +95,12 @@ void VideoWriteThread::run()
                 std::cout << "Loaded frame " << frm << std::endl;
             }
 
-            videoWriter.write(*img);
+            f.write(*img);
 
             // Log the progress to the writeHandler
             wh.log(img->timestamp);
         }
-        videoWriter.close();
+        f.close();
     }
 }
 

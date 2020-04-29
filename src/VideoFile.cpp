@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "VideoWriter.h"
+#include "VideoFile.h"
 
 #include <array>
 #include <sstream>
@@ -115,7 +115,7 @@ static void encodeFrame(AVCodecContext*  ctx,
     }
 }
 
-VideoWriter::VideoWriter(Config config)
+VideoFile::VideoFile(Config config)
 : _cfg(config)
 , _formatContext(nullptr)
 , _videoStream(nullptr)
@@ -126,7 +126,7 @@ VideoWriter::VideoWriter(Config config)
 {
 }
 
-VideoWriter::~VideoWriter()
+VideoFile::~VideoFile()
 {
     if (_videoPacket)
     {
@@ -149,8 +149,8 @@ VideoWriter::~VideoWriter()
     }
 }
 
-VideoWriter::VideoWriter(const std::string& filename, Config config)
-: VideoWriter(config)
+VideoFile::VideoFile(const std::string& filename, Config config)
+: VideoFile(config)
 {
     // Set up for encoding a single video stream and storing it in filename with
     // the container format automatically detected based on the filename suffix.
@@ -299,7 +299,7 @@ VideoWriter::VideoWriter(const std::string& filename, Config config)
     }
 }
 
-void VideoWriter::write(const GrayscaleImage& image)
+void VideoFile::write(const GrayscaleImage& image)
 {
     if (auto r = av_frame_make_writable(_videoFrame); r < 0)
     {
@@ -322,7 +322,7 @@ void VideoWriter::write(const GrayscaleImage& image)
     encodeFrame(_codecContext, _videoFrame, _videoPacket, _videoStream, _formatContext);
 }
 
-void VideoWriter::close()
+void VideoFile::close()
 {
     encodeFrame(_codecContext, nullptr, _videoPacket, _videoStream, _formatContext);
 
