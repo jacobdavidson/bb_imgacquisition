@@ -13,7 +13,7 @@
 #include "Watchdog.h"
 #include "settings/Settings.h"
 #include "settings/utility.h"
-#include "Buffer/ImageBuffer.h"
+#include "GrayscaleImage.h"
 
 #include <sstream> //stringstreams
 
@@ -48,9 +48,9 @@ Flea3CamThread::~Flea3CamThread()
 }
 
 // this function reads the data input vector
-bool Flea3CamThread::initialize(unsigned int                                   id,
-                                ConcurrentQueue<std::shared_ptr<ImageBuffer>>* pBuffer,
-                                Watchdog*                                      dog)
+bool Flea3CamThread::initialize(unsigned int                                      id,
+                                ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* pBuffer,
+                                Watchdog*                                         dog)
 {
     _Buffer      = pBuffer;
     _ID          = id;
@@ -641,8 +641,8 @@ void Flea3CamThread::run()
         // std::string currentTimestamp(timeresult);
 
         // Move image to buffer for further procession
-        std::shared_ptr<ImageBuffer> buf = std::shared_ptr<ImageBuffer>(
-            new ImageBuffer(vwidth, vheight, _ID, currentTimestamp));
+        std::shared_ptr<GrayscaleImage> buf = std::shared_ptr<GrayscaleImage>(
+            new GrayscaleImage(vwidth, vheight, _ID, currentTimestamp));
         // int numBytesRead = flycapTo420(&buf.get()->data[0], &cimg);
         memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 

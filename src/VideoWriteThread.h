@@ -7,7 +7,7 @@
 #include <QThread>
 
 #include "ConcurrentQueue.h"
-#include "Buffer/ImageBuffer.h"
+#include "GrayscaleImage.h"
 
 /**
  * @brief The VideoWriteThread class
@@ -19,8 +19,8 @@
  * Warning:
  * Keep in mind when using Nvidia hardware encoders:
  * -    The number of instances you spawn:
- *      Most consumer Nvidia GPUs are only able to spawn a limited amount of concurrent encoders, e.g. 2 for HEVC.
- *      One thread will use one encoder and crash if no GPU encoder is available.
+ *      Most consumer Nvidia GPUs are only able to spawn a limited amount of concurrent encoders,
+ *      e.g. 2 for HEVC. One thread will use one encoder and crash if no GPU encoder is available.
  * -    The resolution:
  *      Encoding may not work correctly if 4096x4096 is exceeded.
  */
@@ -32,7 +32,7 @@ public:
     /**
      * @brief _Buffer1 The first buffer to encode
      */
-    ConcurrentQueue<std::shared_ptr<ImageBuffer>> _Buffer1;
+    ConcurrentQueue<std::shared_ptr<GrayscaleImage>> _Buffer1;
 
     /**
      * @brief _CamRing1 Cam number associated with the first ringbuffer
@@ -42,7 +42,7 @@ public:
     /**
      * @brief _Buffer2 The second buffer to encode
      */
-    ConcurrentQueue<std::shared_ptr<ImageBuffer>> _Buffer2;
+    ConcurrentQueue<std::shared_ptr<GrayscaleImage>> _Buffer2;
 
     /**
      * @brief _CamRing2 Cam number associated with the second ringbuffer

@@ -43,9 +43,9 @@ void VideoWriteThread::run()
         uint64_t c1 = _Buffer1.size() * (uint64_t)(cfgC1.width * cfgC1.height);
         uint64_t c2 = _Buffer2.size() * (uint64_t)(cfgC2.width * cfgC2.height);
 
-        int                                            currentCam = 0;
-        ConcurrentQueue<std::shared_ptr<ImageBuffer>>* currentCamBuffer;
-        EncoderQualityConfig                           encCfg;
+        int                                               currentCam = 0;
+        ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* currentCamBuffer;
+        EncoderQualityConfig                              encCfg;
 
         auto maxSize = std::max({c1, c2});
 
@@ -87,7 +87,7 @@ void VideoWriteThread::run()
 
         for (int frm = 0; frm < encCfg.totalFrames; frm++)
         {
-            std::shared_ptr<ImageBuffer> img;
+            std::shared_ptr<GrayscaleImage> img;
             currentCamBuffer->pop(img);
 
             // Debug output TODO: remove?

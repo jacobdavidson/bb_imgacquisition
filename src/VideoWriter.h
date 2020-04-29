@@ -13,7 +13,7 @@ extern "C"
 #include <libavutil/frame.h>
 }
 
-#include "Buffer/ImageBuffer.h"
+#include "GrayscaleImage.h"
 
 class VideoWriter final
 {
@@ -31,7 +31,7 @@ public:
 
         struct
         {
-            std::string name;
+            std::string                                  name;
             std::unordered_map<std::string, std::string> options;
         } codec;
     };
@@ -39,7 +39,7 @@ public:
     VideoWriter(const std::string& filename, Config config);
     ~VideoWriter();
 
-    void write(const ImageBuffer& image);
+    void write(const GrayscaleImage& image);
     void close();
 
 private:

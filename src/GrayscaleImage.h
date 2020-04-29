@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-struct ImageBuffer
+struct GrayscaleImage
 {
     std::string          timestamp;
     int                  width;
@@ -13,5 +13,5 @@ struct ImageBuffer
     int                  camid;
     std::vector<uint8_t> data;
 
-    ImageBuffer(int w, int h, int cid, std::string t);
+    GrayscaleImage(int w, int h, int cid, std::string t);
 };

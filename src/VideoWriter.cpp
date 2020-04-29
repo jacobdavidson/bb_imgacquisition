@@ -230,10 +230,12 @@ VideoWriter::VideoWriter(const std::string& filename, Config config)
         }
         else
         {
-            if (auto r = av_opt_set(_codecContext->priv_data, name.c_str(), value.c_str(), 0); r < 0)
+            if (auto r = av_opt_set(_codecContext->priv_data, name.c_str(), value.c_str(), 0);
+                r < 0)
             {
                 std::ostringstream msg;
-                msg << "Failed to set encoder option '" << name << "' to '" << value << "': " << av_strerror(r);
+                msg << "Failed to set encoder option '" << name << "' to '" << value
+                    << "': " << av_strerror(r);
                 throw std::runtime_error(msg.str());
             }
         }
@@ -297,7 +299,7 @@ VideoWriter::VideoWriter(const std::string& filename, Config config)
     }
 }
 
-void VideoWriter::write(const ImageBuffer& image)
+void VideoWriter::write(const GrayscaleImage& image)
 {
     if (auto r = av_frame_make_writable(_videoFrame); r < 0)
     {

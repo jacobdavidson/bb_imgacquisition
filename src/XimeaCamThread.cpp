@@ -12,7 +12,7 @@
 #include "Watchdog.h"
 #include "settings/Settings.h"
 #include "settings/utility.h"
-#include "Buffer/ImageBuffer.h"
+#include "GrayscaleImage.h"
 
 #include <sstream> //stringstreams
 
@@ -53,9 +53,9 @@ XimeaCamThread::~XimeaCamThread()
 }
 
 // this function reads the data input vector
-bool XimeaCamThread::initialize(unsigned int                                   id,
-                                ConcurrentQueue<std::shared_ptr<ImageBuffer>>* pBuffer,
-                                Watchdog*                                      dog)
+bool XimeaCamThread::initialize(unsigned int                                      id,
+                                ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* pBuffer,
+                                Watchdog*                                         dog)
 {
     _Buffer      = pBuffer;
     _ID          = id;
@@ -358,7 +358,7 @@ void XimeaCamThread::run()
     uint64_t                 lastImageSequenceNumber{0};
     boost::posix_time::ptime lastCameraTimestamp;
 
-    // Preallocate image buffer on stack in order to safe performance later.
+    // Preallocate image buffer on stack in order to save performance later.
     std::array<unsigned char, 3008 * 4112> imageBuffer;
 
     for (size_t loopCount = 0; true; loopCount += 1)
@@ -486,7 +486,7 @@ void XimeaCamThread::run()
         const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
                                                lastCameraTimestamp) +
                                            "Z";
-        auto buf = std::make_shared<ImageBuffer>(vwidth, vheight, _ID, frameTimestamp);
+        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, _ID, frameTimestamp);
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
         _Buffer->push(buf);

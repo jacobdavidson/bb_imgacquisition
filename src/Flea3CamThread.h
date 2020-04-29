@@ -33,8 +33,8 @@ public:
      * @param Buffer shared with the video writer thread
      * @param Watchdog to notifiy each acquisition loop (when running)
      */
-    virtual bool initialize(unsigned int                                   id,
-                            ConcurrentQueue<std::shared_ptr<ImageBuffer>>* pBuffer,
+    virtual bool initialize(unsigned int                                      id,
+                            ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* pBuffer,
                             Watchdog* dog) override; // here goes the camera ID (from 0 to 3)
 
     //! Object has been initialized using "initialize"
@@ -125,7 +125,7 @@ private:
     unsigned int _LocalCounter;
 
     //! Buffer shared with the video writer thread
-    ConcurrentQueue<std::shared_ptr<ImageBuffer>>* _Buffer;
+    ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* _Buffer;
 
 protected:
     void run(); // this is the function that will be iterated indefinitely

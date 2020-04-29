@@ -41,8 +41,8 @@ add_executable(${EXE_NAME}
 	src/writeHandler.cpp
 	src/VideoWriter.cpp
 	src/VideoWriter.h
-	src/Buffer/ImageBuffer.h
-	src/Buffer/ImageBuffer.cpp
+	src/GrayscaleImage.h
+	src/GrayscaleImage.cpp
 	src/settings/Settings.cpp
 	src/settings/utility.cpp
 	src/CamThread.h

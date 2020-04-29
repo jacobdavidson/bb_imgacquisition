@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "ImageBuffer.h"
+#include "GrayscaleImage.h"
 
-ImageBuffer::ImageBuffer(int w, int h, int cid, std::string t)
+GrayscaleImage::GrayscaleImage(int w, int h, int cid, std::string t)
 : timestamp{t}
 , width{w}
 , height{h}
