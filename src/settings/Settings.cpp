@@ -154,9 +154,9 @@ void SettingsIAC::loadNewSettings()
         if (triggerType == "hardware")
         {
             VideoStream::Camera::HardwareTrigger trigger;
-            trigger.source        = triggerTree.get<int>("source");
+            trigger.source          = triggerTree.get<int>("source");
             trigger.framesPerSecond = triggerTree.get<int>("frames_per_second");
-            stream.camera.trigger = trigger;
+            stream.camera.trigger   = trigger;
         }
         else if (triggerType == "software")
         {
@@ -221,7 +221,7 @@ void SettingsIAC::loadNewSettings()
     }
 
     _logDirectory = _ptree.get_value<std::string>("log_directory");
-    _tmpPath = _ptree.get_value<std::string>("tmpPath");
+    _tmpPath      = _ptree.get_value<std::string>("tmpPath");
     _outDirectory = _ptree.get_value<std::string>("outDirectory");
 }
 

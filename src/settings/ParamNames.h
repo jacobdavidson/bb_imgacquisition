@@ -47,8 +47,8 @@ namespace IMACQUISITION
 
     static const std::string BUFFER = "IMACQUISITION.BUFFER";
 
-    static const std::string LOGDIR             = "IMACQUISITION.LOGDIR";
-    static const std::string IMDIR              = "IMACQUISITION.IMDIR";
-    static const std::string EXCHANGEDIR        = "IMACQUISITION.EXCHANGEDIR";
-    static const std::string CAMCOUNT           = "IMACQUISITION.CAMCOUNT";
+    static const std::string LOGDIR      = "IMACQUISITION.LOGDIR";
+    static const std::string IMDIR       = "IMACQUISITION.IMDIR";
+    static const std::string EXCHANGEDIR = "IMACQUISITION.EXCHANGEDIR";
+    static const std::string CAMCOUNT    = "IMACQUISITION.CAMCOUNT";
 }

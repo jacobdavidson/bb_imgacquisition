@@ -281,11 +281,11 @@ public:
 
             boost::optional<int> buffersize;
 
-            boost::optional<boost::optional<int>>  brightness;
-            boost::optional<boost::optional<int>>  exposure;
-            boost::optional<boost::optional<int>>  shutter;
-            boost::optional<boost::optional<int>>  gain;
-            boost::optional<bool> whitebalance;
+            boost::optional<boost::optional<int>> brightness;
+            boost::optional<boost::optional<int>> exposure;
+            boost::optional<boost::optional<int>> shutter;
+            boost::optional<boost::optional<int>> gain;
+            boost::optional<bool>                 whitebalance;
         };
 
         Camera camera;
