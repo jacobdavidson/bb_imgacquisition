@@ -21,7 +21,7 @@
 #include "VideoWriteThread.h"
 
 #include "writeHandler.h"
-#include "VideoFile.h"
+#include "VideoFileWriter.h"
 
 void VideoWriteThread::run()
 {
@@ -78,7 +78,7 @@ void VideoWriteThread::run()
 
         writeHandler wh(dir, currentCam, exdir);
 
-        VideoFile f(std::string(wh._videofile.c_str(), wh._videofile.size() - 4) + ".mp4",
+        VideoFileWriter f(std::string(wh._videofile.c_str(), wh._videofile.size() - 4) + ".mp4",
                     {encCfg.width,
                      encCfg.height,
                      {encCfg.fps, 1},

@@ -39,8 +39,8 @@ add_executable(${EXE_NAME}
 	src/VideoWriteThread.cpp
 	src/main.cpp
 	src/writeHandler.cpp
-	src/VideoFile.cpp
-	src/VideoFile.h
+	src/VideoFileWriter.cpp
+	src/VideoFileWriter.h
 	src/GrayscaleImage.h
 	src/GrayscaleImage.cpp
 	src/settings/Settings.cpp

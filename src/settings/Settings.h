@@ -290,7 +290,7 @@ public:
 
         Camera camera;
 
-        int framesPerVideoFile;
+        int framesPerVideoFileWriter;
 
         struct
         {

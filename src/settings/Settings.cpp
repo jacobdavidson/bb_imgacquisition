@@ -203,7 +203,7 @@ void SettingsIAC::loadNewSettings()
 
         stream.camera.whitebalance = cameraTree.get_optional<bool>("whitebalance");
 
-        stream.framesPerVideoFile = videoStreamTree.get<int>("frames_per_video_file");
+        stream.framesPerVideoFileWriter = videoStreamTree.get<int>("frames_per_video_file");
 
         for (const auto& [key, value] : videoStreamTree.get_child("encoder"))
         {
