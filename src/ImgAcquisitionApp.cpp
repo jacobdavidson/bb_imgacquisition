@@ -239,11 +239,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     connect(watchdogTimer, &QTimer::timeout, this, [this]() { _watchdog.check(); });
 }
 
-// destructor
-ImgAcquisitionApp::~ImgAcquisitionApp()
-{
-}
-
 // Just prints the library's info
 void ImgAcquisitionApp::printBuildInfo()
 {

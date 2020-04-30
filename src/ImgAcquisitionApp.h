@@ -29,11 +29,6 @@ public:
     ImgAcquisitionApp(int& argc, char** argv);
 
     /**
-     * @brief STUB
-     */
-    ~ImgAcquisitionApp();
-
-    /**
      * @brief prints FlyCapture2 and Application build info
      *
      * Just prints the library's info
