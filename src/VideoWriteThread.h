@@ -3,11 +3,11 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 
 #include <QThread>
 
-#include "ConcurrentQueue.h"
-#include "GrayscaleImage.h"
+#include "VideoStream.h"
 
 /**
  * @brief The VideoWriteThread class
@@ -29,39 +29,13 @@ class VideoWriteThread final : public QThread
     Q_OBJECT
 
 public:
-    /**
-     * @brief _Buffer1 The first buffer to encode
-     */
-    ConcurrentQueue<std::shared_ptr<GrayscaleImage>> _Buffer1;
+    VideoWriteThread(std::string encoderName);
 
-    /**
-     * @brief _CamRing1 Cam number associated with the first ringbuffer
-     */
-    int _CamBuffer1;
+    void add(VideoStream videoStream);
 
-    /**
-     * @brief _Buffer2 The second buffer to encode
-     */
-    ConcurrentQueue<std::shared_ptr<GrayscaleImage>> _Buffer2;
+private:
+    const std::string        _encoderName;
+    std::vector<VideoStream> _videoStreams;
 
-    /**
-     * @brief _CamRing2 Cam number associated with the second ringbuffer
-     */
-    int _CamBuffer2;
-
-    /**
-     * @brief Creates a new encoder glue. Initializes ringbuffers.
-     */
-    VideoWriteThread();
-
-protected:
-    /**
-     * @brief Run the encoding thread.
-     *
-     * This is the function that will be iterated indefinitely.
-     * The ringbuffers will be watched permanently and will be encoded.
-     *
-     * @param Length of the ringbuffer
-     */
     void run();
 };

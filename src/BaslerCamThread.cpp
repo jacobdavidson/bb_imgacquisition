@@ -20,71 +20,47 @@
 #include <ctime> //get time
 #include <time.h>
 
-#if __linux__
-    #include <unistd.h> //sleep
-    #include <sys/time.h>
-#else
-    #include <stdint.h>
-#endif
-
 #include <opencv2/opencv.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "boost/date_time/local_time/local_time.hpp"
-#include "boost/date_time/c_local_time_adjustor.hpp"
-#include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/date_time/local_time/local_time.hpp>
+#include <boost/date_time/c_local_time_adjustor.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time.hpp>
 
 // Namespace for using pylon objects.
 using namespace Pylon;
 
-BaslerCamThread::BaslerCamThread()
+template<typename T>
+struct dependent_false : std::false_type
 {
-}
+};
 
-BaslerCamThread::~BaslerCamThread()
+BaslerCamThread::BaslerCamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
+: CamThread(config, videoStream, watchdog)
 {
-}
-
-// this function reads the data input vector
-bool BaslerCamThread::initialize(unsigned int                                      id,
-                                 ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* pBuffer,
-                                 Watchdog*                                         dog)
-{
-    _Buffer      = pBuffer;
-    _ID          = id;
-    _initialized = false;
-    _Dog         = dog;
-
-    if (initCamera())
+    if (!initCamera())
     {
-        std::cout << "Starting capture on camera " << id << std::endl;
-        _initialized = startCapture();
-        if (_initialized)
-            std::cout << "Done starting capture." << std::endl;
-        else
-            std::cout << "Error capturing." << std::endl;
-    }
-    else
-    {
-        std::cerr << "Error on camera init " << id << std::endl;
-        return false;
+        std::ostringstream msg;
+        msg << "Failed to initialize camera " << _config.serial;
+        throw std::runtime_error(msg.str());
     }
 
-    return _initialized;
+    if (!startCapture())
+
+    {
+        std::ostringstream msg;
+        msg << "Failed to start capturing camera " << _config.serial;
+        throw std::runtime_error(msg.str());
+    }
 }
 
 bool BaslerCamThread::initCamera()
 {
-    _initialized = false;
-
-    SettingsIAC*         set = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg = set->getBufferConf(_ID);
-
     // If the configuration entry is invalid, just skip it.
-    if (cfg.serialString.empty())
+    if (_config.serial.empty())
     {
         sendLogMessage(0, "Serial number not configured. Skipping camera discovery.");
         return false;
@@ -98,22 +74,25 @@ bool BaslerCamThread::initCamera()
         // Get all attached devices and return -1 if no device is found.
         DeviceInfoList_t devices;
 
-        tlFactory.EnumerateDevices(devices);
+        if (auto r = tlFactory.EnumerateDevices(devices); r < 0)
+        {
+            throw std::runtime_error("Coult not enumerate cameras");
+        }
+
+        bool camFound = false;
         for (size_t i = 0; i < devices.size(); i++)
         {
-            if (cfg.serialString == devices[i].GetSerialNumber().c_str())
+            if (devices[i].GetSerialNumber() == _config.serial.c_str())
             {
-                _HWID = i;
                 _camera.Attach(tlFactory.CreateDevice(devices[i]));
                 _camera.Open();
 
-                _initialized = true;
-
+                camFound = true;
                 break;
             }
         }
 
-        if (_HWID)
+        if (camFound)
         {
             std::ostringstream msg;
             msg << "Resolution: " << _camera.Width() << "x" << _camera.Height();
@@ -124,56 +103,69 @@ bool BaslerCamThread::initCamera()
         }
         else
         {
-            sendLogMessage(0, "failed to find cam matching config serial nr: " + cfg.serialString);
+            sendLogMessage(0, "failed to find cam matching config serial nr: " + _config.serial);
+            return false;
         }
 
-        const auto mapTriggerSource =
-            [](int source) -> std::optional<Basler_UsbCameraParams::TriggerSourceEnums> {
-            std::cerr << "Trigger source " << source << std::endl;
-            switch (source)
-            {
-            case 1:
-                return Basler_UsbCameraParams::TriggerSource_Line1;
-            case 2:
-                return Basler_UsbCameraParams::TriggerSource_Line2;
-            case 3:
-                return Basler_UsbCameraParams::TriggerSource_Line3;
-            case 4:
-                return Basler_UsbCameraParams::TriggerSource_Line4;
-            default:
-                return std::nullopt;
-            }
-        };
+        std::visit(
+            [this](auto&& trigger) {
+                const auto mapTriggerSource =
+                    [](int source) -> std::optional<Basler_UsbCameraParams::TriggerSourceEnums> {
+                    std::cerr << "Trigger source " << source << std::endl;
+                    switch (source)
+                    {
+                    case 1:
+                        return Basler_UsbCameraParams::TriggerSource_Line1;
+                    case 2:
+                        return Basler_UsbCameraParams::TriggerSource_Line2;
+                    case 3:
+                        return Basler_UsbCameraParams::TriggerSource_Line3;
+                    case 4:
+                        return Basler_UsbCameraParams::TriggerSource_Line4;
+                    default:
+                        return std::nullopt;
+                    }
+                };
 
-        if (cfg.hwtrigger)
-        {
-            auto triggerSource = mapTriggerSource(cfg.hwtriggersrc);
-            if (triggerSource)
-            {
-                _camera.TriggerSelector = Basler_UsbCameraParams::TriggerSelector_FrameStart;
-                _camera.TriggerSource   = *triggerSource;
-                _camera.TriggerMode     = Basler_UsbCameraParams::TriggerMode_On;
+                using Trigger = std::decay_t<decltype(trigger)>;
 
-                _camera.AcquisitionFrameRateEnable = 0;
-            }
-            else
-                throw std::runtime_error("Invalid camera hardware trigger source");
-        }
-        else
-        {
-            _camera.TriggerSelector = Basler_UsbCameraParams::TriggerSelector_FrameStart;
-            _camera.TriggerMode     = Basler_UsbCameraParams::TriggerMode_Off;
+                if constexpr (std::is_same_v<Trigger, Config::HardwareTrigger>)
+                {
+                    auto triggerSource = mapTriggerSource(trigger.source);
+                    if (triggerSource)
+                    {
+                        _camera.TriggerSelector =
+                            Basler_UsbCameraParams::TriggerSelector_FrameStart;
+                        _camera.TriggerSource = *triggerSource;
+                        _camera.TriggerMode   = Basler_UsbCameraParams::TriggerMode_On;
 
-            _camera.AcquisitionFrameRateEnable = 1;
-            _camera.AcquisitionFrameRate       = cfg.fps;
-        }
+                        _camera.AcquisitionFrameRateEnable = 0;
+                    }
+                    else
+                        throw std::runtime_error("Invalid camera hardware trigger source");
+                }
+                else if constexpr (std::is_same_v<Trigger, Config::SoftwareTrigger>)
+                {
+                    _camera.TriggerSelector = Basler_UsbCameraParams::TriggerSelector_FrameStart;
+                    _camera.TriggerMode     = Basler_UsbCameraParams::TriggerMode_Off;
+
+                    _camera.AcquisitionFrameRateEnable = 1;
+                    _camera.AcquisitionFrameRate       = trigger.framesPerSecond;
+                }
+                else
+                {
+                    static_assert(dependent_false<Trigger>::value);
+                }
+            },
+            _config.trigger);
     }
     catch (GenericException e)
     {
         sendLogMessage(0, e.what());
+        return false;
     }
 
-    return _initialized;
+    return true;
 }
 
 // This function starts the streaming from the camera
@@ -194,15 +186,14 @@ bool BaslerCamThread::startCapture()
 
 void BaslerCamThread::run()
 {
-    SettingsIAC*         set = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg = set->getBufferConf(_ID);
+    SettingsIAC* set = SettingsIAC::getInstance();
 
     char        logfilepathFull[256];
-    std::string logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
-    sprintf(logfilepathFull, logdir.c_str(), _ID);
+    std::string logdir = set->logDirectory();
+    sprintf(logfilepathFull, logdir.c_str(), _videoStream.id);
 
-    const unsigned int vwidth  = static_cast<unsigned int>(cfg.width);
-    const unsigned int vheight = static_cast<unsigned int>(cfg.height);
+    const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
+    const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
     ////////////////////////WINDOWS/////////////////////
     int oldTime = 0;
@@ -230,29 +221,32 @@ void BaslerCamThread::run()
 
     for (size_t loopCount = 0; true; loopCount += 1)
     {
-        // signal thread is alive
-        _Dog->pulse(static_cast<int>(_ID));
+        _watchdog->pulse();
 
         if (_camera.IsGrabbing())
         {
             try
             {
-                if (cfg.hwtrigger)
+                if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
                 {
                     // Watchdog demands heartbeats at an interval of at most 60 seconds
                     _camera.RetrieveResult(30 * 1000, _grabbed, TimeoutHandling_Return);
                     if (!_grabbed)
                         continue;
                 }
-                else
+                else if (std::holds_alternative<Config::SoftwareTrigger>(_config.trigger))
                 {
                     _camera.RetrieveResult(1000, _grabbed, TimeoutHandling_Return);
                     if (!_grabbed)
                     {
                         std::cerr << "Error: " << _grabbed->GetErrorCode() << " "
-                                  << _grabbed->GetErrorDescription() << std::endl;
+                                    << _grabbed->GetErrorDescription() << std::endl;
                         continue;
                     }
+                }
+                else
+                {
+                    throw std::logic_error("Not implemented");
                 }
 
                 // get time after getting the data
@@ -329,7 +323,7 @@ void BaslerCamThread::run()
                     QString str("Warning: Processing time too long: ");
                     str.append(std::to_string(duration).c_str());
                     str.append(" on camera ");
-                    str.append(std::to_string(_ID).c_str());
+                    str.append(QString::fromStdString(_videoStream.id));
                     std::cerr << str.toStdString() << std::endl;
                     generateLog(logfilepathFull, str);
                 }
@@ -382,10 +376,10 @@ void BaslerCamThread::run()
         const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
                                                lastCameraTimestamp) +
                                            "Z";
-        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, _ID, frameTimestamp);
+        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, frameTimestamp);
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
-        _Buffer->push(buf);
+        _videoStream.push(buf);
     }
 
     return;
@@ -398,7 +392,7 @@ void BaslerCamThread::logCriticalError(const std::string& message)
 
 void BaslerCamThread::sendLogMessage(int logLevel, QString message)
 {
-    emit logMessage(logLevel, "Cam " + QString::number(_ID) + " : " + message);
+    emit logMessage(logLevel, "Cam " + QString::fromStdString(_videoStream.id) + " : " + message);
 }
 
 void BaslerCamThread::sendLogMessage(int logLevel, std::string message)

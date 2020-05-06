@@ -47,7 +47,7 @@ public:
     std::string _exchangedir;
 
     //! The camera ID
-    int _camId;
+    std::string _camId;
 
     /**
      * @brief Writes a line to the textfile
@@ -63,7 +63,7 @@ public:
      * @param Sets the camera ID
      * @param Sets the path to the out dir
      */
-    writeHandler(std::string imdir, int currentCam, std::string exchangedir);
+    writeHandler(std::string imdir, std::string currentCam, std::string exchangedir);
 
     /**
      * @brief Destructor. Finalizes writing.

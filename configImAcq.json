@@ -1,69 +1,33 @@
 {
-    "IMACQUISITION": {
-        "BUFFER": {
-            "CAMID": "0",
-            "SERIAL": "0",
-            "SERIAL_STRING": "40026484",
-            "ENABLED": "1",
-            "VIDEO_WIDTH": "4096",
-            "VIDEO_HEIGHT": "2168",
-            "BITRATE": "1000000",
-            "RCMODE": "0",
-            "QP": "25",
-            "FRAMESPERVIDEO": "500",
-            "FPS": "6",
-            "PRESET": "2",
-            "OFFSETX": "0",
-            "OFFSETY": "0",
-            "HWBUFSIZE": "0",
-            "BRIGHTNESSONOFF": "1",
-            "BRIGHTNESSAUTO": "0",
-            "BRIGHTNESS": "0",
-            "EXPOSUREONOFF": "0",
-            "EXPOSUREAUTO": "0",
-            "SHUTTER": "40",
-            "SHUTTERONOFF": "1",
-            "SHUTTERAUTO": "0",
-            "GAIN": "0",
-            "GAINONOFF": "1",
-            "GAINAUTO": "0",
-            "WHITEBALANCE": "0",
-            "HWTRIGGER": "1",
-            "HWTRIGGERPARAM": "0",
-            "HWTRIGGERSOURCE": "3"
-        },
-        "LOGDIR": ".\/data\/log\/Cam_%d\/",
-        "IMDIR": ".\/data\/tmp\/Cam_%u\/Cam_%u_%s--%s",
-        "EXCHANGEDIR": ".\/data\/out\/Cam_%u\/",
-        "CAMCOUNT": "2"
+    "log_directory": ".\/data\/log\/Cam_%s\/",
+    "tmp_path": ".\/data\/tmp\/Cam_%s\/Cam_%s_%s--%s",
+    "out_directory": ".\/data\/out\/Cam_%s\/",
+    "video_encoders": {
+        "h265_hw_0": "hevc_nvenc"
     },
-    "video_streams": [
-        {
-            "camera" :
-            {
+    "video_streams": {
+        "0": {
+            "camera": {
+                "backend": "basler",
                 "serial": "40026484",
-                "id": 0,
                 "width": 4096,
                 "height": 2168,
-                "trigger":
-                {
+                "trigger": {
                     "type": "hardware",
-                    "source": 3,
-                    "frames_per_second": 6
+                    "source": 3
                 }
             },
-            "frames_per_video_file": 500,
-            "encoder" :
-            {
-                "name": "hevc_nvenc",
-                "preset": "default",
-                "rc": "vbr_hq",
-                "cq": "25",
-                "goplength": "infinite"
+            "frames_per_second": 6,
+            "frames_per_file": 500,
+            "encoder": {
+                "id": "h265_hw_0",
+                "options": {
+                    "preset": "default",
+                    "rc": "vbr_hq",
+                    "cq": "25",
+                    "goplength": "infinite"
+                }
             }
         }
-    ],
-    "log_directory": ".\/data\/log\/Cam_%d\/",
-    "tmp_path": ".\/data\/tmp\/Cam_%u\/Cam_%u_%s--%s",
-    "out_directory": ".\/data\/out\/Cam_%u\/"
+    }
 }

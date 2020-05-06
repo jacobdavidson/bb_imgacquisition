@@ -23,76 +23,70 @@
 #include "writeHandler.h"
 #include "VideoFileWriter.h"
 
+VideoWriteThread::VideoWriteThread(std::string encoderName)
+: _encoderName{encoderName}
+{
+}
+
+void VideoWriteThread::add(VideoStream videoStream)
+{
+    _videoStreams.push_back(std::move(videoStream));
+}
+
 void VideoWriteThread::run()
 {
 
     SettingsIAC* set = SettingsIAC::getInstance();
 
-    std::string imdir       = set->getValueOfParam<std::string>(IMACQUISITION::IMDIR);
-    std::string exchangedir = set->getValueOfParam<std::string>(IMACQUISITION::EXCHANGEDIR);
+    auto imdir       = set->tmpPath();
+    auto exchangedir = set->outDirectory();
 
     // For logging encoding times
     double elapsedTimeP, avgtimeP;
 
-    EncoderQualityConfig cfgC1 = set->getBufferConf(_CamBuffer1);
-    EncoderQualityConfig cfgC2 = set->getBufferConf(_CamBuffer2);
-
-    while (1)
+    while (true)
     {
-        // Select a buffer to work on. Largest first.
-        uint64_t c1 = _Buffer1.size() * (uint64_t)(cfgC1.width * cfgC1.height);
-        uint64_t c2 = _Buffer2.size() * (uint64_t)(cfgC2.width * cfgC2.height);
+        std::vector<size_t> sizes;
+        for (auto& s : _videoStreams)
+        {
+            const auto [width, height] = s.resolution;
+            sizes.emplace_back(s.size() * width * height);
+        }
 
-        int                                               currentCam = 0;
-        ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* currentCamBuffer;
-        EncoderQualityConfig                              encCfg;
-
-        auto maxSize = std::max({c1, c2});
+        const auto maxSize      = std::max_element(sizes.begin(), sizes.end());
+        const auto maxSizeIndex = std::distance(sizes.begin(), maxSize);
 
         // If all are empty, check again later.
-        if (maxSize == 0)
+        if (*maxSize == 0)
         {
             usleep(500);
             continue;
-        }
-
-        // Configure which buffer and configuration to use
-        if (c1 >= maxSize)
-        {
-            currentCamBuffer = &_Buffer1;
-            currentCam       = _CamBuffer1;
-            encCfg           = cfgC1;
-            std::cout << "Chosen: 1" << std::endl;
-        }
-        else if (c2 >= maxSize)
-        {
-            currentCamBuffer = &_Buffer2;
-            currentCam       = _CamBuffer2;
-            encCfg           = cfgC2;
-            std::cout << "Chosen: 2" << std::endl;
         }
 
         // Configure output directories
         std::string dir   = imdir;
         std::string exdir = exchangedir;
 
-        writeHandler wh(dir, currentCam, exdir);
+        auto videoStream           = _videoStreams[maxSizeIndex];
+        const auto [width, height] = videoStream.resolution;
+
+        writeHandler wh(dir, videoStream.id, exdir);
 
         VideoFileWriter f(std::string(wh._videofile.c_str(), wh._videofile.size() - 4) + ".mp4",
-                    {encCfg.width,
-                     encCfg.height,
-                     {encCfg.fps, 1},
-                     {"hevc_nvenc", {{"preset", "default"}, {"rc", "vbr_hq"}, {"cq", "25"}}}});
+                          {static_cast<int>(width),
+                           static_cast<int>(height),
+                           {static_cast<int>(videoStream.framesPerSecond), 1},
+                           {_encoderName, videoStream.encoderOptions}});
 
-        for (int frm = 0; frm < encCfg.totalFrames; frm++)
+        for (size_t frameIndex = 0; frameIndex < videoStream.framesPerFile; frameIndex++)
         {
             std::shared_ptr<GrayscaleImage> img;
-            currentCamBuffer->pop(img);
+            videoStream.pop(img);
 
             // Debug output TODO: remove?
-            if (frm % 100 == 0)
+            if (frameIndex % 100 == 0)
             {
-                std::cout << "Loaded frame " << frm << std::endl;
+                std::cout << "Loaded frame " << frameIndex << std::endl;
             }
 
             f.write(*img);
@@ -102,10 +96,4 @@ void VideoWriteThread::run()
         }
         f.close();
     }
-}
-
-VideoWriteThread::VideoWriteThread()
-: _CamBuffer1(-1)
-, _CamBuffer2(-1)
-{
 }

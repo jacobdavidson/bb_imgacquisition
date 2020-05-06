@@ -2,11 +2,13 @@
 
 #pragma once
 
+#include <memory>
+
 #include <QString>
 #include <QThread>
 
-#include "ConcurrentQueue.h"
-#include "GrayscaleImage.h"
+#include "VideoStream.h"
+#include "settings/Settings.h"
 
 // Forward declare not-required types.
 class Watchdog;
@@ -20,22 +22,16 @@ class CamThread : public QThread
     Q_OBJECT
 
 protected:
-    CamThread() = default;
+    using Config = SettingsIAC::VideoStream::Camera;
+
+    CamThread(Config config, VideoStream videoStream, Watchdog* watchdog);
+
+    Config      _config;
+    VideoStream _videoStream;
+    Watchdog*   _watchdog;
 
 public:
     virtual ~CamThread();
-
-    /**
-     * @brief Initialization of cameras and configuration
-     *
-     * @param Virtual ID of the camera (0 to 3)
-     * @param Buffer shared with the video writer thread
-     * @param Watchdog to notifiy each acquisition loop (when running)
-     */
-    virtual bool initialize(unsigned int                                      id,
-                            ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* pBuffer,
-                            Watchdog* dog) = 0; // here goes the camera ID (from 0 to 3)
-    virtual bool isInitialized() const     = 0;
 
 signals:
     void logMessage(int logLevel, QString message);

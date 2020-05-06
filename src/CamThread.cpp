@@ -2,6 +2,13 @@
 
 #include "CamThread.h"
 
+CamThread::CamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
+: _config{config}
+, _videoStream{videoStream}
+, _watchdog{watchdog}
+{
+}
+
 CamThread::~CamThread()
 {
 }

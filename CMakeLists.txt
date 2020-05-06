@@ -41,6 +41,8 @@ add_executable(${EXE_NAME}
 	src/writeHandler.cpp
 	src/VideoFileWriter.cpp
 	src/VideoFileWriter.h
+	src/VideoStream.cpp
+	src/VideoStream.h
 	src/GrayscaleImage.h
 	src/GrayscaleImage.cpp
 	src/settings/Settings.cpp
@@ -49,7 +51,7 @@ add_executable(${EXE_NAME}
 	src/ImgAcquisitionApp.h
 	src/VideoWriteThread.h
 	src/Watchdog.h
-	src/settings/ParamNames.h
+	src/Watchdog.cpp
 	src/settings/Settings.h
 	src/settings/utility.h
 	src/writeHandler.h

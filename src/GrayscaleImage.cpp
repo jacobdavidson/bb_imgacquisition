@@ -2,11 +2,10 @@
 
 #include "GrayscaleImage.h"
 
-GrayscaleImage::GrayscaleImage(int w, int h, int cid, std::string t)
+GrayscaleImage::GrayscaleImage(int w, int h, std::string t)
 : timestamp{t}
 , width{w}
 , height{h}
-, camid{cid}
 , data(width * height)
 {
 }

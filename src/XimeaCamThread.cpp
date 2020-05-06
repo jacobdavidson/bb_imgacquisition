@@ -14,74 +14,42 @@
 #include "settings/utility.h"
 #include "GrayscaleImage.h"
 
-#include <sstream> //stringstreams
+#include <sstream>
 
 #include <array>
-#include <ctime> //get time
+#include <ctime>
 #include <time.h>
-
-#if __linux__
-    #include <unistd.h> //sleep
-    #include <sys/time.h>
-#else
-    #include <stdint.h>
-#endif
-
-#if HALIDE
-    #include "halideYuv420Conv.h"
-    #include "Halide.h"
-    // On Windows this might conflict with predefs
-    #undef user_error
-#endif
 
 #include <opencv2/opencv.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "boost/date_time/local_time/local_time.hpp"
-#include "boost/date_time/c_local_time_adjustor.hpp"
-#include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/date_time/local_time/local_time.hpp>
+#include <boost/date_time/c_local_time_adjustor.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time.hpp>
 
-XimeaCamThread::XimeaCamThread()
+XimeaCamThread::XimeaCamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
+: CamThread(config, videoStream, watchdog)
 {
-}
-
-XimeaCamThread::~XimeaCamThread()
-{
-}
-
-// this function reads the data input vector
-bool XimeaCamThread::initialize(unsigned int                                      id,
-                                ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* pBuffer,
-                                Watchdog*                                         dog)
-{
-    _Buffer      = pBuffer;
-    _ID          = id;
-    _HWID        = -1;
-    _initialized = false;
-    _Dog         = dog;
-
-    if (initCamera())
+    if (!initCamera())
     {
-        std::cout << "Starting capture on camera " << id << std::endl;
-        _initialized = startCapture();
-        std::cout << "Done starting capture." << std::endl;
-    }
-    else
-    {
-        std::cerr << "Error on camera init " << id << std::endl;
-        return false;
+        std::ostringstream msg;
+        msg << "Failed to initialize camera " << _config.serial;
+        throw std::runtime_error(msg.str());
     }
 
-    return _initialized;
+    if (!startCapture())
+    {
+        std::ostringstream msg;
+        msg << "Failed to start capturing camera " << _config.serial;
+        throw std::runtime_error(msg.str());
+    }
 }
 
 bool XimeaCamThread::initCamera()
 {
-    _initialized = false;
-
     // Try settings that our mc124mg does not support.
     // This might become relevant with other XIMEA cams.
     // However, with our camera, it just displays warnings.
@@ -99,18 +67,23 @@ bool XimeaCamThread::initCamera()
     if (!checkReturnCode(errorCode, "xiGetNumberDevices"))
         return false;
 
-    SettingsIAC*         set = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg = set->getBufferConf(_ID);
+    SettingsIAC* set = SettingsIAC::getInstance();
 
     // If the configuration entry is invalid, just skip it.
-    if (cfg.serialString.empty())
+    if (_config.serial.empty())
     {
         sendLogMessage(0, "Serial number not configured. Skipping camera discovery.");
         return false;
     }
 
-    _HWID = std::numeric_limits<decltype(_HWID)>::max();
-    for (int i = 0; i < 4; ++i)
+    DWORD numCameras;
+    if (auto err = xiGetNumberDevices(&numCameras); err != XI_OK)
+    {
+        throw std::runtime_error("Could not enumerate cameras");
+    }
+
+    bool camFound = false;
+    for (decltype(numCameras) i = 0; i < numCameras; ++i)
     {
         XI_RETURN errorCode;
         HANDLE    cam;
@@ -128,11 +101,10 @@ bool XimeaCamThread::initCamera()
         }
         else
         {
-            if (cfg.serialString == serial)
+            if (_config.serial == serial)
             {
-                _HWID   = i;
-                _Serial = cfg.serialString;
-                _Camera = cam;
+                camFound = true;
+                _Camera  = cam;
                 // Do NOT close the camera.
                 break;
             }
@@ -141,15 +113,14 @@ bool XimeaCamThread::initCamera()
         xiCloseDevice(cam);
     }
 
-    if (_HWID == std::numeric_limits<decltype(_HWID)>::max())
+    if (!camFound)
     {
-        sendLogMessage(0, "failed to find cam matching config serial nr: " + cfg.serialString);
+        sendLogMessage(0, "failed to find cam matching config serial nr: " + _config.serial);
         return false;
     }
     else
     {
-        sendLogMessage(0,
-                       "OPEN! hardware ID: " + std::to_string(_HWID) + " serial nr: " + _Serial);
+        sendLogMessage(0, "OPEN! serial nr: " + _config.serial);
         // Print some interesting meta data.
 
         // Temperature.
@@ -195,13 +166,16 @@ bool XimeaCamThread::initCamera()
         }
     }
 
-    // Set the bandwidth limit.
-    errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH, cfg.bitrate);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH"))
-        return false;
-    errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH_MODE, XI_ON);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH_MODE"))
-        return false;
+    if (_config.throughput_limit)
+    {
+        // Set the bandwidth limit.
+        errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH, *_config.throughput_limit);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH"))
+            return false;
+        errorCode = xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH_MODE, XI_ON);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH_MODE"))
+            return false;
+    }
 
     // Set a format that corresponds to the Y in YUV.
     errorCode = xiSetParamInt(_Camera, XI_PRM_IMAGE_DATA_FORMAT, XI_RAW8);
@@ -219,12 +193,17 @@ bool XimeaCamThread::initCamera()
     // Select configured properties.
 
     // Exposure
+    if (!_config.exposure || !*_config.exposure)
+    {
+        throw std::runtime_error("Manual camera exposure required");
+    }
+
     // Disable auto-exposure.
     errorCode = xiSetParamInt(_Camera, XI_PRM_AEAG, 0);
     if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AEAG"))
         return false;
-    const int exposure_us = cfg.shutter * 1000; // Micro seconds to milli seconds.
-    errorCode             = xiSetParamInt(_Camera, XI_PRM_EXPOSURE, exposure_us);
+
+    errorCode = xiSetParamInt(_Camera, XI_PRM_EXPOSURE, **_config.exposure);
     if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_EXPOSURE"))
         return false;
 
@@ -239,55 +218,67 @@ bool XimeaCamThread::initCamera()
     // if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_HEIGHT")) return false;
 
     // Gain.
+    if (!_config.gain || !*_config.gain)
+    {
+        throw std::runtime_error("Manual camera gain required");
+    }
     errorCode = xiSetParamInt(_Camera, XI_PRM_GAIN_SELECTOR, XI_GAIN_SELECTOR_ALL);
     if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GAIN_SELECTOR"))
         return false;
-    errorCode = xiSetParamFloat(_Camera, XI_PRM_GAIN, static_cast<float>(cfg.gain));
+    errorCode = xiSetParamFloat(_Camera, XI_PRM_GAIN, static_cast<float>(**_config.gain));
     if (!checkReturnCode(errorCode, "xiSetParamFloat XI_PRM_GAIN"))
         return false;
 
     // Whitebalance.
-    if (tryAllXimeaCamSettings)
+    if (tryAllXimeaCamSettings && _config.whitebalance)
     {
-        errorCode = xiSetParamInt(_Camera, XI_PRM_AUTO_WB, cfg.whitebalance);
+        errorCode = xiSetParamInt(_Camera, XI_PRM_AUTO_WB, *_config.whitebalance);
         checkReturnCode(errorCode, "xiSetParamInt XI_PRM_AUTO_WB");
     }
 
-    // Set framerate even though we trigger per hardware in the actual setup.
-    // A failure is not fatal.
-    errorCode = xiSetParamInt(_Camera, XI_PRM_ACQ_TIMING_MODE, XI_ACQ_TIMING_MODE_FRAME_RATE);
-    if (errorCode == XI_OK)
-        xiSetParamFloat(_Camera, XI_PRM_FRAMERATE, static_cast<float>(cfg.fps));
-
-    // Enable hardware trigger.
-    const int triggerSource = cfg.hwtrigger ? XI_TRG_EDGE_RISING : XI_TRG_OFF;
-    if (triggerSource != XI_TRG_OFF)
+    if (std::holds_alternative<Config::SoftwareTrigger>(_config.trigger))
     {
-        errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_SELECTOR, cfg.hwtriggersrc);
+        errorCode = xiSetParamInt(_Camera, XI_PRM_ACQ_TIMING_MODE, XI_ACQ_TIMING_MODE_FRAME_RATE);
+        if (errorCode == XI_OK)
+            xiSetParamFloat(_Camera, XI_PRM_FRAMERATE, static_cast<float>(std::get<Config::SoftwareTrigger>(_config.trigger).framesPerSecond));
+
+        errorCode = xiSetParamInt(_Camera, XI_PRM_TRG_SOURCE, XI_TRG_OFF);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_TRG_SOURCE"))
+            return false;
+    }
+    else if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
+    {
+        errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_SELECTOR, std::get<Config::HardwareTrigger>(_config.trigger).source);
         if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_SELECTOR"))
             return false;
         errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_MODE, XI_GPI_TRIGGER);
         if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_MODE"))
             return false;
-    }
-    errorCode = xiSetParamInt(_Camera, XI_PRM_TRG_SOURCE, triggerSource);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_TRG_SOURCE"))
-        return false;
 
-    // Set the buffering behavior. The default is no buffering.
-    errorCode = xiSetParamInt(_Camera, XI_PRM_BUFFERS_QUEUE_SIZE, cfg.hwbuffersize + 1);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_BUFFERS_QUEUE_SIZE"))
-        return false;
-    errorCode = xiSetParamInt(_Camera, XI_PRM_RECENT_FRAME, cfg.hwbuffersize == 0 ? 1 : 0);
-    if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_RECENT_FRAME"))
-        return false;
-    if (cfg.hwbuffersize > 0)
-    {
-        errorCode = xiSetParamInt(_Camera,
-                                  XI_PRM_ACQ_BUFFER_SIZE,
-                                  3 * (cfg.hwbuffersize + 1) * 3008 * 4112);
-        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_ACQ_BUFFER_SIZE"))
+        errorCode = xiSetParamInt(_Camera, XI_PRM_TRG_SOURCE, XI_TRG_EDGE_RISING);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_TRG_SOURCE"))
             return false;
+    }
+
+    // The default is no buffering.
+    if (_config.buffer_size)
+    {
+        const auto buffer_size = *_config.buffer_size;
+
+        errorCode = xiSetParamInt(_Camera, XI_PRM_BUFFERS_QUEUE_SIZE, buffer_size + 1);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_BUFFERS_QUEUE_SIZE"))
+            return false;
+        errorCode = xiSetParamInt(_Camera, XI_PRM_RECENT_FRAME, buffer_size == 0 ? 1 : 0);
+        if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_RECENT_FRAME"))
+            return false;
+        if (buffer_size > 0)
+        {
+            errorCode = xiSetParamInt(_Camera,
+                                    XI_PRM_ACQ_BUFFER_SIZE,
+                                    3 * (buffer_size + 1) * 3008 * 4112);
+            if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_ACQ_BUFFER_SIZE"))
+                return false;
+        }
     }
 
     // errorCode = xiSetParamInt(_Camera, XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
@@ -309,7 +300,6 @@ bool XimeaCamThread::initCamera()
             return false;
     }
 
-    _initialized = true;
     return true;
 }
 
@@ -327,15 +317,14 @@ bool XimeaCamThread::startCapture()
 
 void XimeaCamThread::run()
 {
-    SettingsIAC*         set = SettingsIAC::getInstance();
-    EncoderQualityConfig cfg = set->getBufferConf(_ID);
+    SettingsIAC* set = SettingsIAC::getInstance();
 
     char        logfilepathFull[256];
-    std::string logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
-    sprintf(logfilepathFull, logdir.c_str(), _ID);
+    std::string logdir = set->logDirectory();
+    sprintf(logfilepathFull, logdir.c_str(), _videoStream.id);
 
-    const unsigned int vwidth  = static_cast<unsigned int>(cfg.width);
-    const unsigned int vheight = static_cast<unsigned int>(cfg.height);
+    const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
+    const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
     ////////////////////////WINDOWS/////////////////////
     int oldTime = 0;
@@ -363,7 +352,7 @@ void XimeaCamThread::run()
 
     for (size_t loopCount = 0; true; loopCount += 1)
     {
-        _Dog->pulse(static_cast<int>(_ID));
+        _watchdog->pulse();
 
         XI_IMG image;
         image.size    = sizeof(XI_IMG);
@@ -441,7 +430,7 @@ void XimeaCamThread::run()
             QString str("Warning: Processing time too long: ");
             str.append(std::to_string(duration).c_str());
             str.append(" on camera ");
-            str.append(std::to_string(_ID).c_str());
+            str.append(QString::fromStdString(_videoStream.id));
             std::cerr << str.toStdString() << std::endl;
             generateLog(logfilepathFull, str);
         }
@@ -486,10 +475,10 @@ void XimeaCamThread::run()
         const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
                                                lastCameraTimestamp) +
                                            "Z";
-        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, _ID, frameTimestamp);
+        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, frameTimestamp);
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
-        _Buffer->push(buf);
+        _videoStream.push(buf);
     }
     // This code will never be executed.
     assert(false);
@@ -531,8 +520,8 @@ void XimeaCamThread::logCriticalError(const std::string& shortMsg, const std::st
         char              logfilepathFull[256];
         std::stringstream str;
         SettingsIAC*      set    = SettingsIAC::getInstance();
-        std::string       logdir = set->getValueOfParam<std::string>(IMACQUISITION::LOGDIR);
-        sprintf(logfilepathFull, logdir.c_str(), _ID);
+        std::string       logdir = set->logDirectory();
+        sprintf(logfilepathFull, logdir.c_str(), _videoStream.id);
         generateLog(logfilepathFull, message.c_str());
     }
 }
@@ -567,7 +556,7 @@ bool XimeaCamThread::checkReturnCode(XI_RETURN errorCode, const std::string& ope
 
 void XimeaCamThread::sendLogMessage(int logLevel, QString message)
 {
-    emit logMessage(logLevel, "Cam " + QString::number(_ID) + " : " + message);
+    emit logMessage(logLevel, "Cam " + QString::fromStdString(_videoStream.id) + " : " + message);
 }
 void XimeaCamThread::sendLogMessage(int logLevel, std::string message)
 {

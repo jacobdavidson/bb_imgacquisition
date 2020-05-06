@@ -2,7 +2,6 @@
 
 #include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
-#include "settings/ParamNames.h"
 #include "settings/utility.h"
 #include "Watchdog.h"
 #include <iostream>
@@ -34,8 +33,6 @@ using namespace FlyCapture2;
     #include <pylon/PylonIncludes.h>
 using namespace Pylon;
 #endif
-
-#include <opencv2/opencv.hpp>
 
 std::string ImgAcquisitionApp::figureBasename(std::string infile)
 {
@@ -117,8 +114,8 @@ void ImgAcquisitionApp::resolveLockDir(std::string from, std::string to)
 void ImgAcquisitionApp::resolveLocks()
 {
     SettingsIAC* set            = SettingsIAC::getInstance();
-    std::string  imdirSet       = set->getValueOfParam<std::string>(IMACQUISITION::IMDIR);
-    std::string  exchangedirSet = set->getValueOfParam<std::string>(IMACQUISITION::EXCHANGEDIR);
+    std::string  imdirSet       = set->tmpPath();
+    std::string  exchangedirSet = set->outDirectory();
 
     std::size_t found       = imdirSet.find_last_of("/\\");
     std::string imdir       = imdirSet.substr(0, found) + "/";
@@ -163,74 +160,66 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     // when the number of cameras is insufficient it should interrupt the program
     numCameras = checkCameras();
 
-    int camcountConf = set->getValueOfParam<int>(IMACQUISITION::CAMCOUNT);
-    if (numCameras < camcountConf)
-    {
-        std::cerr << "Camera count is less than configured!" << std::endl;
-    }
-
     if (numCameras < 1)
     {
         std::exit(2);
     }
 
-    // Initialize CamThreads and connect the respective signals.
-    for (int i = 0; i < 4; i++)
+    for (auto& [id, name] : set->videoEncoders())
     {
+        _videoWriterThreads.emplace(id, name);
+    }
+
+    for (unsigned int i = 0; i < set->videoStreams().size(); i++)
+    {
+        const auto& cfg = set->videoStreams()[i];
+
+        auto videoStream = VideoStream{cfg.id,
+                                       {cfg.camera.width, cfg.camera.height},
+                                       cfg.framesPerSecond,
+                                       cfg.framesPerFile,
+                                       cfg.encoder.options};
 
 #ifdef USE_FLEA3
-        _cameraThreads[i] = std::make_unique<Flea3CamThread>();
+        _cameraThreads.emplace_back(std::make_unique<Flea3CamThread>(cfg.camera, videoStream, &_watchdog));
 #endif
 
 #ifdef USE_XIMEA
-        _cameraThreads[i] = std::make_unique<XimeaCamThread>();
+        _cameraThreads.emplace_back(std::make_unique<XimeaCamThread>(cfg.camera, videoStream, &_watchdog));
 #endif
 
 #ifdef USE_BASLER
-        _cameraThreads[i] = std::make_unique<BaslerCamThread>();
+        _cameraThreads.emplace_back(std::make_unique<BaslerCamThread>(cfg.camera, videoStream, &_watchdog));
 #endif
 
-        connect(_cameraThreads[i].get(),
-                SIGNAL(logMessage(int, QString)),
+        connect(_cameraThreads.back().get(),
+                &CamThread::logMessage,
                 this,
-                SLOT(logMessage(int, QString)));
-    }
+                &ImgAcquisitionApp::logMessage);
 
-    std::cout << "Connected " << numCameras << " cameras." << std::endl;
-
-    // the threads are initialized as a private variable of the class ImgAcquisitionApp
-    _cameraThreads[0]->initialize(0, &_videoWriteThread1._Buffer1, &_watchdog);
-    _cameraThreads[1]->initialize(1, &_videoWriteThread2._Buffer1, &_watchdog);
-    _cameraThreads[2]->initialize(2, &_videoWriteThread1._Buffer2, &_watchdog);
-    _cameraThreads[3]->initialize(3, &_videoWriteThread2._Buffer2, &_watchdog);
-
-    // Map the buffers to camera id's
-    _videoWriteThread1._CamBuffer1 = 0;
-    _videoWriteThread1._CamBuffer2 = 2;
-    _videoWriteThread2._CamBuffer1 = 1;
-    _videoWriteThread2._CamBuffer2 = 3;
-
-    std::cout << "Initialized " << numCameras << " cameras." << std::endl;
-
-    // execute run() function, spawns cam readers
-    for (int i = 0; i < 4; i++)
-    {
-        if (_cameraThreads[i]->isInitialized())
+        if (_videoWriterThreads.count(cfg.encoder.id))
         {
-            _cameraThreads[i]->start();
-            camsStarted++;
+            _videoWriterThreads.at(cfg.encoder.id).add(videoStream);
+        }
+        else
+        {
+            std::cerr << "No such encoder configured: " << cfg.encoder.id << std::endl;
         }
     }
 
-    std::cout << "Started " << camsStarted << " camera threads." << std::endl;
+    for (auto& thread : _cameraThreads)
+    {
+        thread->start();
+    }
 
-    // Start video writer threads
-    // The if(numCameras>=2) is not required here. If only one camera is present,
-    // the other glue thread will sleep most of the time.
-    _videoWriteThread1.start();
-    _videoWriteThread2.start();
+    std::cout << "Started " << _cameraThreads.size() << " camera threads." << std::endl;
 
-    std::cout << "Started the video writer threads." << std::endl;
+    for (auto& [id, thread] : _videoWriterThreads)
+    {
+        thread.start();
+    }
+
+    std::cout << "Started " << _videoWriterThreads.size() << " video writer threads." << std::endl;
 
     auto watchdogTimer = new QTimer(this);
     watchdogTimer->setInterval(500);

@@ -4,6 +4,8 @@
 #define IMGACQUISITIONAPP_H
 
 #include <memory>
+#include <vector>
+#include <unordered_map>
 
 #include <QCoreApplication>
 #include <QtGui/QKeyEvent>
@@ -52,14 +54,12 @@ private:
     Watchdog _watchdog;
 
     //! A vector of the class CamThread, they are accessed from the constructor
-    std::unique_ptr<CamThread> _cameraThreads[4];
+    std::vector<std::unique_ptr<CamThread>> _cameraThreads;
 
     //! Number of detected cameras
     unsigned int _numCameras;
 
-    //! Glue objects which handle encoder workers
-    VideoWriteThread _videoWriteThread1;
-    VideoWriteThread _videoWriteThread2;
+    std::unordered_map<std::string, VideoWriteThread> _videoWriterThreads;
 
     /**
      * @brief Helper function of resolveLocks

@@ -28,39 +28,7 @@ private:
     Pylon::PylonAutoInitTerm pylon;
 
 public:
-    BaslerCamThread();          // constructor
-    virtual ~BaslerCamThread(); // destructor
-
-    /**
-     * @brief Initialization of cameras and configuration
-     *
-     * @param Virtual ID of the camera (0 to 3)
-     * @param Buffer shared with the video writer thread
-     * @param Watchdog to notifiy each acquisition loop (when running)
-     */
-    virtual bool initialize(unsigned int                                      id,
-                            ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* pBuffer,
-                            Watchdog* dog) override; // here goes the camera ID (from 0 to 3)
-
-    //! Object has been initialized using "initialize"
-    virtual bool isInitialized() const override
-    {
-        return _initialized;
-    }
-    bool _initialized{false};
-
-    //! Virtual ID of the camera
-    unsigned int _ID;
-
-    //! Hardware ID (id in bus order) of the camera. (used internally)
-    std::optional<unsigned int> _HWID;
-    Pylon::String_t             _SerialNumber;
-
-    //! Serial number of the camera
-    std::string _Serial;
-
-    //! Watchdog to notifiy each acquisition loop (set by initialize)
-    Watchdog* _Dog;
+    BaslerCamThread(Config config, VideoStream videoStream, Watchdog* watchdog);
 
 private:
     bool initCamera();
@@ -121,9 +89,6 @@ private:
 
     //! ... to enumerate each image in a second
     unsigned int _LocalCounter;
-
-    //! Buffer shared with the video writer thread
-    ConcurrentQueue<std::shared_ptr<GrayscaleImage>>* _Buffer;
 
 protected:
     void run(); // this is the function that will be iterated indefinitely
