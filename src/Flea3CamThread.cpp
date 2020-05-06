@@ -75,9 +75,9 @@ bool Flea3CamThread::initCamera()
     Format7PacketInfo fmt7PacketInfo;
     // fmt7PacketInfo.recommendedBytesPerPacket = 5040;
 
-    BusManager   busMgr;
-    PGRGuid      guid;
-    CameraInfo   camInfo;
+    BusManager busMgr;
+    PGRGuid    guid;
+    CameraInfo camInfo;
 
     FC2Config BufferFrame;
 
@@ -109,11 +109,11 @@ bool Flea3CamThread::initCamera()
     if (auto err = busMgr.GetNumOfCameras(&numCameras); err != PGRERROR_OK)
     {
         std::ostringstream msg;
-            msg << "Could not enumerate cameras: " << err.GetDescription();
+        msg << "Could not enumerate cameras: " << err.GetDescription();
         throw std::runtime_error(msg.str());
     }
 
-    bool camFound = false;
+    bool         camFound = false;
     unsigned int camIndex;
     unsigned int serial;
     for (decltype(numCameras) i = 0; i < numCameras; i++)
@@ -137,10 +137,9 @@ bool Flea3CamThread::initCamera()
         return false;
     }
 
-    sendLogMessage(
-        3,
-        "Camera " + QString::fromStdString(_videoStream.id) +
-            "(ID) Serial Number: " + QString::number(serial)); // serial number is printed
+    sendLogMessage(3,
+                   "Camera " + QString::fromStdString(_videoStream.id) + "(ID) Serial Number: " +
+                       QString::number(serial)); // serial number is printed
 
     // Gets the PGRGuid from the camera
     if (!checkReturnCode(busMgr.GetCameraFromIndex(camIndex, &guid)))
@@ -463,7 +462,9 @@ bool Flea3CamThread::initCamera()
             return false;
         }
 
-        sendLogMessage(3, "New frame rate is " + QString().sprintf("%.2f", frmRate.absValue) + " fps");
+        sendLogMessage(3,
+                       "New frame rate is " + QString().sprintf("%.2f", frmRate.absValue) +
+                           " fps");
     }
 
     //-------------------- FRAME RATE ENDS          -----------------------------------
@@ -490,7 +491,7 @@ void Flea3CamThread::run()
 {
     char timeresult[32];
 
-    SettingsIAC*         set = SettingsIAC::getInstance();
+    SettingsIAC* set = SettingsIAC::getInstance();
 
     char        logfilepathFull[256];
     std::string logdir = set->logDirectory();
@@ -667,7 +668,9 @@ bool Flea3CamThread::checkReturnCode(FlyCapture2::Error error)
 {
     if (error != PGRERROR_OK)
     {
-        sendLogMessage(1, "Cam " + QString::fromStdString(_videoStream.id) + " : " + error.GetDescription());
+        sendLogMessage(1,
+                       "Cam " + QString::fromStdString(_videoStream.id) + " : " +
+                           error.GetDescription());
         return false;
     }
     return true;

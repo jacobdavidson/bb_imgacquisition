@@ -111,7 +111,6 @@ bool BaslerCamThread::initCamera()
             [this](auto&& trigger) {
                 const auto mapTriggerSource =
                     [](int source) -> std::optional<Basler_UsbCameraParams::TriggerSourceEnums> {
-                    std::cerr << "Trigger source " << source << std::endl;
                     switch (source)
                     {
                     case 1:
@@ -240,7 +239,7 @@ void BaslerCamThread::run()
                     if (!_grabbed)
                     {
                         std::cerr << "Error: " << _grabbed->GetErrorCode() << " "
-                                    << _grabbed->GetErrorDescription() << std::endl;
+                                  << _grabbed->GetErrorDescription() << std::endl;
                         continue;
                     }
                 }

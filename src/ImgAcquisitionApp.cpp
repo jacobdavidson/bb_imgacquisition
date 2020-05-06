@@ -190,8 +190,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 // Just prints the library's info
 void ImgAcquisitionApp::printBuildInfo()
 {
-    std::cout << "Application build date: " << __DATE__ << ", " << __TIME__ << std::endl
-              << std::endl;
+    std::cout << "Application build date: " << __DATE__ << ", " << __TIME__ << std::endl;
 }
 
 // The slot for signals generated from the threads

@@ -83,9 +83,9 @@ void SettingsIAC::loadNewSettings()
         const auto& cameraTree = videoStreamTree.get_child("camera");
 
         stream.camera.backend = cameraTree.get<std::string>("backend");
-        stream.camera.serial = cameraTree.get<std::string>("serial");
-        stream.camera.width  = cameraTree.get<int>("width");
-        stream.camera.height = cameraTree.get<int>("height");
+        stream.camera.serial  = cameraTree.get<std::string>("serial");
+        stream.camera.width   = cameraTree.get<int>("width");
+        stream.camera.height  = cameraTree.get<int>("height");
 
         const auto& triggerTree = cameraTree.get_child("trigger");
 
@@ -93,8 +93,8 @@ void SettingsIAC::loadNewSettings()
         if (triggerType == "hardware")
         {
             VideoStream::Camera::HardwareTrigger trigger;
-            trigger.source          = triggerTree.get<int>("source");
-            stream.camera.trigger   = trigger;
+            trigger.source        = triggerTree.get<int>("source");
+            stream.camera.trigger = trigger;
         }
         else if (triggerType == "software")
         {
@@ -109,7 +109,7 @@ void SettingsIAC::loadNewSettings()
             throw std::runtime_error(msg.str());
         }
 
-        stream.camera.buffer_size = cameraTree.get_optional<int>("buffer_size");
+        stream.camera.buffer_size      = cameraTree.get_optional<int>("buffer_size");
         stream.camera.throughput_limit = cameraTree.get_optional<int>("throughput_limit");
 
         const auto parseAutoIntParam =
@@ -143,10 +143,10 @@ void SettingsIAC::loadNewSettings()
         stream.camera.whitebalance = cameraTree.get_optional<bool>("whitebalance");
 
         stream.framesPerSecond = videoStreamTree.get<size_t>("frames_per_second");
-        stream.framesPerFile = videoStreamTree.get<size_t>("frames_per_file");
+        stream.framesPerFile   = videoStreamTree.get<size_t>("frames_per_file");
 
         const auto& encoderTree = videoStreamTree.get_child("encoder");
-        stream.encoder.id = encoderTree.get<std::string>("id");
+        stream.encoder.id       = encoderTree.get<std::string>("id");
 
         for (const auto& [key, value] : encoderTree.get_child("options"))
         {

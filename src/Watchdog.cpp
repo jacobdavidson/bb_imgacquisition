@@ -1,6 +1,5 @@
 #include "Watchdog.h"
 
-
 void Watchdog::pulse()
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -10,7 +9,7 @@ void Watchdog::pulse()
 void Watchdog::check()
 {
     std::lock_guard<std::mutex> lock(_mutex);
-    const auto now = std::chrono::steady_clock::now();
+    const auto                  now = std::chrono::steady_clock::now();
     for (const auto& [threadId, lastPulse] : _lastPulses)
     {
         if (now - lastPulse > std::chrono::seconds(60))

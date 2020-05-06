@@ -240,7 +240,11 @@ bool XimeaCamThread::initCamera()
     {
         errorCode = xiSetParamInt(_Camera, XI_PRM_ACQ_TIMING_MODE, XI_ACQ_TIMING_MODE_FRAME_RATE);
         if (errorCode == XI_OK)
-            xiSetParamFloat(_Camera, XI_PRM_FRAMERATE, static_cast<float>(std::get<Config::SoftwareTrigger>(_config.trigger).framesPerSecond));
+            xiSetParamFloat(
+                _Camera,
+                XI_PRM_FRAMERATE,
+                static_cast<float>(
+                    std::get<Config::SoftwareTrigger>(_config.trigger).framesPerSecond));
 
         errorCode = xiSetParamInt(_Camera, XI_PRM_TRG_SOURCE, XI_TRG_OFF);
         if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_TRG_SOURCE"))
@@ -248,7 +252,9 @@ bool XimeaCamThread::initCamera()
     }
     else if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
     {
-        errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_SELECTOR, std::get<Config::HardwareTrigger>(_config.trigger).source);
+        errorCode = xiSetParamInt(_Camera,
+                                  XI_PRM_GPI_SELECTOR,
+                                  std::get<Config::HardwareTrigger>(_config.trigger).source);
         if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_GPI_SELECTOR"))
             return false;
         errorCode = xiSetParamInt(_Camera, XI_PRM_GPI_MODE, XI_GPI_TRIGGER);
@@ -274,8 +280,8 @@ bool XimeaCamThread::initCamera()
         if (buffer_size > 0)
         {
             errorCode = xiSetParamInt(_Camera,
-                                    XI_PRM_ACQ_BUFFER_SIZE,
-                                    3 * (buffer_size + 1) * 3008 * 4112);
+                                      XI_PRM_ACQ_BUFFER_SIZE,
+                                      3 * (buffer_size + 1) * 3008 * 4112);
             if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_ACQ_BUFFER_SIZE"))
                 return false;
         }
