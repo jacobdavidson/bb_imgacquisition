@@ -25,11 +25,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/src/cmake)
 
 find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
 
-set(CAMERA_BACKEND "Basler" CACHE STRING "Select a camera backend")
-set_property(CACHE CAMERA_BACKEND PROPERTY STRINGS "Basler" "Flea3" "XIMEA")
-
-message("Configuring for ${CAMERA_BACKEND} on ${CMAKE_SYSTEM_NAME}")
-
 set(EXE_NAME bb_ImageAcquistion)
 
 add_executable(${EXE_NAME}
@@ -66,29 +61,57 @@ target_link_libraries(${EXE_NAME} PRIVATE
 	${OpenCV_LIBRARIES}
 )
 
-if(${CAMERA_BACKEND} STREQUAL "Basler")
-	target_sources(${EXE_NAME} PRIVATE src/BaslerCamThread.h src/BaslerCamThread.cpp)
-	target_compile_definitions(${EXE_NAME} PRIVATE USE_BASLER)
+if(CAMERA_BACKENDS)
+	foreach(camera_backend ${CAMERA_BACKENDS})
+		if(${camera_backend} STREQUAL Flea3)
+			find_package(FlyCapture2 REQUIRED)
+		elseif(${camera_backend} STREQUAL XIMEA)
+			find_package(XIMEA REQUIRED)
+		elseif(${camera_backend} STREQUAL Basler)
+			find_package(Pylon5 REQUIRED)
+		else()
+			message(FATAL_ERROR "No such camera backend: ${camera_backend}")
+		endif()
+	endforeach()
+else()
+	find_package(FlyCapture2)
+	if(FlyCapture2_FOUND)
+		list(APPEND CAMERA_BACKENDS Flea3)
+	endif()
 
-	find_package(Pylon5 REQUIRED)
-	target_link_libraries(${EXE_NAME} PRIVATE Pylon5::Base Pylon5::Utility Pylon5::GenAPI Pylon5::GCBase)
+	find_package(XIMEA)
+	if(XIMEA_FOUND)
+		list(APPEND CAMERA_BACKENDS XIMEA)
+	endif()
+
+	find_package(Pylon5)
+	if(Pylon5_FOUND)
+		list(APPEND CAMERA_BACKENDS Basler)
+	endif()
 endif()
 
-if(${CAMERA_BACKEND} STREQUAL "Flea3")
+if(Flea3 IN_LIST CAMERA_BACKENDS)
 	target_compile_definitions(${EXE_NAME} PRIVATE USE_FLEA3)
 	target_sources(${EXE_NAME} PRIVATE src/Flea3CamThread.h src/Flea3CamThread.cpp)
 
-	find_package(FlyCapture2 REQUIRED)
 	target_link_libraries(${EXE_NAME} PRIVATE FlyCapture2)
 endif()
 
-if(${CAMERA_BACKEND} STREQUAL "XIMEA")
+if(XIMEA IN_LIST CAMERA_BACKENDS)
 	target_sources(${EXE_NAME} PRIVATE src/XimeaCamThread.h src/XimeaCamThread.cpp)
 	target_compile_definitions(${EXE_NAME} PRIVATE USE_XIMEA)
 
-	find_package(XIMEA REQUIRED)
 	target_link_libraries(${EXE_NAME} PRIVATE XIMEA)
 endif()
+
+if(Basler IN_LIST CAMERA_BACKENDS)
+	target_sources(${EXE_NAME} PRIVATE src/BaslerCamThread.h src/BaslerCamThread.cpp)
+	target_compile_definitions(${EXE_NAME} PRIVATE USE_BASLER)
+
+	target_link_libraries(${EXE_NAME} PRIVATE Pylon5::Base Pylon5::Utility Pylon5::GenAPI Pylon5::GCBase)
+endif()
+
+message(STATUS "Enabled camera backends: ${CAMERA_BACKENDS}")
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_compile_options(${EXE_NAME} PRIVATE -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer)

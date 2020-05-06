@@ -1,38 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "ImgAcquisitionApp.h"
-#include "settings/Settings.h"
-#include "settings/utility.h"
-#include "Watchdog.h"
+
 #include <iostream>
 #include <fstream>
-#include <stdio.h>
+#include <cstdio>
+
 #include <QDebug>
 #include <QDir>
 #include <QTimer>
 
-#ifdef LINUX
-    #include <unistd.h>
-#endif
-#ifdef WINDOWS
-    #include <windows.h>
-    #include <stdint.h>
-#endif
-
-#ifdef USE_FLEA3
-    #include "Flea3CamThread.h"
-using namespace FlyCapture2;
-#endif
-
-#ifdef USE_XIMEA
-    #include "XimeaCamThread.h"
-#endif
-
-#ifdef USE_BASLER
-    #include "BaslerCamThread.h"
-    #include <pylon/PylonIncludes.h>
-using namespace Pylon;
-#endif
+#include "settings/Settings.h"
+#include "settings/utility.h"
+#include "Watchdog.h"
 
 std::string ImgAcquisitionApp::figureBasename(std::string infile)
 {
@@ -157,40 +137,19 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     printBuildInfo();
     resolveLocks();
 
-    // when the number of cameras is insufficient it should interrupt the program
-    numCameras = checkCameras();
-
-    if (numCameras < 1)
-    {
-        std::exit(2);
-    }
-
     for (auto& [id, name] : set->videoEncoders())
     {
         _videoWriterThreads.emplace(id, name);
     }
 
-    for (unsigned int i = 0; i < set->videoStreams().size(); i++)
+    for (const auto& cfg : set->videoStreams())
     {
-        const auto& cfg = set->videoStreams()[i];
-
         auto videoStream = VideoStream{cfg.id,
                                        {cfg.camera.width, cfg.camera.height},
                                        cfg.framesPerSecond,
                                        cfg.framesPerFile,
                                        cfg.encoder.options};
-
-#ifdef USE_FLEA3
-        _cameraThreads.emplace_back(std::make_unique<Flea3CamThread>(cfg.camera, videoStream, &_watchdog));
-#endif
-
-#ifdef USE_XIMEA
-        _cameraThreads.emplace_back(std::make_unique<XimeaCamThread>(cfg.camera, videoStream, &_watchdog));
-#endif
-
-#ifdef USE_BASLER
-        _cameraThreads.emplace_back(std::make_unique<BaslerCamThread>(cfg.camera, videoStream, &_watchdog));
-#endif
+        _cameraThreads.emplace_back(CamThread::make(cfg.camera, videoStream, &_watchdog));
 
         connect(_cameraThreads.back().get(),
                 &CamThread::logMessage,
@@ -231,124 +190,8 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 // Just prints the library's info
 void ImgAcquisitionApp::printBuildInfo()
 {
-#ifdef USE_FLEA3
-    FC2Version fc2Version;
-    Utilities::GetLibraryVersion(&fc2Version);
-
-    std::cout << "FlyCapture2 library version: " << fc2Version.major << "." << fc2Version.minor
-              << "." << fc2Version.type << "." << fc2Version.build << std::endl
-              << std::endl;
-#endif
-
-#ifdef USE_BASLER
-
-#endif
-
     std::cout << "Application build date: " << __DATE__ << ", " << __TIME__ << std::endl
               << std::endl;
-}
-
-// This function checks that at least one camera is connected
-// returns -1 if no camera is found
-int ImgAcquisitionApp::checkCameras()
-{
-#ifdef USE_FLEA3
-    FlyCapture2::BusManager cc_busMgr;
-    FlyCapture2::Error      error;
-
-    error = cc_busMgr.GetNumOfCameras(&_numCameras);
-    if (error != PGRERROR_OK)
-    {
-        return -1;
-    }
-#endif
-
-#ifdef USE_XIMEA
-    {
-        const auto errorCode = xiGetNumberDevices(&_numCameras);
-        if (errorCode != XI_OK)
-            return -1;
-    }
-#endif
-
-#ifdef USE_BASLER
-    PylonAutoInitTerm pylon;
-    try
-    {
-        // Get the transport layer factory.
-        CTlFactory& tlFactory = CTlFactory::GetInstance();
-
-        // Get all attached devices and return -1 if no device is found.
-        DeviceInfoList_t devices;
-        if (tlFactory.EnumerateDevices(devices) == 0)
-            return -1;
-
-        _numCameras = devices.size();
-
-        // ToDo: make max number of cameras accessible
-        CInstantCameraArray cameras(std::min<size_t>(_numCameras, 4));
-
-        // Create and attach all Pylon Devices.
-        for (size_t i = 0; i < cameras.GetSize(); ++i)
-        {
-            cameras[i].Attach(tlFactory.CreateDevice(devices[i]));
-
-            // Print the model name and serial number of the camera(s).
-            std::cout << "Cam #" << i << ": " << cameras[i].GetDeviceInfo().GetModelName()
-                      << ", SN:" << cameras[i].GetDeviceInfo().GetSerialNumber() << std::endl;
-        }
-
-        // Detach cameras in array
-        cameras.DestroyDevice();
-    }
-    catch (const GenericException& e)
-    {
-        return -1;
-    }
-#endif
-
-    qDebug() << "Number of cameras detected: " << _numCameras;
-
-    // print cam serial numbers
-    for (int i = 0; i < 4; i++)
-    {
-
-#ifdef USE_FLEA3
-        unsigned int serial;
-        Error        error = cc_busMgr.GetCameraSerialNumberFromIndex(i, &serial);
-        if (error == PGRERROR_OK)
-        {
-            qDebug() << "Detected cam with serial: " << serial;
-        }
-#endif
-
-#ifdef USE_XIMEA
-        XI_RETURN errorCode;
-        HANDLE    cam;
-        errorCode = xiOpenDevice(i, &cam);
-        if (errorCode != XI_OK)
-        {
-            qDebug() << QString("Error opening cam ") << i << ": error code " << errorCode;
-            continue;
-        }
-        char serial[20] = "";
-        errorCode       = xiGetParamString(cam, XI_PRM_DEVICE_SN, serial, sizeof(serial));
-        if (errorCode == XI_OK)
-        {
-            qDebug() << "Detected cam with serial: " << serial;
-        }
-        xiCloseDevice(cam);
-#endif
-    }
-
-    if (_numCameras < 1)
-    {
-        std::cerr << "Insufficient number of cameras... press Enter to exit." << std::endl;
-        logMessage(1, "Insufficient number of cameras ...");
-        getchar();
-        return -1;
-    }
-    return _numCameras;
 }
 
 // The slot for signals generated from the threads
