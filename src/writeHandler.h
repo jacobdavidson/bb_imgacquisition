@@ -1,14 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/*
- * writeHandler.h
- *
- *  Created on: Feb 4, 2016
- *      Author: hauke
- */
+#pragma once
 
-#ifndef WRITEHANDLER_H_
-#define WRITEHANDLER_H_
 #include <string>
 
 class writeHandler
@@ -73,5 +66,3 @@ public:
      */
     virtual ~writeHandler();
 };
-
-#endif /* WRITEHANDLER_H_ */

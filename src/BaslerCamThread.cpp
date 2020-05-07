@@ -30,9 +30,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time.hpp>
 
-// Namespace for using pylon objects.
-using namespace Pylon;
-
 template<typename T>
 struct dependent_false : std::false_type
 {
@@ -69,10 +66,10 @@ bool BaslerCamThread::initCamera()
     try
     {
         // Get the transport layer factory.
-        CTlFactory& tlFactory = CTlFactory::GetInstance();
+        auto& tlFactory = Pylon::CTlFactory::GetInstance();
 
         // Get all attached devices and return -1 if no device is found.
-        DeviceInfoList_t devices;
+        Pylon::DeviceInfoList_t devices;
 
         if (auto r = tlFactory.EnumerateDevices(devices); r < 0)
         {
@@ -158,7 +155,7 @@ bool BaslerCamThread::initCamera()
             },
             _config.trigger);
     }
-    catch (GenericException e)
+    catch (Pylon::GenericException e)
     {
         sendLogMessage(0, e.what());
         return false;
@@ -175,7 +172,7 @@ bool BaslerCamThread::startCapture()
     {
         _camera.StartGrabbing();
     }
-    catch (GenericException e)
+    catch (Pylon::GenericException e)
     {
         return false;
     }
@@ -229,13 +226,13 @@ void BaslerCamThread::run()
                 if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
                 {
                     // Watchdog demands heartbeats at an interval of at most 60 seconds
-                    _camera.RetrieveResult(30 * 1000, _grabbed, TimeoutHandling_Return);
+                    _camera.RetrieveResult(30 * 1000, _grabbed, Pylon::TimeoutHandling_Return);
                     if (!_grabbed)
                         continue;
                 }
                 else if (std::holds_alternative<Config::SoftwareTrigger>(_config.trigger))
                 {
-                    _camera.RetrieveResult(1000, _grabbed, TimeoutHandling_Return);
+                    _camera.RetrieveResult(1000, _grabbed, Pylon::TimeoutHandling_Return);
                     if (!_grabbed)
                     {
                         std::cerr << "Error: " << _grabbed->GetErrorCode() << " "
@@ -334,7 +331,7 @@ void BaslerCamThread::run()
                 localCounter(oldTime, timeinfo->tm_sec);
                 oldTime = timeinfo->tm_sec;
             }
-            catch (GenericException e) // could not retrieve grab result
+            catch (Pylon::GenericException e) // could not retrieve grab result
             {
                 std::cerr << e.what() << '\n';
 

@@ -27,13 +27,6 @@
     #include <stdint.h>
 #endif
 
-#if HALIDE
-    #include "halideYuv420Conv.h"
-    #include "Halide.h"
-    // On Windows this might conflict with predefs
-    #undef user_error
-#endif
-
 #include <opencv2/opencv.hpp>
 
 // Flea3CamThread constructor
@@ -58,12 +51,12 @@ Flea3CamThread::Flea3CamThread(Config config, VideoStream videoStream, Watchdog*
 bool Flea3CamThread::initCamera()
 {
     // SET VIDEO MODE HERE!!!
-    Format7Info fmt7Info;
+    FlyCapture2::Format7Info fmt7Info;
 
-    const Mode        fmt7Mode   = MODE_10;
-    const PixelFormat fmt7PixFmt = PIXEL_FORMAT_RAW8;
+    const FlyCapture2::Mode        fmt7Mode   = FlyCapture2::MODE_10;
+    const FlyCapture2::PixelFormat fmt7PixFmt = FlyCapture2::PIXEL_FORMAT_RAW8;
 
-    Format7ImageSettings fmt7ImageSettings;
+    FlyCapture2::Format7ImageSettings fmt7ImageSettings;
 
     fmt7ImageSettings.mode        = fmt7Mode;
     fmt7ImageSettings.offsetX     = 0;
@@ -72,41 +65,41 @@ bool Flea3CamThread::initCamera()
     fmt7ImageSettings.height      = _config.height;
     fmt7ImageSettings.pixelFormat = fmt7PixFmt;
 
-    Format7PacketInfo fmt7PacketInfo;
+    FlyCapture2::Format7PacketInfo fmt7PacketInfo;
     // fmt7PacketInfo.recommendedBytesPerPacket = 5040;
 
-    BusManager busMgr;
-    PGRGuid    guid;
-    CameraInfo camInfo;
+    FlyCapture2::BusManager busMgr;
+    FlyCapture2::PGRGuid    guid;
+    FlyCapture2::CameraInfo camInfo;
 
-    FC2Config BufferFrame;
+    FlyCapture2::FC2Config BufferFrame;
 
-    EmbeddedImageInfo EmbeddedInfo;
+    FlyCapture2::EmbeddedImageInfo EmbeddedInfo;
 
     // Properties to be modified
 
-    Property brightness;
-    brightness.type = BRIGHTNESS;
+    FlyCapture2::Property brightness;
+    brightness.type = FlyCapture2::BRIGHTNESS;
 
-    Property exposure;
-    exposure.type = AUTO_EXPOSURE;
+    FlyCapture2::Property exposure;
+    exposure.type = FlyCapture2::AUTO_EXPOSURE;
 
-    Property shutter;
-    shutter.type = SHUTTER;
+    FlyCapture2::Property shutter;
+    shutter.type = FlyCapture2::SHUTTER;
 
-    Property frmRate;
-    frmRate.type = FRAME_RATE;
+    FlyCapture2::Property frmRate;
+    frmRate.type = FlyCapture2::FRAME_RATE;
 
-    Property gain;
-    gain.type = GAIN;
+    FlyCapture2::Property gain;
+    gain.type = FlyCapture2::GAIN;
 
-    Property wBalance;
-    wBalance.type = WHITE_BALANCE;
+    FlyCapture2::Property wBalance;
+    wBalance.type = FlyCapture2::WHITE_BALANCE;
 
     bool supported;
 
     unsigned int numCameras;
-    if (auto err = busMgr.GetNumOfCameras(&numCameras); err != PGRERROR_OK)
+    if (auto err = busMgr.GetNumOfCameras(&numCameras); err != FlyCapture2::PGRERROR_OK)
     {
         std::ostringstream msg;
         msg << "Could not enumerate cameras: " << err.GetDescription();
@@ -118,7 +111,8 @@ bool Flea3CamThread::initCamera()
     unsigned int serial;
     for (decltype(numCameras) i = 0; i < numCameras; i++)
     {
-        if (auto err = busMgr.GetCameraSerialNumberFromIndex(i, &serial); err != PGRERROR_OK)
+        if (auto err = busMgr.GetCameraSerialNumberFromIndex(i, &serial);
+            err != FlyCapture2::PGRERROR_OK)
         {
             std::ostringstream msg;
             msg << "Could not read camera serial number: " << err.GetDescription();
@@ -209,7 +203,7 @@ bool Flea3CamThread::initCamera()
 
         // Modify the maximum number of frames to be buffered and send it back to the camera
         BufferFrame.numBuffers = *_config.buffer_size;
-        BufferFrame.grabMode   = BUFFER_FRAMES;
+        BufferFrame.grabMode   = FlyCapture2::BUFFER_FRAMES;
 
         if (!checkReturnCode(_Camera.SetConfiguration(&BufferFrame)))
         {
@@ -416,7 +410,7 @@ bool Flea3CamThread::initCamera()
     if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
     {
         // Get current trigger settings
-        TriggerMode triggerMode;
+        FlyCapture2::TriggerMode triggerMode;
         if (!checkReturnCode(_Camera.GetTriggerMode(&triggerMode)))
         {
             return false;
@@ -497,13 +491,13 @@ void Flea3CamThread::run()
     std::string logdir = set->logDirectory();
     sprintf(logfilepathFull, logdir.c_str(), _videoStream.id);
 
-    int vwidth           = _config.width;
-    int vheight          = _config.height;
-    timeresult[14]       = 0;
-    int        cont      = 0;
-    int        loopCount = 0;
-    BusManager busMgr;
-    PGRGuid    guid;
+    int vwidth                        = _config.width;
+    int vheight                       = _config.height;
+    timeresult[14]                    = 0;
+    int                     cont      = 0;
+    int                     loopCount = 0;
+    FlyCapture2::BusManager busMgr;
+    FlyCapture2::PGRGuid    guid;
 
     ////////////////////////WINDOWS/////////////////////
     unsigned int oldTimeUs = 1000000;
@@ -565,7 +559,7 @@ void Flea3CamThread::run()
         // In case an error occurs, simply log it and restart the application.
         // Sometimes fetching images starts to fail and cameras need to be re-initialized.
         // However, this will solve the issue in the general case
-        if (e.GetType() != PGRERROR_OK)
+        if (e.GetType() != FlyCapture2::PGRERROR_OK)
         {
             logCriticalError(e);
             std::exit(1);
@@ -638,7 +632,7 @@ void Flea3CamThread::logCriticalError(FlyCapture2::Error e)
 
 // We will use Format7 to set the video parameters instead of DCAM, so it becomes handy to print
 // this info
-void Flea3CamThread::PrintFormat7Capabilities(Format7Info fmt7Info)
+void Flea3CamThread::PrintFormat7Capabilities(FlyCapture2::Format7Info fmt7Info)
 {
     sendLogMessage(3,
                    "Max image pixels: " + QString::number(fmt7Info.maxWidth) + " x " +
@@ -651,7 +645,7 @@ void Flea3CamThread::PrintFormat7Capabilities(Format7Info fmt7Info)
 }
 
 // Just prints the camera's info
-void Flea3CamThread::PrintCameraInfo(CameraInfo* pCamInfo)
+void Flea3CamThread::PrintCameraInfo(FlyCapture2::CameraInfo* pCamInfo)
 {
     sendLogMessage(3,
                    QString() + "\n*** CAMERA INFORMATION ***\n" + "Serial number - " +
@@ -666,7 +660,7 @@ void Flea3CamThread::PrintCameraInfo(CameraInfo* pCamInfo)
 
 bool Flea3CamThread::checkReturnCode(FlyCapture2::Error error)
 {
-    if (error != PGRERROR_OK)
+    if (error != FlyCapture2::PGRERROR_OK)
     {
         sendLogMessage(1,
                        "Cam " + QString::fromStdString(_videoStream.id) + " : " +

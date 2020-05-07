@@ -2,10 +2,6 @@
 
 #pragma once
 
-#ifdef WINDOWS
-    #include <windows.h>
-#endif
-
 #include <mutex>
 #include <string>
 #include <optional>

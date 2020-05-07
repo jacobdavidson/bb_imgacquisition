@@ -26,7 +26,13 @@ writeHandler::writeHandler(std::string imdir, std::string currentCam, std::strin
     char filepath[512];
     char exdirFilepath[512];
 
-    sprintf(filepath, _basename.c_str(), _camId.c_str(), _camId.c_str(), timestamp.c_str(), timestamp.c_str(), 0);
+    sprintf(filepath,
+            _basename.c_str(),
+            _camId.c_str(),
+            _camId.c_str(),
+            timestamp.c_str(),
+            timestamp.c_str(),
+            0);
     sprintf(exdirFilepath, edir.c_str(), _camId.c_str(), 0);
 
     boost::filesystem::create_directories({filepath});
