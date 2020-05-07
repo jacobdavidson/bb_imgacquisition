@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef IMGACQUISITIONAPP_H
-#define IMGACQUISITIONAPP_H
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -58,5 +57,3 @@ public slots:
 
     void logMessage(int logLevel, QString message);
 };
-
-#endif // IMGACQUISITIONAPP_H
