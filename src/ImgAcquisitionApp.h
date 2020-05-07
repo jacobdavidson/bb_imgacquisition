@@ -42,14 +42,6 @@ public:
      */
     int checkCameras();
 
-    /**
-     * @brief Find and fix any partially written videos
-     *
-     * might print error messages if resolving failed.
-     * This might be the case when the textfile was empty.
-     */
-    void resolveLocks();
-
 private:
     Watchdog _watchdog;
 
@@ -60,16 +52,6 @@ private:
     unsigned int _numCameras;
 
     std::unordered_map<std::string, VideoWriteThread> _videoWriterThreads;
-
-    /**
-     * @brief Helper function of resolveLocks
-     */
-    std::string figureBasename(std::string infile);
-
-    /**
-     * @brief Helper function of resolveLocks
-     */
-    void resolveLockDir(std::string from, std::string to);
 
     // Slots for the signals sent by CamThread Class
 public slots:
