@@ -25,6 +25,8 @@ CamThread::CamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
 
 CamThread::~CamThread()
 {
+    // Signal stream end to blocking consumer thread
+    _videoStream.push(nullptr);
 }
 
 CamThread* CamThread::make(Config config, VideoStream videoStream, Watchdog* watchdog)

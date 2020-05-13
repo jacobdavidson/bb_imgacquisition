@@ -215,7 +215,7 @@ void BaslerCamThread::run()
     uint     img_width, img_height;
     uint64_t n_current_frame_id;
 
-    for (size_t loopCount = 0; true; loopCount += 1)
+    for (size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
     {
         _watchdog->pulse();
 

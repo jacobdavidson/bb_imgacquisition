@@ -29,6 +29,8 @@ set(EXE_NAME bb_ImageAcquistion)
 
 add_executable(${EXE_NAME}
 	src/ConcurrentQueue.h
+	src/PlatformAdapter.h
+	src/PlatformAdapter.cpp
 	src/GrayscaleImage.h
 	src/GrayscaleImage.cpp
 	src/VideoStream.h

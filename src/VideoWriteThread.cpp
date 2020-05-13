@@ -44,7 +44,7 @@ void VideoWriteThread::run()
     // For logging encoding times
     double elapsedTimeP, avgtimeP;
 
-    while (true)
+    while (!isInterruptionRequested())
     {
         std::vector<size_t> sizes;
         for (auto& s : _videoStreams)
@@ -78,10 +78,16 @@ void VideoWriteThread::run()
                            {static_cast<int>(videoStream.framesPerSecond), 1},
                            {_encoderName, videoStream.encoderOptions}});
 
-        for (size_t frameIndex = 0; frameIndex < videoStream.framesPerFile; frameIndex++)
+        size_t frameIndex = 0;
+        for (; frameIndex < videoStream.framesPerFile; frameIndex++)
         {
             std::shared_ptr<GrayscaleImage> img;
             videoStream.pop(img);
+            if (!img)
+            {
+                wh._skipFinalization = true;
+                break;
+            }
 
             // Debug output TODO: remove?
             if (frameIndex % 100 == 0)
@@ -94,6 +100,7 @@ void VideoWriteThread::run()
             // Log the progress to the writeHandler
             wh.log(img->timestamp);
         }
+
         f.close();
     }
 }

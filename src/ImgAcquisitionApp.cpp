@@ -13,13 +13,36 @@
 #include "settings/Settings.h"
 #include "settings/utility.h"
 #include "Watchdog.h"
+#include "PlatformAdapter.h"
 
-// constructor
-// definition of ImgAcquisitionApp, it configures the threads, connects them including the
-// signals(input) to be read and the slots (output) the whole process is executed when the object
-// is initialized in main.
+ImgAcquisitionApp::~ImgAcquisitionApp()
+{
+    for (auto& thread : _cameraThreads)
+    {
+        thread->requestInterruption();
+    }
+
+    for (auto& thread : _cameraThreads)
+    {
+        thread->wait();
+    }
+
+    // Ensure empty image is added to end of each video stream to signal possible termination within video file to video writers
+    _cameraThreads.clear();
+
+    for (auto& [name, thread] : _videoWriterThreads)
+    {
+        thread.requestInterruption();
+    }
+
+    for (auto& [name, thread] : _videoWriterThreads)
+    {
+        thread.wait();
+    }
+}
+
 ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
-: QCoreApplication(argc, argv) //
+: QCoreApplication(argc, argv)
 {
     int          numCameras  = 0;
     int          camsStarted = 0;
@@ -86,6 +109,10 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     watchdogTimer->setSingleShot(false);
     watchdogTimer->start();
     connect(watchdogTimer, &QTimer::timeout, this, [this]() { _watchdog.check(); });
+
+    auto* adapter = new PlatformAdapter(this);
+    QObject::connect(adapter, &PlatformAdapter::interruptReceived, this, QCoreApplication::quit);
+    QObject::connect(adapter, &PlatformAdapter::terminateReceived, this, QCoreApplication::quit);
 }
 
 // Just prints the library's info

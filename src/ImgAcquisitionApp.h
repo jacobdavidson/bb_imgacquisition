@@ -28,6 +28,7 @@ public:
      * @param Process argv
      */
     ImgAcquisitionApp(int& argc, char** argv);
+    ~ImgAcquisitionApp();
 
     /**
      * @brief prints FlyCapture2 and Application build info

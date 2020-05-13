@@ -42,6 +42,9 @@ public:
     //! The camera ID
     std::string _camId;
 
+    //! Whether to skip moving the finished video file to out dir
+    bool _skipFinalization;
+
     /**
      * @brief Writes a line to the textfile
      *

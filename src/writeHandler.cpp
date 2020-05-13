@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 
 writeHandler::writeHandler(std::string imdir, std::string currentCam, std::string edir)
+: _skipFinalization{false}
 {
 
     // Create assemble file name and create a file handle to pass the encoder.
@@ -89,6 +90,11 @@ writeHandler::~writeHandler()
         fclose(_lock);
     if (_frames)
         fclose(_frames);
+
+    if (_skipFinalization)
+    {
+        return;
+    }
 
     // For filling the basepath
     char filepath[512];

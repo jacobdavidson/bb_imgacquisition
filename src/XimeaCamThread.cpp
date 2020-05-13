@@ -356,7 +356,7 @@ void XimeaCamThread::run()
     // Preallocate image buffer on stack in order to save performance later.
     std::array<unsigned char, 3008 * 4112> imageBuffer;
 
-    for (size_t loopCount = 0; true; loopCount += 1)
+    for (size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
     {
         _watchdog->pulse();
 

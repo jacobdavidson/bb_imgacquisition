@@ -531,7 +531,7 @@ void Flea3CamThread::run()
 #endif
     ////////////////////////////////////////////////////
 
-    while (1)
+    while (!isInterruptionRequested())
     {
         _watchdog->pulse();
         FlyCapture2::Image cimg;
