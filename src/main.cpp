@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
     SettingsIAC::setConf("configImAcq.json");
     SettingsIAC::getInstance();
 
-    ImgAcquisitionApp a(argc, argv); // An instance is initialized
+    ImgAcquisitionApp app(argc, argv);
 
-    return a.exec();
+    return app.exec();
 }

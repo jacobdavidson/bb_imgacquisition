@@ -29,27 +29,27 @@ set(EXE_NAME bb_ImageAcquistion)
 
 add_executable(${EXE_NAME}
 	src/ConcurrentQueue.h
-	src/CamThread.cpp
-	src/ImgAcquisitionApp.cpp
-	src/VideoWriteThread.cpp
-	src/main.cpp
-	src/writeHandler.cpp
-	src/VideoFileWriter.cpp
-	src/VideoFileWriter.h
-	src/VideoStream.cpp
-	src/VideoStream.h
 	src/GrayscaleImage.h
 	src/GrayscaleImage.cpp
-	src/settings/Settings.cpp
-	src/settings/utility.cpp
-	src/CamThread.h
-	src/ImgAcquisitionApp.h
+	src/VideoStream.h
+	src/VideoStream.cpp
 	src/VideoWriteThread.h
+	src/VideoWriteThread.cpp
+	src/VideoFileWriter.h
+	src/VideoFileWriter.cpp
 	src/Watchdog.h
 	src/Watchdog.cpp
-	src/settings/Settings.h
 	src/settings/utility.h
+	src/settings/utility.cpp
+	src/settings/Settings.h
+	src/settings/Settings.cpp
 	src/writeHandler.h
+	src/writeHandler.cpp
+	src/CamThread.h
+	src/CamThread.cpp
+	src/ImgAcquisitionApp.h
+	src/ImgAcquisitionApp.cpp
+	src/main.cpp
 )
 
 target_link_libraries(${EXE_NAME} PRIVATE
