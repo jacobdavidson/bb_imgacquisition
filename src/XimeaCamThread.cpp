@@ -332,21 +332,6 @@ void XimeaCamThread::run()
     const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
     const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
-    ////////////////////////WINDOWS/////////////////////
-    int oldTime = 0;
-    ////////////////////////////////////////////////////
-
-    ////////////////////////LINUX/////////////////////
-#ifdef __linux__
-    // Timestamp housekeeping
-    struct timeval  tv;
-    struct timezone tz;
-
-    gettimeofday(&tv, &tz);
-
-#endif
-    ////////////////////////////////////////////////////
-
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
     uint64_t                 lastCameraTimestampMicroseconds{0};
@@ -455,9 +440,6 @@ void XimeaCamThread::run()
         // converts the time in seconds to local time
         const std::time_t timestamp{image.tsSec};
         const struct tm*  timeinfo{localtime(&timestamp)};
-
-        localCounter(oldTime, timeinfo->tm_sec);
-        oldTime = timeinfo->tm_sec;
 
         // Crop the image to the expected size (e.g. 4000x3000).
         // This is necessary, because the encoder/codec requires the image sizes to be
@@ -582,13 +564,4 @@ void XimeaCamThread::generateLog(QString path, QString message)
     QTextStream stream(&file);
     stream << QString::fromStdString(getTimestamp()) << ": " << message << "\r\n";
     file.close();
-}
-
-void XimeaCamThread::localCounter(int oldTime, int newTime)
-{
-    if (oldTime != newTime)
-    {
-        _LocalCounter = 0;
-    }
-    _LocalCounter++;
 }

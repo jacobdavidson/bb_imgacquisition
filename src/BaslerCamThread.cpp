@@ -191,20 +191,6 @@ void BaslerCamThread::run()
     const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
     const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
-    ////////////////////////WINDOWS/////////////////////
-    int oldTime = 0;
-    ////////////////////////////////////////////////////
-
-    ////////////////////////LINUX/////////////////////
-#ifdef __linux__
-    // Timestamp housekeeping
-    struct timeval  tv;
-    struct timezone tz;
-
-    gettimeofday(&tv, &tz);
-#endif
-    ////////////////////////////////////////////////////
-
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
     uint64_t                 n_last_camera_tick_count{0};
@@ -327,9 +313,6 @@ void BaslerCamThread::run()
                 // converts the time in seconds to local time
                 const std::time_t timestamp{static_cast<std::time_t>(n_current_camera_tick_count)};
                 const struct tm*  timeinfo{localtime(&timestamp)};
-
-                localCounter(oldTime, timeinfo->tm_sec);
-                oldTime = timeinfo->tm_sec;
             }
             catch (Pylon::GenericException e) // could not retrieve grab result
             {
@@ -410,13 +393,4 @@ void BaslerCamThread::generateLog(QString path, QString message)
     QTextStream stream(&file);
     stream << QString::fromStdString(getTimestamp()) << ": " << message << "\r\n";
     file.close();
-}
-
-void BaslerCamThread::localCounter(int oldTime, int newTime)
-{
-    if (oldTime != newTime)
-    {
-        _LocalCounter = 0;
-    }
-    _LocalCounter++;
 }

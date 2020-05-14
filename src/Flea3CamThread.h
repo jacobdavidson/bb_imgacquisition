@@ -86,9 +86,6 @@ private:
     //! time stamp from the current frame
     FlyCapture2::TimeStamp _TimeStamp;
 
-    //! ... to enumerate each image in a second
-    unsigned int _LocalCounter;
-
 protected:
     void run(); // this is the function that will be iterated indefinitely
 };

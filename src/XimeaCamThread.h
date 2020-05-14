@@ -61,14 +61,6 @@ private:
     void generateLog(QString path, QString message);
 
     /**
-     * @brief Deprecated
-     *
-     * @param Deprecated
-     * @param Deprecated
-     */
-    void localCounter(int oldTime, int newTime);
-
-    /**
      * @brief Logs a critical error in very detail
      *
      * Logs are written to the logfile specified as per
@@ -84,9 +76,6 @@ private:
 
     //! Handle returned by xiOpenDevice.
     HANDLE _Camera;
-
-    //! ... to enumerate each image in a second
-    unsigned int _LocalCounter;
 
 protected:
     void run(); // this is the function that will be iterated indefinitely
