@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTOMOC ON)
 
 find_package(Threads REQUIRED)
+find_package(fmt REQUIRED)
 
 find_package(Qt5 COMPONENTS Core REQUIRED)
 
@@ -57,6 +58,7 @@ add_executable(${EXE_NAME}
 target_link_libraries(${EXE_NAME} PRIVATE
 	${CMAKE_DL_LIBS}
 	Threads::Threads
+	fmt
 	Qt5::Core
 	Boost::headers Boost::system Boost::filesystem Boost::program_options Boost::date_time Boost::disable_autolinking
 	FFmpeg::avformat FFmpeg::avcodec FFmpeg::avutil

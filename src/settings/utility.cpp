@@ -3,6 +3,8 @@
 #include "utility.h"
 #include "Settings.h"
 
+#include <chrono>
+
 #include <time.h>
 #if __linux__
     #include <sys/time.h>
@@ -20,6 +22,13 @@
 #include <boost/date_time.hpp>
 
 #include <cstdlib>
+
+#include <fmt/format.h>
+#if FMT_VERSION >= 60000
+#include <fmt/chrono.h>
+#else
+#include <fmt/time.h>
+#endif
 
 std::string get_utc_time()
 {
@@ -109,4 +118,10 @@ std::string getTimestamp()
     std::string r(timeresult);
     return r;
 #endif
+}
+
+
+std::tm getUTCDateTime()
+{
+    return fmt::gmtime(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
 }
