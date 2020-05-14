@@ -1,12 +1,12 @@
 {
     "log_directory": ".\/data\/log\/Cam_%s\/",
-    "tmp_path": ".\/data\/tmp\/Cam_%s\/Cam_%s_%s--%s",
-    "out_directory": ".\/data\/out\/Cam_%s\/",
+    "tmp_path": "data/tmp",
+    "out_directory": "data/out",
     "video_encoders": {
         "h265_hw_0": "hevc_nvenc"
     },
     "video_streams": {
-        "0": {
+        "Cam-0": {
             "camera": {
                 "backend": "basler",
                 "serial": "40026484",
