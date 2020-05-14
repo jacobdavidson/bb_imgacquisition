@@ -117,13 +117,3 @@ std::string getTimestamp()
     return r;
 #endif
 }
-
-std::tuple<std::tm, std::chrono::microseconds::rep> getUTCDateTime()
-{
-    const auto now = std::chrono::system_clock::now();
-    const auto microseconds =
-        std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count() %
-        1000000;
-
-    return {fmt::gmtime(std::chrono::system_clock::to_time_t(now)), microseconds};
-}

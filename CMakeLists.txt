@@ -29,6 +29,8 @@ find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
 set(EXE_NAME bb_ImageAcquistion)
 
 add_executable(${EXE_NAME}
+	src/DateTime.h
+	src/DateTime.cpp
 	src/ConcurrentQueue.h
 	src/PlatformAdapter.h
 	src/PlatformAdapter.cpp

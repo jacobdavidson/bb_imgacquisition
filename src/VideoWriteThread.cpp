@@ -18,6 +18,8 @@
 
 #include "VideoFileWriter.h"
 
+#include "DateTime.h"
+
 VideoWriteThread::VideoWriteThread(std::string encoderName)
 : _encoderName{encoderName}
 {
@@ -58,7 +60,7 @@ void VideoWriteThread::run()
         auto videoStream           = _videoStreams[maxSizeIndex];
         const auto [width, height] = videoStream.resolution;
 
-        const auto [startTime, startTimeMicroSeconds] = getUTCDateTime();
+        const auto startTime = DateTime::now();
 
         namespace fs = boost::filesystem;
 
@@ -68,7 +70,7 @@ void VideoWriteThread::run()
             fs::create_directories(tmpDir);
         }
 
-        const auto tmpVideoFilename = tmpDir / fmt::format("{:%Y%m%dT%H%M%SZ}.mp4", startTime);
+        const auto tmpVideoFilename = tmpDir / fmt::format("{:%Y%m%dT%H%M%SZ}.mp4", startTime.tm);
 
         VideoFileWriter f(tmpVideoFilename.string(),
                           {static_cast<int>(width),
@@ -77,7 +79,7 @@ void VideoWriteThread::run()
                            {_encoderName, videoStream.encoderOptions}});
 
         const auto tmpFrameTimestampsFilename = tmpDir /
-                                                fmt::format("{:%Y%m%dT%H%M%SZ}.txt", startTime);
+                                                fmt::format("{:%Y%m%dT%H%M%SZ}.txt", startTime.tm);
 
         std::fstream frameTimestamps(tmpFrameTimestampsFilename, std::ios::trunc | std::ios::out);
 
@@ -111,7 +113,7 @@ void VideoWriteThread::run()
         f.close();
         frameTimestamps.close();
 
-        const auto [endTime, endTimeMicroSeconds] = getUTCDateTime();
+        const auto endTime = DateTime::now();
 
         if (!videoStreamClosedEarly)
         {
@@ -126,9 +128,11 @@ void VideoWriteThread::run()
                                         fs::others_exe);
                 }
 
-                const auto outVideoFilename =
-                    outDir /
-                    fmt::format("{:%Y%m%dT%H%M%SZ}-{:%Y%m%dT%H%M%SZ}.mp4", startTime, endTime);
+                const auto outVideoFilename = outDir /
+                                              fmt::format(
+                                                  "{:%Y%m%dT%H%M%SZ}-{:%Y%m%dT%H%M%SZ}.mp4",
+                                                  startTime.tm,
+                                                  endTime.tm);
 
                 fs::rename(tmpVideoFilename, outVideoFilename);
                 fs::permissions(outVideoFilename,
@@ -136,8 +140,9 @@ void VideoWriteThread::run()
                                     fs::group_write | fs::others_read | fs::others_write);
 
                 const auto outFrameTimestampsFilename =
-                    outDir /
-                    fmt::format("{:%Y%m%dT%H%M%SZ}-{:%Y%m%dT%H%M%SZ}.txt", startTime, endTime);
+                    outDir / fmt::format("{:%Y%m%dT%H%M%SZ}-{:%Y%m%dT%H%M%SZ}.txt",
+                                         startTime.tm,
+                                         endTime.tm);
 
                 fs::rename(tmpFrameTimestampsFilename, outFrameTimestampsFilename);
                 fs::permissions(outFrameTimestampsFilename,
