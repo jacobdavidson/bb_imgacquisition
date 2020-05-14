@@ -105,7 +105,7 @@ void VideoWriteThread::run()
 
             if (frameTimestamps.is_open())
             {
-                frameTimestamps << fmt::format("{}_{}\n", videoStream.id, img->timestamp);
+                frameTimestamps << fmt::format("{}\n", img->timestamp);
                 frameTimestamps.flush();
             }
         }
