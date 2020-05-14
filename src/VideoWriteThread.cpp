@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <time.h>
-
-#if HAVE_UNISTD_H
-    #include <unistd.h> //sleep
-#else
-    #include <stdint.h>
-#endif
+#include <chrono>
 #include <iostream>
+#include <fstream>
+
+#include <fmt/format.h>
+#if FMT_VERSION >= 60000
+    #include <fmt/chrono.h>
+#else
+    #include <fmt/time.h>
+#endif
+
 #include "settings/utility.h"
 #include "settings/Settings.h"
 // The order is important!
 #include "VideoWriteThread.h"
 
-#include "WriteHandler.h"
 #include "VideoFileWriter.h"
 
 VideoWriteThread::VideoWriteThread(std::string encoderName)
@@ -30,9 +32,6 @@ void VideoWriteThread::run()
 {
 
     SettingsIAC* set = SettingsIAC::getInstance();
-
-    auto imdir       = set->tmpPath();
-    auto exchangedir = set->outDirectory();
 
     // For logging encoding times
     double elapsedTimeP, avgtimeP;
@@ -56,29 +55,41 @@ void VideoWriteThread::run()
             continue;
         }
 
-        // Configure output directories
-        std::string dir   = imdir;
-        std::string exdir = exchangedir;
-
         auto videoStream           = _videoStreams[maxSizeIndex];
         const auto [width, height] = videoStream.resolution;
 
-        WriteHandler wh(dir, videoStream.id, exdir);
+        const auto startTime = getUTCDateTime();
 
-        VideoFileWriter f(std::string(wh._videofile.c_str(), wh._videofile.size() - 4) + ".mp4",
+        namespace fs = boost::filesystem;
+
+        const auto tmpDir = fs::path{set->tmpPath()} / videoStream.id;
+        if (!fs::exists(tmpDir))
+        {
+            fs::create_directories(tmpDir);
+        }
+
+        const auto tmpVideoFilename = tmpDir / fmt::format("{:%Y%m%dT%H%M%SZ}.mp4", startTime);
+
+        VideoFileWriter f(tmpVideoFilename.string(),
                           {static_cast<int>(width),
                            static_cast<int>(height),
                            {static_cast<int>(videoStream.framesPerSecond), 1},
                            {_encoderName, videoStream.encoderOptions}});
 
-        size_t frameIndex = 0;
+        const auto tmpFrameTimestampsFilename = tmpDir /
+                                                fmt::format("{:%Y%m%dT%H%M%SZ}.txt", startTime);
+
+        std::fstream frameTimestamps(tmpFrameTimestampsFilename, std::ios::trunc | std::ios::out);
+
+        bool   videoStreamClosedEarly = false;
+        size_t frameIndex             = 0;
         for (; frameIndex < videoStream.framesPerFile; frameIndex++)
         {
             std::shared_ptr<GrayscaleImage> img;
             videoStream.pop(img);
             if (!img)
             {
-                wh._skipFinalization = true;
+                videoStreamClosedEarly = true;
                 break;
             }
 
@@ -90,10 +101,53 @@ void VideoWriteThread::run()
 
             f.write(*img);
 
-            // Log the progress to the WriteHandler
-            wh.log(img->timestamp);
+            if (frameTimestamps.is_open())
+            {
+                frameTimestamps << fmt::format("{}_{}\n", videoStream.id, img->timestamp);
+                frameTimestamps.flush();
+            }
         }
 
         f.close();
+        frameTimestamps.close();
+
+        const auto endTime = getUTCDateTime();
+
+        if (!videoStreamClosedEarly)
+        {
+            try
+            {
+                const auto outDir = fs::path{set->outDirectory()} / videoStream.id;
+                if (!fs::exists(outDir))
+                {
+                    fs::create_directories(outDir);
+                    fs::permissions(outDir,
+                                    fs::owner_all | fs::group_all | fs::others_read |
+                                        fs::others_exe);
+                }
+
+                const auto outVideoFilename =
+                    outDir /
+                    fmt::format("{:%Y%m%dT%H%M%SZ}-{:%Y%m%dT%H%M%SZ}.mp4", startTime, endTime);
+
+                fs::rename(tmpVideoFilename, outVideoFilename);
+                fs::permissions(outVideoFilename,
+                                fs::owner_read | fs::owner_write | fs::group_read |
+                                    fs::group_write | fs::others_read | fs::others_write);
+
+                const auto outFrameTimestampsFilename =
+                    outDir /
+                    fmt::format("{:%Y%m%dT%H%M%SZ}-{:%Y%m%dT%H%M%SZ}.txt", startTime, endTime);
+
+                fs::rename(tmpFrameTimestampsFilename, outFrameTimestampsFilename);
+                fs::permissions(outFrameTimestampsFilename,
+                                fs::owner_read | fs::owner_write | fs::group_read |
+                                    fs::group_write | fs::others_read | fs::others_write);
+            }
+            catch (const fs::filesystem_error& e)
+            {
+                std::cerr << e.what() << std::endl;
+            }
+        }
     }
 }
