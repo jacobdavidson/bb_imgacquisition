@@ -12,14 +12,8 @@ public:
     //! Target video file
     FILE* _video;
 
-    //! lock file, so no one grabs the unfinished video
-    FILE* _lock;
-
     //! text file holding the names of the frames
     FILE* _frames;
-
-    //! Lockfile which is created in temp dirs. Deprecated
-    std::string _lockfile;
 
     //! Video file to create
     std::string _videofile;
@@ -61,11 +55,5 @@ public:
      */
     writeHandler(std::string imdir, std::string currentCam, std::string exchangedir);
 
-    /**
-     * @brief Destructor. Finalizes writing.
-     *
-     * Closes file handles, moves files to the exchangedirs and
-     * deletes eventual locks.
-     */
     virtual ~writeHandler();
 };

@@ -39,18 +39,9 @@ writeHandler::writeHandler(std::string imdir, std::string currentCam, std::strin
     boost::filesystem::create_directories({filepath});
     std::string tmp = filepath;
     _exchangedir    = exdirFilepath;
-    _lockfile       = tmp + ".lck";
     _videofile      = tmp + ".mp4";
     _framesfile     = tmp + ".txt";
 
-    // Open for writing
-    _lock = fopen(_lockfile.c_str(), "wb");
-    if (_lock == nullptr)
-    {
-        std::cerr << "Lock file could not be opened!" << std::endl;
-        assert(false);
-        exit(1);
-    }
     _video = fopen(_videofile.c_str(), "wb");
     if (_video == nullptr)
     {
@@ -86,8 +77,6 @@ writeHandler::~writeHandler()
     // Always be a good citizen and close your file handles.
     if (_video)
         fclose(_video);
-    if (_lock)
-        fclose(_lock);
     if (_frames)
         fclose(_frames);
 
@@ -133,7 +122,4 @@ writeHandler::~writeHandler()
                         S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     if (error_value != 0)
         perror("chmod");
-
-    // Remove the lockfile, so others will be allowed to grab the video
-    remove(_lockfile.c_str());
 }
