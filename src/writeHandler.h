@@ -9,9 +9,6 @@ class writeHandler
 
     // All public policy
 public:
-    //! Target video file
-    FILE* _video;
-
     //! text file holding the names of the frames
     FILE* _frames;
 

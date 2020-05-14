@@ -41,13 +41,6 @@ writeHandler::writeHandler(std::string imdir, std::string currentCam, std::strin
     _videofile      = tmp + ".mp4";
     _framesfile     = tmp + ".txt";
 
-    _video = fopen(_videofile.c_str(), "wb");
-    if (_video == nullptr)
-    {
-        std::cerr << "Video file could not be opened!" << std::endl;
-        assert(false);
-        exit(1);
-    }
     _frames = fopen(_framesfile.c_str(), "wb");
     if (_frames == nullptr)
     {
@@ -73,9 +66,6 @@ void writeHandler::log(std::string timestamp)
 
 writeHandler::~writeHandler()
 {
-    // Always be a good citizen and close your file handles.
-    if (_video)
-        fclose(_video);
     if (_frames)
         fclose(_frames);
 
