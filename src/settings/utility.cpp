@@ -3,8 +3,6 @@
 #include "utility.h"
 #include "Settings.h"
 
-#include <chrono>
-
 #include <time.h>
 #if __linux__
     #include <sys/time.h>
@@ -25,9 +23,9 @@
 
 #include <fmt/format.h>
 #if FMT_VERSION >= 60000
-#include <fmt/chrono.h>
+    #include <fmt/chrono.h>
 #else
-#include <fmt/time.h>
+    #include <fmt/time.h>
 #endif
 
 std::string get_utc_time()
@@ -120,8 +118,12 @@ std::string getTimestamp()
 #endif
 }
 
-
-std::tm getUTCDateTime()
+std::tuple<std::tm, std::chrono::microseconds::rep> getUTCDateTime()
 {
-    return fmt::gmtime(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+    const auto now = std::chrono::system_clock::now();
+    const auto microseconds =
+        std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count() %
+        1000000;
+
+    return {fmt::gmtime(std::chrono::system_clock::to_time_t(now)), microseconds};
 }

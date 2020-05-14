@@ -58,7 +58,7 @@ void VideoWriteThread::run()
         auto videoStream           = _videoStreams[maxSizeIndex];
         const auto [width, height] = videoStream.resolution;
 
-        const auto startTime = getUTCDateTime();
+        const auto [startTime, startTimeMicroSeconds] = getUTCDateTime();
 
         namespace fs = boost::filesystem;
 
@@ -111,7 +111,7 @@ void VideoWriteThread::run()
         f.close();
         frameTimestamps.close();
 
-        const auto endTime = getUTCDateTime();
+        const auto [endTime, endTimeMicroSeconds] = getUTCDateTime();
 
         if (!videoStreamClosedEarly)
         {
