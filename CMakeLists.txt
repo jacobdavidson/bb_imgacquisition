@@ -45,8 +45,8 @@ add_executable(${EXE_NAME}
 	src/settings/utility.cpp
 	src/settings/Settings.h
 	src/settings/Settings.cpp
-	src/writeHandler.h
-	src/writeHandler.cpp
+	src/WriteHandler.h
+	src/WriteHandler.cpp
 	src/CamThread.h
 	src/CamThread.cpp
 	src/ImgAcquisitionApp.h

@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/*
- * VideoWriteThread.cpp
- *
- *  Created on: Nov 6, 2015
- *      Author: hauke
- */
-
 #include <time.h>
 
 #if HAVE_UNISTD_H
@@ -20,7 +13,7 @@
 // The order is important!
 #include "VideoWriteThread.h"
 
-#include "writeHandler.h"
+#include "WriteHandler.h"
 #include "VideoFileWriter.h"
 
 VideoWriteThread::VideoWriteThread(std::string encoderName)
@@ -70,7 +63,7 @@ void VideoWriteThread::run()
         auto videoStream           = _videoStreams[maxSizeIndex];
         const auto [width, height] = videoStream.resolution;
 
-        writeHandler wh(dir, videoStream.id, exdir);
+        WriteHandler wh(dir, videoStream.id, exdir);
 
         VideoFileWriter f(std::string(wh._videofile.c_str(), wh._videofile.size() - 4) + ".mp4",
                           {static_cast<int>(width),
@@ -97,7 +90,7 @@ void VideoWriteThread::run()
 
             f.write(*img);
 
-            // Log the progress to the writeHandler
+            // Log the progress to the WriteHandler
             wh.log(img->timestamp);
         }
 

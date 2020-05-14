@@ -4,7 +4,7 @@
 
 #include <string>
 
-class writeHandler
+class WriteHandler
 {
 
     // All public policy
@@ -50,7 +50,7 @@ public:
      * @param Sets the camera ID
      * @param Sets the path to the out dir
      */
-    writeHandler(std::string imdir, std::string currentCam, std::string exchangedir);
+    WriteHandler(std::string imdir, std::string currentCam, std::string exchangedir);
 
-    virtual ~writeHandler();
+    virtual ~WriteHandler();
 };

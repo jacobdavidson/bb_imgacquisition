@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/*
- * utility.cpp
- *
- *  Created on: Nov 11, 2015
- *      Author: hauke
- */
-
 #include "utility.h"
 #include "Settings.h"
 

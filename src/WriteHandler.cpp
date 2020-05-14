@@ -1,19 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/*
- * writeHandler.cpp
- *
- *  Created on: Feb 4, 2016
- *      Author: hauke
- */
-
-#include "writeHandler.h"
+#include "WriteHandler.h"
 #include "settings/utility.h"
 #include <sstream>
 #include <iostream>
 #include <boost/filesystem.hpp>
 
-writeHandler::writeHandler(std::string imdir, std::string currentCam, std::string edir)
+WriteHandler::WriteHandler(std::string imdir, std::string currentCam, std::string edir)
 : _skipFinalization{false}
 {
 
@@ -50,7 +43,7 @@ writeHandler::writeHandler(std::string imdir, std::string currentCam, std::strin
     }
 }
 
-void writeHandler::log(std::string timestamp)
+void WriteHandler::log(std::string timestamp)
 {
 
     if (_firstTimestamp == "")
@@ -64,7 +57,7 @@ void writeHandler::log(std::string timestamp)
     fflush(_frames);
 }
 
-writeHandler::~writeHandler()
+WriteHandler::~WriteHandler()
 {
     if (_frames)
         fclose(_frames);
