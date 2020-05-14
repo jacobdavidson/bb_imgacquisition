@@ -12,7 +12,6 @@
 #include <sstream>
 #include <iostream>
 #include <boost/filesystem.hpp>
-#include <sys/stat.h>
 
 writeHandler::writeHandler(std::string imdir, std::string currentCam, std::string edir)
 : _skipFinalization{false}
@@ -106,20 +105,42 @@ writeHandler::~writeHandler()
     boost::filesystem::path frames(newframesfile);
     newframesfile = _exchangedir + frames.filename().string();
 
-    boost::filesystem::create_directories(boost::filesystem::path{newvideofile}.parent_path());
-    rename(_videofile.c_str(), newvideofile.c_str());
-    boost::filesystem::create_directories(boost::filesystem::path{newframesfile}.parent_path());
-    rename(_framesfile.c_str(), newframesfile.c_str());
+    {
+        using namespace boost::system;
+        using namespace boost::filesystem;
 
-    // This process runs as root. Set correct rights so others can work with the files.
-    // We are generous with the permissions.
-    int error_value = 0;
-    error_value     = chmod(newframesfile.c_str(),
-                        S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-    if (error_value != 0)
-        perror("chmod");
-    error_value = chmod(newvideofile.c_str(),
-                        S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-    if (error_value != 0)
-        perror("chmod");
+        try
+        {
+            const auto outputDirectory = path{newvideofile}.parent_path();
+            if (!exists(outputDirectory))
+            {
+                create_directories(outputDirectory);
+                permissions(outputDirectory, owner_all | group_all | others_read | others_exe);
+            }
+
+            rename(_videofile, newvideofile);
+            permissions(newvideofile, owner_read | owner_write | group_read | group_write | others_read | others_write);
+        }
+        catch (const filesystem_error& e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
+
+        try
+        {
+            const auto outputDirectory = path{newframesfile}.parent_path();
+            if (!exists(outputDirectory))
+            {
+                create_directories(outputDirectory);
+                permissions(outputDirectory, owner_all | group_all | others_read | others_exe);
+            }
+
+            rename(_framesfile, newframesfile);
+            permissions(newframesfile, owner_read | owner_write | group_read | group_write | others_read | others_write);
+        }
+        catch (const filesystem_error& e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
+    }
 }
