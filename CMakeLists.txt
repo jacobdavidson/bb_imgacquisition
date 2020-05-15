@@ -9,7 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTOMOC ON)
 
 find_package(Threads REQUIRED)
-find_package(fmt REQUIRED)
+find_package(fmt 6 REQUIRED)
 
 find_package(Qt5 COMPONENTS Core REQUIRED)
 
@@ -29,8 +29,7 @@ find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
 set(EXE_NAME bb_ImageAcquistion)
 
 add_executable(${EXE_NAME}
-	src/DateTime.h
-	src/DateTime.cpp
+	src/format.h
 	src/ConcurrentQueue.h
 	src/PlatformAdapter.h
 	src/PlatformAdapter.cpp
