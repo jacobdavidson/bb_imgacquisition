@@ -309,10 +309,6 @@ void BaslerCamThread::run()
                     std::cerr << str.toStdString() << std::endl;
                     generateLog(logfilepathFull, str);
                 }
-
-                // converts the time in seconds to local time
-                const std::time_t timestamp{static_cast<std::time_t>(n_current_camera_tick_count)};
-                const struct tm*  timeinfo{localtime(&timestamp)};
             }
             catch (Pylon::GenericException e) // could not retrieve grab result
             {

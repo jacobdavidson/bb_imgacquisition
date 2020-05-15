@@ -437,10 +437,6 @@ void XimeaCamThread::run()
             std::exit(1);
         }
 
-        // converts the time in seconds to local time
-        const std::time_t timestamp{image.tsSec};
-        const struct tm*  timeinfo{localtime(&timestamp)};
-
         // Crop the image to the expected size (e.g. 4000x3000).
         // This is necessary, because the encoder/codec requires the image sizes to be
         // some multiple of X.
