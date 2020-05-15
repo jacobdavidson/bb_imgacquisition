@@ -27,7 +27,8 @@ ImgAcquisitionApp::~ImgAcquisitionApp()
         thread->wait();
     }
 
-    // Ensure empty image is added to end of each video stream to signal possible termination within video file to video writers
+    // Ensure empty image is added to end of each video stream to signal possible termination
+    // within video file to video writers
     _cameraThreads.clear();
 
     for (auto& [name, thread] : _videoWriterThreads)

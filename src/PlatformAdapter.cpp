@@ -103,20 +103,18 @@ private:
         }
 
         auto* signalThread = new std::thread([]() {
-
             std::vector<struct pollfd> sockets;
-            std::vector<int> signalNumbers;
+            std::vector<int>           signalNumbers;
             for (const auto [signalNumber, socketPair] : _signalSocketPairs)
             {
                 struct pollfd fd;
-                fd.fd = socketPair[1];
+                fd.fd     = socketPair[1];
                 fd.events = POLLIN;
                 sockets.push_back(fd);
                 signalNumbers.push_back(signalNumber);
             }
 
-            const auto emitSignal = [](int signalNumber)
-            {
+            const auto emitSignal = [](int signalNumber) {
                 const auto signalName = [&]() -> std::string {
                     switch (signalNumber)
                     {

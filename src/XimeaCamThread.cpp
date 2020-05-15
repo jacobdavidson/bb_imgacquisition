@@ -350,12 +350,12 @@ void XimeaCamThread::run()
         image.bp      = static_cast<LPVOID>(&imageBuffer[0]);
         image.bp_size = imageBuffer.size();
 
-        const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-        // Retrieve image and metadata
-        auto returnCode = xiGetImage(_Camera, 1000 * 2, &image);
+        const auto begin      = std::chrono::steady_clock::now();
+        const auto returnCode = xiGetImage(_Camera, 1000 * 2, &image);
+        const auto end        = std::chrono::steady_clock::now();
+
         // Get the timestamp
-        const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
-        const std::chrono::steady_clock::time_point end   = std::chrono::steady_clock::now();
+        const auto     wallClockNow = boost::posix_time::microsec_clock::universal_time();
         const uint64_t currentCameraTimestampMicroseconds = image.tsUSec;
 
         // Image sequence sanity check.
@@ -414,9 +414,10 @@ void XimeaCamThread::run()
         }
 
         // Check if processing a frame took longer than X seconds. If so, log the event.
-        const int64_t duration =
-            std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-        if (duration > 2 * (1000000 / 6))
+        // TODO: Why this number: 2 * (1000000 / 6
+        if (const auto duration =
+                std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+            duration > 2 * (1000000 / 6))
         {
             QString str("Warning: Processing time too long: ");
             str.append(std::to_string(duration).c_str());
@@ -434,7 +435,7 @@ void XimeaCamThread::run()
             const std::string message = "Aquisition failed with error code " +
                                         std::to_string(returnCode);
             logCriticalError(message, message);
-            std::exit(1);
+            throw std::runtime_error(message);
         }
 
         // Crop the image to the expected size (e.g. 4000x3000).

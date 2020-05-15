@@ -8,7 +8,9 @@
 #include <qdir.h> //QT stuff
 #include <qtextstream.h>
 
-#include "FlyCapture2.h"
+#include <FlyCapture2.h>
+
+#include "format.h"
 
 #include "Watchdog.h"
 #include "settings/Settings.h"
@@ -278,9 +280,10 @@ bool Flea3CamThread::initCamera()
     }
 
     sendLogMessage(3,
-                   "Brightness Parameter is: " + QString().sprintf("%s and %.2f",
-                                                                   brightness.onOff ? "On" : "Off",
-                                                                   brightness.absValue));
+                   QString::fromStdString(fmt::format("Brightness Parameter is: {} and {:.2f}",
+
+                                                      brightness.onOff ? "On" : "Off",
+                                                      brightness.absValue)));
 
     //-------------------- BROGHTNESS ENDS          -----------------------------------
 
@@ -483,31 +486,22 @@ bool Flea3CamThread::startCapture()
 // this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
-    char timeresult[32];
-
     SettingsIAC* set = SettingsIAC::getInstance();
 
     char        logfilepathFull[256];
     std::string logdir = set->logDirectory();
     sprintf(logfilepathFull, logdir.c_str(), _videoStream.id);
 
-    int vwidth                        = _config.width;
-    int vheight                       = _config.height;
-    timeresult[14]                    = 0;
-    int                     cont      = 0;
-    int                     loopCount = 0;
+    int                     vwidth  = _config.width;
+    int                     vheight = _config.height;
     FlyCapture2::BusManager busMgr;
     FlyCapture2::PGRGuid    guid;
 
-    ////////////////////////WINDOWS/////////////////////
     unsigned int oldTimeUs = 1000000;
     unsigned int difTimeStampUs;
-    ////////////////////////////////////////////////////
 
-    ////////////////////////Timekeeping/////
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point end   = std::chrono::steady_clock::now();
-    ////////////////////////////////////////////////////
+    auto begin = std::chrono::steady_clock::now();
+    auto end   = std::chrono::steady_clock::now();
 
     ////////////////////////LINUX/////////////////////
 #ifdef __linux__
@@ -545,15 +539,15 @@ void Flea3CamThread::run()
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
         // Check if processing a frame took longer than 0.4 seconds. If so, log the event.
-        int duration = std::chrono::duration_cast<std::chrono::microseconds>(begin - end).count();
-        if (duration > 333333)
+        if (const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(begin -
+                                                                                        end);
+            duration > std::chrono::milliseconds(400))
         {
-            std::cerr << "Warning: Processing time too long:  " << duration << "\n";
-            QString str("Warning: Processing time too long: ");
-            str.append(std::to_string(duration).c_str());
-            str.append(" on video stream ");
-            str.append(QString::fromStdString(_videoStream.id));
-            generateLog(logfilepathFull, str);
+            const auto msg = fmt::format(
+                "Warning: Video Stream {}: Processing time too long: {}\n",
+                _videoStream.id,
+                duration);
+            sendLogMessage(1, QString::fromStdString(msg));
         }
 
         // In case an error occurs, simply log it and restart the application.
@@ -562,7 +556,7 @@ void Flea3CamThread::run()
         if (e.GetType() != FlyCapture2::PGRERROR_OK)
         {
             logCriticalError(e);
-            std::exit(1);
+            throw std::runtime_error(e.GetDescription());
         }
 
         // Grab metadata and timestamps from the images
@@ -594,13 +588,10 @@ void Flea3CamThread::run()
         memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 
         _videoStream.push(buf);
-
-        loopCount++;
     }
     _Camera.StopCapture();
     _Camera.Disconnect();
 
-    std::cout << "done" << std::endl;
     return;
 }
 
