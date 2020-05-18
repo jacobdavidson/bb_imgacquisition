@@ -49,8 +49,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     int          camsStarted = 0;
     SettingsIAC* set         = SettingsIAC::getInstance();
 
-    std::cerr << "Successfully parsed config!" << std::endl;
-
     if (argc > 1 && strncmp(argv[1], "--help", 6) == 0)
     {
         std::cout << "Usage: ./bb_imageacquision <Options>" << std::endl
