@@ -44,7 +44,7 @@ void VideoWriteThread::run()
         const auto maxSizeIndex = std::distance(sizes.begin(), maxSize);
 
         // If all are empty, check again later.
-        if (*maxSize == 0)
+        if (maxSize == sizes.end() || *maxSize == 0)
         {
             usleep(500);
             continue;
