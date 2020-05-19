@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cassert>
+#include <thread>
+#include <sstream>
+
 #include <fmt/format.h>
 #include <fmt/chrono.h>
 
@@ -15,7 +19,7 @@ struct fmt::formatter<std::chrono::time_point<Clock, Duration>, Char>
     // Fractional second precision
     std::optional<size_t> precision;
 
-    // Parses format specifications of the form ['f' | 'e'].
+    // Parses format specifications of the form ['b' | 'e'] ['.' ('1' - '9')].
     constexpr auto parse(fmt::format_parse_context& ctx)
     {
         auto       it  = ctx.begin();
@@ -49,6 +53,7 @@ struct fmt::formatter<std::chrono::time_point<Clock, Duration>, Char>
     template<typename FormatContext>
     auto format(const time_point& tp, FormatContext& ctx)
     {
+        // NOTE: std::gmtime is not thread safe, fmt::gmtime is
         const auto tm = fmt::gmtime(Clock::to_time_t(tp));
 
         if (precision)
@@ -84,5 +89,30 @@ struct fmt::formatter<std::chrono::time_point<Clock, Duration>, Char>
         }
 
         assert(false);
+    }
+};
+
+template<typename Char>
+struct fmt::formatter<std::thread::id, Char>
+{
+    constexpr auto parse(fmt::format_parse_context& ctx)
+    {
+        auto       it  = ctx.begin();
+        const auto end = ctx.end();
+
+        if (it != end && *it != '}')
+        {
+            throw format_error("invalid format");
+        }
+
+        return it;
+    }
+
+    template<typename FormatContext>
+    auto format(const std::thread::id& id, FormatContext& ctx)
+    {
+        std::stringstream ss;
+        ss << id;
+        return format_to(ctx.out(), "{}", ss.str());
     }
 };

@@ -13,6 +13,7 @@
 #include "settings/Settings.h"
 #include "settings/utility.h"
 #include "GrayscaleImage.h"
+#include "log.h"
 
 #include <sstream> //stringstreams
 
@@ -38,29 +39,15 @@ struct dependent_false : std::false_type
 BaslerCamThread::BaslerCamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
 : CamThread(config, videoStream, watchdog)
 {
-    if (!initCamera())
-    {
-        std::ostringstream msg;
-        msg << "Failed to initialize camera " << _config.serial;
-        throw std::runtime_error(msg.str());
-    }
-
-    if (!startCapture())
-
-    {
-        std::ostringstream msg;
-        msg << "Failed to start capturing camera " << _config.serial;
-        throw std::runtime_error(msg.str());
-    }
+    initCamera();
+    startCapture();
 }
 
-bool BaslerCamThread::initCamera()
+void BaslerCamThread::initCamera()
 {
-    // If the configuration entry is invalid, just skip it.
     if (_config.serial.empty())
     {
-        sendLogMessage(0, "Serial number not configured. Skipping camera discovery.");
-        return false;
+        throw std::runtime_error(fmt::format("{}: Camera serial empty", _videoStream.id));
     }
 
     try
@@ -73,7 +60,8 @@ bool BaslerCamThread::initCamera()
 
         if (auto r = tlFactory.EnumerateDevices(devices); r < 0)
         {
-            throw std::runtime_error("Coult not enumerate cameras");
+            throw std::runtime_error(
+                fmt::format("{}: Could not enumerate cameras", _videoStream.id));
         }
 
         bool camFound = false;
@@ -89,20 +77,25 @@ bool BaslerCamThread::initCamera()
             }
         }
 
-        if (camFound)
+        if (!camFound)
         {
-            std::ostringstream msg;
-            msg << "Resolution: " << _camera.Width() << "x" << _camera.Height();
-            sendLogMessage(0, msg.str());
-            // ToDo:
-            // print additional info
-            // set cam params as set in config file
+            throw std::runtime_error(
+                fmt::format("{}: No camera matching serial: {}", _videoStream.id, _config.serial));
         }
-        else
-        {
-            sendLogMessage(0, "failed to find cam matching config serial nr: " + _config.serial);
-            return false;
-        }
+
+        logInfo("{}: Camera resolution: {}x{}",
+                _videoStream.id,
+                _camera.SensorWidth(),
+                _camera.SensorHeight());
+
+        logInfo("{}: Camera region of interest: ({},{}), {}x{}",
+                _videoStream.id,
+                _camera.OffsetX(),
+                _camera.OffsetY(),
+                _camera.Width(),
+                _camera.Height());
+
+        // TODO: Set cam params as set in config file
 
         std::visit(
             [this](auto&& trigger) {
@@ -138,7 +131,9 @@ bool BaslerCamThread::initCamera()
                         _camera.AcquisitionFrameRateEnable = 0;
                     }
                     else
+                    {
                         throw std::runtime_error("Invalid camera hardware trigger source");
+                    }
                 }
                 else if constexpr (std::is_same_v<Trigger, Config::SoftwareTrigger>)
                 {
@@ -157,37 +152,27 @@ bool BaslerCamThread::initCamera()
     }
     catch (Pylon::GenericException e)
     {
-        sendLogMessage(0, e.what());
-        return false;
+        throw std::runtime_error(
+            fmt::format("{}: Failed to initialize camera: {}", _videoStream.id, e.what()));
     }
-
-    return true;
 }
 
-// This function starts the streaming from the camera
-bool BaslerCamThread::startCapture()
+void BaslerCamThread::startCapture()
 {
-
     try
     {
         _camera.StartGrabbing();
     }
     catch (Pylon::GenericException e)
     {
-        return false;
+        throw std::runtime_error(fmt::format("{}: Failed to start capturing with camera: {}",
+                                             _videoStream.id,
+                                             e.what()));
     }
-
-    return true;
 }
 
 void BaslerCamThread::run()
 {
-    SettingsIAC* set = SettingsIAC::getInstance();
-
-    char        logfilepathFull[256];
-    std::string logdir = set->logDirectory();
-    sprintf(logfilepathFull, logdir.c_str(), _videoStream.id);
-
     const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
     const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
@@ -221,8 +206,9 @@ void BaslerCamThread::run()
                     _camera.RetrieveResult(1000, _grabbed, Pylon::TimeoutHandling_Return);
                     if (!_grabbed)
                     {
-                        std::cerr << "Error: " << _grabbed->GetErrorCode() << " "
-                                  << _grabbed->GetErrorDescription() << std::endl;
+                        logCritical("{}: Failed to grab camera image: {}",
+                                    _videoStream.id,
+                                    _grabbed->GetErrorDescription());
                         continue;
                     }
                 }
@@ -251,14 +237,12 @@ void BaslerCamThread::run()
                 // Image sequence sanity check.
                 if (n_last_frame_id != 0 && n_current_frame_id != n_last_frame_id + 1)
                 {
-                    QString str("Warning: Camera lost frame: This frame: #");
-                    str.append(std::to_string(n_current_frame_id).c_str());
-                    str.append(" last frame: #");
-                    str.append(std::to_string(n_last_frame_id).c_str());
-                    str.append(" timestamp: ");
-                    str.append(boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-                    std::cerr << str.toStdString() << std::endl;
-                    generateLog(logfilepathFull, str);
+                    logWarning(
+                        "{}: Camera lost frame: This frame: #{} last frame: #{} timestamp: {}",
+                        _videoStream.id,
+                        n_current_frame_id,
+                        n_last_frame_id,
+                        boost::posix_time::to_iso_extended_string(wallClockNow));
 
                     // add camera handling
                     // ...
@@ -273,16 +257,12 @@ void BaslerCamThread::run()
                     if (n_last_camera_tick_count != 0 && lastCameraTimestamp > wallClockNow &&
                         loopCount > 10)
                     {
-                        QString str(
-                            "Warning: camera clock faster than wall "
-                            "time. Last camera time: ");
-                        str.append(boost::posix_time::to_iso_extended_string(lastCameraTimestamp)
-                                       .c_str());
-                        str.append(" wall clock: ");
-                        str.append(
-                            boost::posix_time::to_iso_extended_string(wallClockNow).c_str());
-                        std::cerr << str.toStdString() << std::endl;
-                        generateLog(logfilepathFull, str);
+                        logWarning(
+                            "{}: Camera clock faster than wall time. Last camera time: {} wall "
+                            "clock: {}",
+                            _videoStream.id,
+                            boost::posix_time::to_iso_extended_string(lastCameraTimestamp),
+                            boost::posix_time::to_iso_extended_string(wallClockNow));
                     }
                     lastCameraTimestamp = wallClockNow;
                 }
@@ -290,8 +270,8 @@ void BaslerCamThread::run()
                 {
                     const int64_t tick_delta = static_cast<const int64_t>(
                         n_current_camera_tick_count - n_last_camera_tick_count);
-                    assert(tick_delta >= 0); // ToDo: add tick to microsecond conversion
-                                             // factor as config setting
+                    // TODO: Add tick to microsecond conversion factor as config setting
+                    assert(tick_delta >= 0);
                     lastCameraTimestamp += boost::posix_time::microseconds(tick_delta * 1000);
                 }
                 n_last_camera_tick_count = n_current_camera_tick_count;
@@ -302,37 +282,27 @@ void BaslerCamThread::run()
                     std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
                 if (duration > 2 * (1000000 / 6))
                 {
-                    QString str("Warning: Processing time too long: ");
-                    str.append(std::to_string(duration).c_str());
-                    str.append(" on camera ");
-                    str.append(QString::fromStdString(_videoStream.id));
-                    std::cerr << str.toStdString() << std::endl;
-                    generateLog(logfilepathFull, str);
+                    logWarning("{}: Processing time too long: {}", _videoStream.id, duration);
                 }
             }
             catch (Pylon::GenericException e) // could not retrieve grab result
             {
-                std::cerr << e.what() << '\n';
+                logWarning("{}: Camera error: {}", _videoStream.id, e.what());
 
-                // ToDo: if the problem persists and we get this error repeatedly,
-                // restart application
+                // TODO: Terminate application if the problem persists and we get this error
+                // repeatedly
             }
         }
-        else // camera not grabbing
+        else
         {
-            // although grabbing had been started, isGrabbing returned false. this means
-            // somehow the camera stopped grabbing
-            // --> we simply log it and restart the application.
-            const std::string message = "Aquisition failed with error code " + std::to_string(42);
-            logCriticalError(message);
-            std::exit(1);
+            throw std::runtime_error(fmt::format("{}: Camera stopped capturing", _videoStream.id));
         }
 
         // Move image to buffer for further procession
         // Crop the image to the expected size (e.g. 4000x3000).
         // This is necessary, because the encoder/codec requires the image sizes to be
-        // some multiple of X. ToDo: remove this part and add camera check if
-        // conforming with size requirements
+        // some multiple of X.
+        // TODO: Remove this part and add camera check if conforming with size requirements
         cv::Mat            wholeImageMatrix(cv::Size(img_width, img_height),
                                  CV_8UC1, /// FIXME: This should not be hardcoded, the pixel
                                           /// type should be mapped from pylon to opencv
@@ -358,35 +328,4 @@ void BaslerCamThread::run()
     }
 
     return;
-}
-
-void BaslerCamThread::logCriticalError(const std::string& message)
-{
-    sendLogMessage(0, message);
-}
-
-void BaslerCamThread::sendLogMessage(int logLevel, QString message)
-{
-    emit logMessage(logLevel, "Cam " + QString::fromStdString(_videoStream.id) + " : " + message);
-}
-
-void BaslerCamThread::sendLogMessage(int logLevel, std::string message)
-{
-    sendLogMessage(logLevel, QString::fromStdString(message));
-}
-
-void BaslerCamThread::sendLogMessage(int logLevel, const char* message)
-{
-    sendLogMessage(logLevel, QString(message));
-}
-
-void BaslerCamThread::generateLog(QString path, QString message)
-{
-    boost::filesystem::create_directories({path.toStdString()});
-    QString filename = (path + "log.txt");
-    QFile   file(filename);
-    file.open(QIODevice::Append);
-    QTextStream stream(&file);
-    stream << QString::fromStdString(getTimestamp()) << ": " << message << "\r\n";
-    file.close();
 }

@@ -1,5 +1,7 @@
 #include "Watchdog.h"
 
+#include "format.h"
+
 void Watchdog::pulse()
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -14,8 +16,7 @@ void Watchdog::check()
     {
         if (now - lastPulse > std::chrono::seconds(60))
         {
-            std::cerr << "Watchdog timeout for thread " << threadId;
-            std::exit(1);
+            throw std::runtime_error(fmt::format("Watchdog timeout for thread {}", threadId));
         }
     }
 }

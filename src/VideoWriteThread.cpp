@@ -12,6 +12,7 @@
 #include "VideoFileWriter.h"
 
 #include "format.h"
+#include "log.h"
 
 VideoWriteThread::VideoWriteThread(std::string encoderName)
 : _encoderName{encoderName}
@@ -87,10 +88,9 @@ void VideoWriteThread::run()
                 break;
             }
 
-            // Debug output TODO: remove?
             if (frameIndex % 100 == 0)
             {
-                std::cout << "Loaded frame " << frameIndex << std::endl;
+                logDebug("Loaded frame {}", frameIndex);
             }
 
             f.write(*img);
@@ -139,7 +139,7 @@ void VideoWriteThread::run()
             }
             catch (const fs::filesystem_error& e)
             {
-                std::cerr << e.what() << std::endl;
+                logCritical("{}: Failed to finalize video file: {}", e.what());
             }
         }
     }

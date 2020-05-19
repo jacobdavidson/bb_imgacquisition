@@ -27,49 +27,13 @@ public:
     std::string _Serial;
 
 private:
-    bool initCamera();
-    bool startCapture();
+    void initCamera();
+    void startCapture();
 
     //! @brief Just prints the camera's info
     // void                PrintCameraInfo(CameraInfo *pCamInfo);
 
-    /**
-     * @brief Checks whether the error code is OK and logs otherwise
-     *
-     * @param Ximea error code
-     */
-    bool checkReturnCode(XI_RETURN errorCode, const std::string& operation = "");
-
-    /**
-     * @brief Sends an error message.
-     *
-     * Currently all of them get logged to console.
-     *
-     * @param The log level (currently ugnored)
-     * @param Message forwarded to QDebug()
-     */
-    void sendLogMessage(int logLevel, QString message);
-    void sendLogMessage(int logLevel, std::string message);
-    void sendLogMessage(int logLevel, const char* message);
-
-    /**
-     * @brief Generates a log message to log.txt in the given path.
-     *
-     * @param Path to the log.txt file
-     * @param Message to emit
-     */
-    void generateLog(QString path, QString message);
-
-    /**
-     * @brief Logs a critical error in very detail
-     *
-     * Logs are written to the logfile specified as per
-     * JSON configuration.
-     *
-     * @param The error object
-     */
-    // void logCriticalError(Error e);
-    void logCriticalError(const std::string& shortMsg, const std::string& message);
+    void enforce(XI_RETURN errorCode, const std::string& operation = "");
 
     //! Deprecated JPeg compression parameter
     // JPEGOption            _jpegConf;

@@ -41,6 +41,8 @@ extern "C"
     #error Platform unsupported
 #endif
 
+#include "log.h"
+
 class Implementation final
 {
 public:
@@ -160,7 +162,7 @@ private:
                 }
                 else if (r < 0)
                 {
-                    std::cerr << "Failed to poll signal handling sockets" << std::endl;
+                    logCritical("Failed to poll signal handling sockets");
                 }
             }
         });
@@ -234,7 +236,7 @@ PlatformAdapter::~PlatformAdapter()
     catch (const std::exception& e)
     {
         // noexcept will force termination if this throws
-        std::cerr << e.what() << std::endl;
+        logCritical(e.what());
         std::terminate();
     }
 }

@@ -14,6 +14,9 @@
 #include "settings/utility.h"
 #include "Watchdog.h"
 #include "PlatformAdapter.h"
+#include "log.h"
+#include "version.h"
+#include "build_timestamp.h"
 
 ImgAcquisitionApp::~ImgAcquisitionApp()
 {
@@ -74,18 +77,13 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
                                        cfg.encoder.options};
         _cameraThreads.emplace_back(CamThread::make(cfg.camera, videoStream, &_watchdog));
 
-        connect(_cameraThreads.back().get(),
-                &CamThread::logMessage,
-                this,
-                &ImgAcquisitionApp::logMessage);
-
         if (_videoWriterThreads.count(cfg.encoder.id))
         {
             _videoWriterThreads.at(cfg.encoder.id).add(videoStream);
         }
         else
         {
-            std::cerr << "No such encoder configured: " << cfg.encoder.id << std::endl;
+            logCritical("Encoder with id {} referenced, but not configured", cfg.encoder.id);
         }
     }
 
@@ -94,14 +92,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         thread->start();
     }
 
-    std::cout << "Started " << _cameraThreads.size() << " camera threads." << std::endl;
+    logInfo("Started {} camera threads", _cameraThreads.size());
 
     for (auto& [id, thread] : _videoWriterThreads)
     {
         thread.start();
     }
 
-    std::cout << "Started " << _videoWriterThreads.size() << " video writer threads." << std::endl;
+    logInfo("Started {} video writer threads", _videoWriterThreads.size());
 
     auto watchdogTimer = new QTimer(this);
     watchdogTimer->setInterval(500);
@@ -117,11 +115,6 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 // Just prints the library's info
 void ImgAcquisitionApp::printBuildInfo()
 {
-    std::cout << "Application build date: " << __DATE__ << ", " << __TIME__ << std::endl;
-}
-
-// The slot for signals generated from the threads
-void ImgAcquisitionApp::logMessage(int prio, QString message)
-{
-    qDebug() << message;
+    logInfo("Application source version: {}", g_SOURCE_VERSION);
+    logInfo("Application build timestamp: {}", g_BUILD_TIMESTAMP);
 }

@@ -52,9 +52,4 @@ private:
     unsigned int _numCameras;
 
     std::unordered_map<std::string, VideoWriteThread> _videoWriterThreads;
-
-    // Slots for the signals sent by CamThread Class
-public slots:
-
-    void logMessage(int logLevel, QString message);
 };

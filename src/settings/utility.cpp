@@ -21,13 +21,6 @@
 
 #include <cstdlib>
 
-#include <fmt/format.h>
-#if FMT_VERSION >= 60000
-    #include <fmt/chrono.h>
-#else
-    #include <fmt/time.h>
-#endif
-
 std::string get_utc_time()
 {
     return boost::posix_time::to_iso_extended_string(

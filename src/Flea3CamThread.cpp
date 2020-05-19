@@ -16,6 +16,7 @@
 #include "settings/Settings.h"
 #include "settings/utility.h"
 #include "GrayscaleImage.h"
+#include "log.h"
 
 #include <sstream> //stringstreams
 
@@ -35,22 +36,11 @@
 Flea3CamThread::Flea3CamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
 : CamThread(config, videoStream, watchdog)
 {
-    if (!initCamera())
-    {
-        std::ostringstream msg;
-        msg << "Failed to initialize camera " << _config.serial;
-        throw std::runtime_error(msg.str());
-    }
-
-    if (!startCapture())
-    {
-        std::ostringstream msg;
-        msg << "Failed to start capturing camera " << _config.serial;
-        throw std::runtime_error(msg.str());
-    }
+    initCamera();
+    startCapture();
 }
 
-bool Flea3CamThread::initCamera()
+void Flea3CamThread::initCamera()
 {
     // SET VIDEO MODE HERE!!!
     FlyCapture2::Format7Info fmt7Info;
@@ -103,9 +93,9 @@ bool Flea3CamThread::initCamera()
     unsigned int numCameras;
     if (auto err = busMgr.GetNumOfCameras(&numCameras); err != FlyCapture2::PGRERROR_OK)
     {
-        std::ostringstream msg;
-        msg << "Could not enumerate cameras: " << err.GetDescription();
-        throw std::runtime_error(msg.str());
+        throw std::runtime_error(fmt::format("{}: Could not enumerate cameras: {}",
+                                             _videoStream.id,
+                                             err.GetDescription()));
     }
 
     bool         camFound = false;
@@ -116,9 +106,9 @@ bool Flea3CamThread::initCamera()
         if (auto err = busMgr.GetCameraSerialNumberFromIndex(i, &serial);
             err != FlyCapture2::PGRERROR_OK)
         {
-            std::ostringstream msg;
-            msg << "Could not read camera serial number: " << err.GetDescription();
-            throw std::runtime_error(msg.str());
+            throw std::runtime_error(fmt::format("{}: Could not read camera serial: {}",
+                                                 _videoStream.id,
+                                                 err.GetDescription()));
         }
         if (serial == std::stoull(_config.serial))
         {
@@ -130,65 +120,40 @@ bool Flea3CamThread::initCamera()
 
     if (!camFound)
     {
-        return false;
+        throw std::runtime_error(
+            fmt::format("{}: No camera matching serial: {}", _videoStream.id, _config.serial));
     }
-
-    sendLogMessage(3,
-                   "Camera " + QString::fromStdString(_videoStream.id) + "(ID) Serial Number: " +
-                       QString::number(serial)); // serial number is printed
 
     // Gets the PGRGuid from the camera
-    if (!checkReturnCode(busMgr.GetCameraFromIndex(camIndex, &guid)))
-    {
-        return false;
-    }
+    enforce(busMgr.GetCameraFromIndex(camIndex, &guid));
 
     // Connect to camera
-    if (!checkReturnCode(_Camera.Connect(&guid)))
-    {
-        return false;
-    }
+    enforce(_Camera.Connect(&guid));
 
     // Get the camera information
-    if (!checkReturnCode(_Camera.GetCameraInfo(&camInfo)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetCameraInfo(&camInfo));
 
     PrintCameraInfo(&camInfo); // camera information is printed
 
     /////////////////// ALL THE PROCESS WITH FORMAT 7 ////////////////////////////////
 
     // Query for available Format 7 modes
-    if (!checkReturnCode(_Camera.GetFormat7Info(&fmt7Info, &supported)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetFormat7Info(&fmt7Info, &supported));
 
     // Print the camera capabilities for fmt7
     PrintFormat7Capabilities(fmt7Info);
 
     // Validate the settings to make sure that they are valid
-    if (!checkReturnCode(
-            _Camera.ValidateFormat7Settings(&fmt7ImageSettings, &supported, &fmt7PacketInfo)))
-    {
-        return false;
-    }
+    enforce(_Camera.ValidateFormat7Settings(&fmt7ImageSettings, &supported, &fmt7PacketInfo));
 
     if (!supported)
     {
-        // Settings are not valid
-        sendLogMessage(1, "Format7 settings are not valid");
-        return false;
+        throw std::runtime_error(fmt::format("{}: Invalid Format7 settings ", _videoStream.id));
     }
 
     // Set the settings to the camera
-    if (!checkReturnCode(
-            _Camera.SetFormat7Configuration(&fmt7ImageSettings,
-                                            fmt7PacketInfo.recommendedBytesPerPacket)))
-    {
-        return false;
-    }
+    enforce(_Camera.SetFormat7Configuration(&fmt7ImageSettings,
+                                            fmt7PacketInfo.recommendedBytesPerPacket));
 
     /////////////////////////////// ENDS PROCESS WITH FORMAT 7
     /////////////////////////////////////////////
@@ -198,19 +163,13 @@ bool Flea3CamThread::initCamera()
     if (_config.buffer_size)
     {
         // Grab the current configuration from the camera in ss_BufferFrame
-        if (!checkReturnCode(_Camera.GetConfiguration(&BufferFrame)))
-        {
-            return false;
-        }
+        enforce(_Camera.GetConfiguration(&BufferFrame));
 
         // Modify the maximum number of frames to be buffered and send it back to the camera
         BufferFrame.numBuffers = *_config.buffer_size;
         BufferFrame.grabMode   = FlyCapture2::BUFFER_FRAMES;
 
-        if (!checkReturnCode(_Camera.SetConfiguration(&BufferFrame)))
-        {
-            return false;
-        }
+        enforce(_Camera.SetConfiguration(&BufferFrame));
     }
 
     /////////////////// ENDS PROCESS WITH FC2Config  ////////////////////////////////
@@ -218,10 +177,7 @@ bool Flea3CamThread::initCamera()
     /////////////////// ALL THE PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
 
     // Get the info of the image in ss_EmbeddedInfo
-    if (!checkReturnCode(_Camera.GetEmbeddedImageInfo(&EmbeddedInfo)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetEmbeddedImageInfo(&EmbeddedInfo));
 
     // Again modify a couple of parameters and send them back to the camera
     if (EmbeddedInfo.timestamp.available == true)
@@ -231,7 +187,7 @@ bool Flea3CamThread::initCamera()
     }
     else
     {
-        sendLogMessage(3, "Timestamp is not available!");
+        logInfo("{}: Embedded camera timestamp is not available", _videoStream.id);
     }
 
     if (EmbeddedInfo.frameCounter.available == true)
@@ -241,23 +197,17 @@ bool Flea3CamThread::initCamera()
     }
     else
     {
-        sendLogMessage(3, "Framecounter is not avalable!");
+        logInfo("{}: Embedded camera frame counter is not available", _videoStream.id);
     }
 
-    if (!checkReturnCode(_Camera.SetEmbeddedImageInfo(&EmbeddedInfo)))
-    {
-        return false;
-    }
+    enforce(_Camera.SetEmbeddedImageInfo(&EmbeddedInfo));
 
     /////////////////// ENDS PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
 
     /////////////////// ALL THE PROCESS WITH PROPERTIES  ////////////////////////////////
 
     //-------------------- BRIGHTNESS STARTS        -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&brightness)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&brightness));
 
     brightness.onOff = static_cast<bool>(_config.blacklevel);
     if (brightness.onOff)
@@ -269,29 +219,19 @@ bool Flea3CamThread::initCamera()
         }
     }
 
-    if (!checkReturnCode(_Camera.SetProperty(&brightness)))
-    {
-        return false;
-    }
+    enforce(_Camera.SetProperty(&brightness));
 
-    if (!checkReturnCode(_Camera.GetProperty(&brightness)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&brightness));
 
-    sendLogMessage(3,
-                   QString::fromStdString(fmt::format("Brightness Parameter is: {} and {:.2f}",
-
-                                                      brightness.onOff ? "On" : "Off",
-                                                      brightness.absValue)));
+    logInfo("{}: Brightness parameter is {} and {:.2f}",
+            _videoStream.id,
+            brightness.onOff ? "on" : "off",
+            brightness.absValue);
 
     //-------------------- BROGHTNESS ENDS          -----------------------------------
 
     //-------------------- EXPOSURE STARTS          -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&exposure)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&exposure));
 
     exposure.onOff = static_cast<bool>(_config.exposure);
     if (exposure.onOff)
@@ -303,29 +243,19 @@ bool Flea3CamThread::initCamera()
         }
     }
 
-    if (!checkReturnCode(_Camera.SetProperty(&exposure)))
-    {
-        return false;
-    }
+    enforce(_Camera.SetProperty(&exposure));
 
-    if (!checkReturnCode(_Camera.GetProperty(&exposure)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&exposure));
 
-    sendLogMessage(3,
-                   "Exposure Parameter is: " +
-                       QString().sprintf("%s and %s",
-                                         exposure.onOff ? "On" : "Off",
-                                         exposure.autoManualMode ? "Auto" : "Manual"));
+    logInfo("{}: Exposure parameter is {} and {}",
+            _videoStream.id,
+            exposure.onOff ? "on" : "off",
+            exposure.autoManualMode ? "auto" : "manual");
 
     //-------------------- EXPOSURE ENDS -----------------------------------
 
     //-------------------- SHUTTER STARTS           -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&shutter)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&shutter));
 
     shutter.onOff = static_cast<bool>(_config.shutter);
     if (shutter.onOff)
@@ -337,28 +267,18 @@ bool Flea3CamThread::initCamera()
         }
     }
 
-    if (!checkReturnCode(_Camera.SetProperty(&shutter)))
-    {
-        return false;
-    }
+    enforce(_Camera.SetProperty(&shutter));
+    enforce(_Camera.GetProperty(&shutter));
 
-    if (!checkReturnCode(_Camera.GetProperty(&shutter)))
-    {
-        return false;
-    }
+    logInfo("{}: Shutter parameter is {} and {:.2f}",
+            _videoStream.id,
+            shutter.autoManualMode ? "auto" : "manual",
+            shutter.absValue);
 
-    sendLogMessage(3,
-                   "New shutter parameter is: " +
-                       QString().sprintf("%s and %.2f ms",
-                                         shutter.autoManualMode ? "Auto" : "Manual",
-                                         shutter.absValue));
     //-------------------- SHUTTER ENDS             -----------------------------------
 
     //-------------------- GAIN STARTS              -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&gain)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&gain));
 
     gain.onOff = static_cast<bool>(_config.gain);
     if (gain.onOff)
@@ -370,42 +290,23 @@ bool Flea3CamThread::initCamera()
         }
     }
 
-    if (!checkReturnCode(_Camera.SetProperty(&gain)))
-    {
-        return false;
-    }
+    enforce(_Camera.SetProperty(&gain));
 
-    if (!checkReturnCode(_Camera.GetProperty(&gain)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&gain));
 
-    sendLogMessage(3,
-                   "New gain parameter is: " +
-                       QString().sprintf("%s", gain.autoManualMode ? "Auto" : "Manual"));
+    logInfo("{}: Gain parameter is {}", _videoStream.id, gain.autoManualMode ? "auto" : "manual");
     //-------------------- GAIN ENDS                -----------------------------------
 
     //-------------------- WHITE BALANCE STARTS     -----------------------------------
-    if (!checkReturnCode(_Camera.GetProperty(&wBalance)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&wBalance));
 
     wBalance.onOff = static_cast<bool>(_config.whitebalance) && *_config.whitebalance;
 
-    if (!checkReturnCode(_Camera.SetProperty(&wBalance)))
-    {
-        return false;
-    }
+    enforce(_Camera.SetProperty(&wBalance));
 
-    if (!checkReturnCode(_Camera.GetProperty(&wBalance)))
-    {
-        return false;
-    }
+    enforce(_Camera.GetProperty(&wBalance));
 
-    sendLogMessage(3,
-                   "New White Balance parameter is: " +
-                       QString().sprintf("%s", wBalance.onOff ? "On" : "Off"));
+    logInfo("{}: White Balance parameter is {}", _videoStream.id, wBalance.onOff ? "on" : "off");
     //-------------------- WHITE BALANCE ENDS       -----------------------------------
 
     //-------------------- TRIGGER MODE STARTS      -----------------------------------
@@ -414,10 +315,7 @@ bool Flea3CamThread::initCamera()
     {
         // Get current trigger settings
         FlyCapture2::TriggerMode triggerMode;
-        if (!checkReturnCode(_Camera.GetTriggerMode(&triggerMode)))
-        {
-            return false;
-        }
+        enforce(_Camera.GetTriggerMode(&triggerMode));
 
         // Set camera to trigger mode 0
         triggerMode.onOff     = true;
@@ -427,10 +325,7 @@ bool Flea3CamThread::initCamera()
         // Triggering the camera externally using source 0.
         triggerMode.source = std::get<Config::HardwareTrigger>(_config.trigger).source;
 
-        if (!checkReturnCode(_Camera.SetTriggerMode(&triggerMode)))
-        {
-            return false;
-        }
+        enforce(_Camera.SetTriggerMode(&triggerMode));
     }
 
     //-------------------- TRIGGER MODE ENDS        -----------------------------------
@@ -439,59 +334,36 @@ bool Flea3CamThread::initCamera()
 
     if (std::holds_alternative<Config::SoftwareTrigger>(_config.trigger))
     {
-        if (!checkReturnCode(_Camera.GetProperty(&frmRate)))
-        {
-            return false;
-        }
+        enforce(_Camera.GetProperty(&frmRate));
 
         frmRate.absControl     = true;
         frmRate.onOff          = true;
         frmRate.autoManualMode = false;
         frmRate.absValue = std::get<Config::SoftwareTrigger>(_config.trigger).framesPerSecond;
 
-        if (!checkReturnCode(_Camera.SetProperty(&frmRate)))
-        {
-            return false;
-        }
+        enforce(_Camera.SetProperty(&frmRate));
 
-        if (!checkReturnCode(_Camera.GetProperty(&frmRate)))
-        {
-            return false;
-        }
+        enforce(_Camera.GetProperty(&frmRate));
 
-        sendLogMessage(3,
-                       "New frame rate is " + QString().sprintf("%.2f", frmRate.absValue) +
-                           " fps");
+        logInfo("{}: Frame rate is {:.2f} fps", _videoStream.id, frmRate.absValue);
     }
 
     //-------------------- FRAME RATE ENDS          -----------------------------------
 
     /////////////////// ALL THE PROCESS WITH EMBEDDEDIMAGEINFO  ////////////////////////////////
     // Saves the configuration to memory channel 2
-    if (!checkReturnCode(_Camera.SaveToMemoryChannel(2)))
-    {
-        return false;
-    }
-
-    return true;
+    enforce(_Camera.SaveToMemoryChannel(2));
 }
 
 // This function starts the streaming from the camera
-bool Flea3CamThread::startCapture()
+void Flea3CamThread::startCapture()
 {
     // Start isochronous image capture
-    return checkReturnCode(_Camera.StartCapture());
+    enforce(_Camera.StartCapture());
 }
 
-// this is what the function does with the information set in configure
 void Flea3CamThread::run()
 {
-    SettingsIAC* set = SettingsIAC::getInstance();
-
-    char        logfilepathFull[256];
-    std::string logdir = set->logDirectory();
-    sprintf(logfilepathFull, logdir.c_str(), _videoStream.id);
-
     int                     vwidth  = _config.width;
     int                     vheight = _config.height;
     FlyCapture2::BusManager busMgr;
@@ -503,27 +375,13 @@ void Flea3CamThread::run()
     auto begin = std::chrono::steady_clock::now();
     auto end   = std::chrono::steady_clock::now();
 
-    ////////////////////////LINUX/////////////////////
-#ifdef __linux__
-    // Timestamp housekeeping
-    time_t          rawtime;
-    struct timeval  tv;
-    struct timezone tz;
-    int             cs;
-    int64_t         startTime;
-
-    gettimeofday(&tv, &tz);
-    startTime = tv.tv_sec; // Note: using this method the start might be shifted by <1sec
     // The first frame usually contains weird metadata. So we grab it and discard it.
     {
         FlyCapture2::Image cimg;
         _Camera.RetrieveBuffer(&cimg);
         _Camera.RetrieveBuffer(&cimg);
         _TimeStamp = cimg.GetTimeStamp();
-        cs         = _TimeStamp.cycleSeconds;
     }
-#endif
-    ////////////////////////////////////////////////////
 
     while (!isInterruptionRequested())
     {
@@ -543,11 +401,9 @@ void Flea3CamThread::run()
                                                                                         end);
             duration > std::chrono::milliseconds(400))
         {
-            const auto msg = fmt::format(
-                "Warning: Video Stream {}: Processing time too long: {}\n",
-                _videoStream.id,
-                duration);
-            sendLogMessage(1, QString::fromStdString(msg));
+            logWarning("Warning: Video Stream {}: Processing time too long: {}",
+                       _videoStream.id,
+                       duration);
         }
 
         // In case an error occurs, simply log it and restart the application.
@@ -555,8 +411,9 @@ void Flea3CamThread::run()
         // However, this will solve the issue in the general case
         if (e.GetType() != FlyCapture2::PGRERROR_OK)
         {
-            logCriticalError(e);
-            throw std::runtime_error(e.GetDescription());
+            throw std::runtime_error(fmt::format("{}: Failed to grab camera image: {}",
+                                                 _videoStream.id,
+                                                 e.GetDescription()));
         }
 
         // Grab metadata and timestamps from the images
@@ -595,84 +452,45 @@ void Flea3CamThread::run()
     return;
 }
 
-void Flea3CamThread::logCriticalError(FlyCapture2::Error e)
-{
-    char              logfilepathFull[256];
-    std::stringstream str;
-    SettingsIAC*      set      = SettingsIAC::getInstance();
-    std::string       logdir   = set->logDirectory();
-    std::string       shortmsg = "Short log: \n";
-    str << "Error acquiring image. Printing full info and exiting. " << std::endl;
-    str << "Type: " << e.GetType() << std::endl;
-    str << "Description: " << e.GetDescription() << std::endl;
-    str << "Filename: " << e.GetFilename() << std::endl;
-    shortmsg = shortmsg + str.str();
-
-    str << "Line: " << e.GetLine() << std::endl;
-    str << "ErrorType: " << e.GetType() << std::endl;
-    FlyCapture2::Error cause = e.GetCause();
-    str << "Cause.Type: " << cause.GetType() << std::endl;
-    str << "Cause.Description: " << cause.GetDescription() << std::endl;
-    str << "Cause.Filename: " << cause.GetFilename() << std::endl;
-    str << "Cause.Line: " << cause.GetLine() << std::endl;
-    str << "Cause.ErrorType: " << cause.GetType() << std::endl;
-    str << "Exit! " << std::endl;
-    sprintf(logfilepathFull, logdir.c_str(), _videoStream.id);
-    generateLog(logfilepathFull, str.str().c_str());
-}
-
 // We will use Format7 to set the video parameters instead of DCAM, so it becomes handy to print
 // this info
 void Flea3CamThread::PrintFormat7Capabilities(FlyCapture2::Format7Info fmt7Info)
 {
-    sendLogMessage(3,
-                   "Max image pixels: " + QString::number(fmt7Info.maxWidth) + " x " +
-                       QString::number(fmt7Info.maxHeight) + "\n" +
-                       "Image Unit size: " + QString::number(fmt7Info.imageHStepSize) + " x " +
-                       QString::number(fmt7Info.imageVStepSize) + "\n" +
-                       "Offset Unit size: " + QString::number(fmt7Info.offsetHStepSize) + " x " +
-                       QString::number(fmt7Info.offsetVStepSize) + "\n" +
-                       "Pixel format bitfield: " + QString::number(fmt7Info.pixelFormatBitField));
+    logInfo("{}: Max image pixels: {}x{}", _videoStream.id, fmt7Info.maxWidth, fmt7Info.maxHeight);
+    logInfo("{}: Image Unit size: {}x{}",
+            _videoStream.id,
+            fmt7Info.imageHStepSize,
+            fmt7Info.imageVStepSize);
+    logInfo("{}: Offset Unit size: {}x{}",
+            _videoStream.id,
+            fmt7Info.offsetHStepSize,
+            fmt7Info.offsetVStepSize);
+    logInfo("{}: Pixel format bitfield: {}", _videoStream.id, fmt7Info.pixelFormatBitField);
 }
 
 // Just prints the camera's info
 void Flea3CamThread::PrintCameraInfo(FlyCapture2::CameraInfo* pCamInfo)
 {
-    sendLogMessage(3,
-                   QString() + "\n*** CAMERA INFORMATION ***\n" + "Serial number - " +
-                       QString::number(pCamInfo->serialNumber) + "\n" + "Camera model - " +
-                       QString(pCamInfo->modelName) + "\n" + "Camera vendor - " +
-                       QString(pCamInfo->vendorName) + "\n" + "Sensor - " +
-                       QString(pCamInfo->sensorInfo) + "\n" + "Resolution - " +
-                       QString(pCamInfo->sensorResolution) + "\n" + "Firmware version - " +
-                       QString(pCamInfo->firmwareVersion) + "\n" + "Firmware build time - " +
-                       QString(pCamInfo->firmwareBuildTime) + "\n" + "\n");
+    logInfo("{}: Camera serial: {}", _videoStream.id, pCamInfo->serialNumber);
+    logInfo("{}: Camera model: {}", _videoStream.id, std::string_view(pCamInfo->modelName));
+    logInfo("{}: Camera vendor: {}", _videoStream.id, std::string_view(pCamInfo->vendorName));
+    logInfo("{}: Camera sensor: {}", _videoStream.id, std::string_view(pCamInfo->sensorInfo));
+    logInfo("{}: Camera resolution: {}",
+            _videoStream.id,
+            std::string_view(pCamInfo->sensorResolution));
+    logInfo("{}: Camera firmware version: {}",
+            _videoStream.id,
+            std::string_view(pCamInfo->firmwareVersion));
+    logInfo("{}: Camera firmware build time: {}",
+            _videoStream.id,
+            std::string_view(pCamInfo->firmwareBuildTime));
 }
 
-bool Flea3CamThread::checkReturnCode(FlyCapture2::Error error)
+void Flea3CamThread::enforce(FlyCapture2::Error error)
 {
     if (error != FlyCapture2::PGRERROR_OK)
     {
-        sendLogMessage(1,
-                       "Cam " + QString::fromStdString(_videoStream.id) + " : " +
-                           error.GetDescription());
-        return false;
+        throw std::runtime_error(
+            fmt::format("{}: Camera error: {}", _videoStream.id, error.GetDescription()));
     }
-    return true;
-}
-
-void Flea3CamThread::sendLogMessage(int logLevel, QString message)
-{
-    emit logMessage(logLevel, "Cam " + QString::fromStdString(_videoStream.id) + " : " + message);
-}
-
-void Flea3CamThread::generateLog(QString path, QString message)
-{
-    boost::filesystem::create_directories({path.toStdString()});
-    QString filename = (path + "log.txt");
-    QFile   file(filename);
-    file.open(QIODevice::Append);
-    QTextStream stream(&file);
-    stream << QString::fromStdString(getTimestamp()) << ": " << message << "\r\n";
-    file.close();
 }

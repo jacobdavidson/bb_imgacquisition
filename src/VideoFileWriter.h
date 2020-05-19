@@ -45,7 +45,11 @@ public:
 private:
     VideoFileWriter(Config config);
 
+    void encodeFrame(AVFrame* frame);
+
     Config _cfg;
+
+    std::string _filename;
 
     AVFormatContext* _formatContext;
 

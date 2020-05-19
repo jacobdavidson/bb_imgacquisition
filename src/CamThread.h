@@ -33,9 +33,6 @@ protected:
 public:
     virtual ~CamThread();
 
-signals:
-    void logMessage(int logLevel, QString message);
-
 public:
     static CamThread* make(Config config, VideoStream videoStream, Watchdog* watchdog);
 };

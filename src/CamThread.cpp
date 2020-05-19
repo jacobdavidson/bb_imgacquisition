@@ -2,7 +2,7 @@
 
 #include "CamThread.h"
 
-#include <sstream>
+#include "format.h"
 
 #if defined(USE_FLEA3) && USE_FLEA3
     #include "Flea3CamThread.h"
@@ -52,7 +52,5 @@ CamThread* CamThread::make(Config config, VideoStream videoStream, Watchdog* wat
     }
 #endif
 
-    std::ostringstream msg;
-    msg << "No such camera backend: " << config.backend;
-    throw std::runtime_error(msg.str());
+    throw std::runtime_error(fmt::format("No such camera backend: {}", config.backend));
 }

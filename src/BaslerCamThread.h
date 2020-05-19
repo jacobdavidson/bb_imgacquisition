@@ -27,48 +27,8 @@ public:
     BaslerCamThread(Config config, VideoStream videoStream, Watchdog* watchdog);
 
 private:
-    bool initCamera();
-    bool startCapture();
-
-    //! @brief Just prints the camera's info
-    // void                PrintCameraInfo(CameraInfo *pCamInfo);
-
-    /**
-     * @brief Checks whether the error code is OK and logs otherwise
-     *
-     * @param Ximea error code
-     */
-    bool checkReturnCode(int errorCode, const std::string& operation = "");
-
-    /**
-     * @brief Sends an error message.
-     *
-     * Currently all of them get logged to console.
-     *
-     * @param The log level (currently ugnored)
-     * @param Message forwarded to QDebug()
-     */
-    void sendLogMessage(int logLevel, QString message);
-    void sendLogMessage(int logLevel, std::string message);
-    void sendLogMessage(int logLevel, const char* message);
-
-    /**
-     * @brief Generates a log message to log.txt in the given path.
-     *
-     * @param Path to the log.txt file
-     * @param Message to emit
-     */
-    void generateLog(QString path, QString message);
-
-    /**
-     * @brief Logs a critical error in very detail
-     *
-     * Logs are written to the logfile specified as per
-     * JSON configuration.
-     *
-     * @param The error message
-     */
-    void logCriticalError(const std::string& message);
+    void initCamera();
+    void startCapture();
 
     // Pylon camera object
     Pylon::CBaslerUsbInstantCamera _camera;

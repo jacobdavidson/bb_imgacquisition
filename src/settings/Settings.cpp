@@ -6,7 +6,8 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/foreach.hpp>
-#include <sstream>
+
+#include "../format.h"
 
 const boost::property_tree::ptree SettingsIAC::getDefaultParams()
 {
@@ -104,9 +105,7 @@ void SettingsIAC::loadNewSettings()
         }
         else
         {
-            std::ostringstream msg;
-            msg << "Invalid camera trigger type: " << triggerType;
-            throw std::runtime_error(msg.str());
+            throw std::runtime_error(fmt::format("Invalid camera trigger type: {}", triggerType));
         }
 
         stream.camera.buffer_size      = cameraTree.get_optional<int>("buffer_size");
@@ -126,10 +125,10 @@ void SettingsIAC::loadNewSettings()
                     return {{intValue}};
                 }
 
-                std::ostringstream msg;
-                msg << "Invalid value for camera parameter \'" << name
-                    << "\': Expected \"auto\" or integer value";
-                throw std::runtime_error(msg.str());
+                throw std::runtime_error(
+                    fmt::format("Invalid value for camera parameter \'{}\': Expected \"auto\" or "
+                                "integer value",
+                                name));
             }
 
             return boost::none;
