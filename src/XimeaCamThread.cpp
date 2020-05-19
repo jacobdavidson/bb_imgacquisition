@@ -265,6 +265,10 @@ bool XimeaCamThread::initCamera()
         if (!checkReturnCode(errorCode, "xiSetParamInt XI_PRM_TRG_SOURCE"))
             return false;
     }
+    else
+    {
+        throw std::logic_error("Not implemented");
+    }
 
     // The default is no buffering.
     if (_config.buffer_size)
