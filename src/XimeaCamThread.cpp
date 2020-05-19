@@ -465,8 +465,6 @@ void XimeaCamThread::run()
 
         _videoStream.push(buf);
     }
-    // This code will never be executed.
-    assert(false);
     auto errorCode = xiStopAcquisition(_Camera);
     checkReturnCode(errorCode, "xiStopAcquisition");
     errorCode = xiCloseDevice(_Camera);
