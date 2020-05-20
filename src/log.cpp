@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <QDir>
+#include <QLoggingCategory>
 
 namespace log_detail
 {
@@ -49,6 +50,7 @@ static void customMessageHandler(QtMsgType                 type,
 
 static const QtMessageHandler g_defaultMessageHandler = []() {
     qSetMessagePattern("%{if-category}%{category}: %{endif}%{type}:\t%{message}");
+    QLoggingCategory::setFilterRules("*.debug=false");
     return qInstallMessageHandler(customMessageHandler);
 }();
 
