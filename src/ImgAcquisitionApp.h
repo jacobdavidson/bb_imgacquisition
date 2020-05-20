@@ -30,13 +30,6 @@ public:
     ImgAcquisitionApp(int& argc, char** argv);
     ~ImgAcquisitionApp();
 
-    /**
-     * @brief prints FlyCapture2 and Application build info
-     *
-     * Just prints the library's info
-     */
-    void printBuildInfo();
-
 private:
     Watchdog _watchdog;
 

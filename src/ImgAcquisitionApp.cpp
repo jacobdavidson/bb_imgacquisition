@@ -52,16 +52,19 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     int          camsStarted = 0;
     SettingsIAC* set         = SettingsIAC::getInstance();
 
-    if (argc > 1 && strncmp(argv[1], "--help", 6) == 0)
+    const auto args = arguments();
+
+    if (args.size() > 1 && args.at(1) == "--help")
     {
-        std::cout << "Usage: ./bb_imageacquision <Options>" << std::endl
-                  << "Valid options: " << std::endl
-                  << "(none) \t\t start recording as per config." << std::endl;
+        std::cout << "Usage: ./bb_ImageAcquistion" << std::endl
+                  << "Start recording as per settings file." << std::endl;
         QCoreApplication::exit(0);
         std::exit(0);
     }
 
-    printBuildInfo();
+    logInfo("Application: Started at {:e}", std::chrono::system_clock::now());
+    logInfo("Application: Source version: {}", g_SOURCE_VERSION);
+    logInfo("Application: Build timestamp: {}", g_BUILD_TIMESTAMP);
 
     for (auto& [id, name] : set->videoEncoders())
     {
@@ -83,7 +86,8 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         }
         else
         {
-            logCritical("Encoder with id {} referenced, but not configured", cfg.encoder.id);
+            logCritical("Application: Encoder with id {} referenced, but not configured",
+                        cfg.encoder.id);
         }
     }
 
@@ -92,14 +96,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         thread->start();
     }
 
-    logInfo("Started {} camera threads", _cameraThreads.size());
+    logInfo("Application: Started {} camera threads", _cameraThreads.size());
 
     for (auto& [id, thread] : _videoWriterThreads)
     {
         thread.start();
     }
 
-    logInfo("Started {} video writer threads", _videoWriterThreads.size());
+    logInfo("Application: Started {} video writer threads", _videoWriterThreads.size());
 
     auto watchdogTimer = new QTimer(this);
     watchdogTimer->setInterval(500);
@@ -110,11 +114,4 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     auto* adapter = new PlatformAdapter(this);
     QObject::connect(adapter, &PlatformAdapter::interruptReceived, this, QCoreApplication::quit);
     QObject::connect(adapter, &PlatformAdapter::terminateReceived, this, QCoreApplication::quit);
-}
-
-// Just prints the library's info
-void ImgAcquisitionApp::printBuildInfo()
-{
-    logInfo("Application source version: {}", g_SOURCE_VERSION);
-    logInfo("Application build timestamp: {}", g_BUILD_TIMESTAMP);
 }
