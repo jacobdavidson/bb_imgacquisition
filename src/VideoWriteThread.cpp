@@ -71,10 +71,14 @@ void VideoWriteThread::run()
                            static_cast<int>(height),
                            {static_cast<int>(videoStream.framesPerSecond), 1},
                            {_encoderName, videoStream.encoderOptions}});
+        logDebug("{}: New video file", tmpVideoFilename);
 
         const auto tmpFrameTimestampsFilename = tmpDir / fmt::format("{}.txt", startTime);
 
-        std::fstream frameTimestamps(tmpFrameTimestampsFilename, std::ios::trunc | std::ios::out);
+        std::fstream frameTimestamps(tmpFrameTimestampsFilename.string(),
+                                     std::ios::trunc | std::ios::out);
+
+        const size_t debugInterval = 100;
 
         bool   videoStreamClosedEarly = false;
         size_t frameIndex             = 0;
@@ -88,12 +92,12 @@ void VideoWriteThread::run()
                 break;
             }
 
-            if (frameIndex % 100 == 0)
-            {
-                logDebug("Loaded frame {}", frameIndex);
-            }
-
             f.write(*img);
+
+            if (frameIndex % debugInterval == 0)
+            {
+                logDebug("{}: Wrote video frame {}", tmpVideoFilename, frameIndex);
+            }
 
             if (frameTimestamps.is_open())
             {
@@ -104,6 +108,7 @@ void VideoWriteThread::run()
 
         f.close();
         frameTimestamps.close();
+        logDebug("{}: Finished", tmpVideoFilename);
 
         const auto endTime = std::chrono::system_clock::now();
 
@@ -139,7 +144,7 @@ void VideoWriteThread::run()
             }
             catch (const fs::filesystem_error& e)
             {
-                logCritical("{}: Failed to finalize video file: {}", e.what());
+                logCritical("{}: Failed to finalize video file: {}", tmpVideoFilename, e.what());
             }
         }
     }
