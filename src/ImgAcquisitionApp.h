@@ -37,11 +37,6 @@ public:
      */
     void printBuildInfo();
 
-    /**
-     * @brief This function checks that at least one camera is connected
-     */
-    int checkCameras();
-
 private:
     Watchdog _watchdog;
 
