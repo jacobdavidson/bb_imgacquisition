@@ -38,3 +38,20 @@ namespace log_detail
         qLogger.critical() << msg;
     }
 }
+
+static void customMessageHandler(QtMsgType                 type,
+                                 const QMessageLogContext& context,
+                                 const QString&            msg);
+
+static const QtMessageHandler g_defaultMessageHandler = []() {
+    qSetMessagePattern("%{if-category}%{category}: %{endif}%{type}:\t%{message}");
+    return qInstallMessageHandler(customMessageHandler);
+}();
+
+static void customMessageHandler(QtMsgType                 type,
+                                 const QMessageLogContext& context,
+                                 const QString&            msg)
+{
+    auto lock = std::unique_lock(log_detail::mutex());
+    (*g_defaultMessageHandler)(type, context, msg);
+}
