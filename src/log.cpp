@@ -2,13 +2,15 @@
 
 #include "log.h"
 
+#include <mutex>
+
 #include <QDebug>
 
 namespace log_detail
 {
-    std::mutex& mutex()
+    static std::recursive_mutex& mutex()
     {
-        static std::mutex instance;
+        static std::recursive_mutex instance;
         return instance;
     }
 

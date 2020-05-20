@@ -2,16 +2,12 @@
 
 #pragma once
 
-#include <mutex>
-
 #include <QMessageLogger>
 
 #include "format.h"
 
 namespace log_detail
 {
-    std::mutex& mutex();
-
     class Logger final
     {
     public:
