@@ -88,7 +88,7 @@ void BaslerCamThread::initCamera()
                 _camera.SensorWidth(),
                 _camera.SensorHeight());
 
-        logInfo("{}: Camera region of interest: ({},{}), {}x{}",
+        logInfo("{}: Camera region of interest: ({},{}),{}x{}",
                 _videoStream.id,
                 _camera.OffsetX(),
                 _camera.OffsetY(),

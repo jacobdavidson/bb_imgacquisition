@@ -62,7 +62,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         std::exit(0);
     }
 
-    logInfo("Application: Started at {:e}", std::chrono::system_clock::now());
+    logInfo("Application: Start timestamp: {:e}", std::chrono::system_clock::now());
     logInfo("Application: Source version: {}", g_SOURCE_VERSION);
     logInfo("Application: Build timestamp: {}", g_BUILD_TIMESTAMP);
 
@@ -96,14 +96,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         thread->start();
     }
 
-    logInfo("Application: Started {} camera threads", _cameraThreads.size());
+    logDebug("Application: Started {} camera threads", _cameraThreads.size());
 
     for (auto& [id, thread] : _videoWriterThreads)
     {
         thread.start();
     }
 
-    logInfo("Application: Started {} video writer threads", _videoWriterThreads.size());
+    logDebug("Application: Started {} video writer threads", _videoWriterThreads.size());
 
     auto watchdogTimer = new QTimer(this);
     watchdogTimer->setInterval(500);
