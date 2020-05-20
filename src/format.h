@@ -4,6 +4,12 @@
 #include <cassert>
 #include <thread>
 #include <sstream>
+#include <iomanip>
+
+#include <QtGlobal>
+#include <QString>
+
+#include <boost/filesystem/path.hpp>
 
 #include <fmt/format.h>
 #include <fmt/chrono.h>
@@ -114,5 +120,105 @@ struct fmt::formatter<std::thread::id, Char>
         std::stringstream ss;
         ss << id;
         return format_to(ctx.out(), "{}", ss.str());
+    }
+};
+
+template<typename Char>
+struct fmt::formatter<boost::filesystem::path, Char>
+{
+    constexpr auto parse(fmt::format_parse_context& ctx)
+    {
+        auto       it  = ctx.begin();
+        const auto end = ctx.end();
+
+        if (it != end && *it != '}')
+        {
+            throw format_error("invalid format");
+        }
+
+        return it;
+    }
+
+    template<typename FormatContext>
+    auto format(const boost::filesystem::path& path, FormatContext& ctx)
+    {
+        return format_to(ctx.out(), "{}", path.string());
+    }
+};
+
+template<typename Char>
+struct fmt::formatter<QtMsgType, Char>
+{
+    constexpr auto parse(fmt::format_parse_context& ctx)
+    {
+        auto       it  = ctx.begin();
+        const auto end = ctx.end();
+
+        if (it != end && *it != '}')
+        {
+            throw format_error("invalid format");
+        }
+
+        return it;
+    }
+
+    template<typename FormatContext>
+    auto format(const QtMsgType& msgType, FormatContext& ctx)
+    {
+        switch (msgType)
+        {
+        case QtDebugMsg:
+            return format_to(ctx.out(), "debug");
+        case QtWarningMsg:
+            return format_to(ctx.out(), "warning");
+        case QtCriticalMsg:
+            return format_to(ctx.out(), "critical");
+        case QtFatalMsg:
+            return format_to(ctx.out(), "fatal");
+        case QtInfoMsg:
+            return format_to(ctx.out(), "info");
+        default:
+            return format_to(ctx.out(), "unknown");
+        }
+    }
+};
+
+template<typename Char>
+struct fmt::formatter<QString, Char>
+{
+    bool quoted = false;
+
+    constexpr auto parse(fmt::format_parse_context& ctx)
+    {
+        auto       it  = ctx.begin();
+        const auto end = ctx.end();
+
+        if (it != end && (*it == 'q'))
+        {
+            quoted = true;
+            ++it;
+        }
+
+        if (it != end && *it != '}')
+        {
+            throw format_error("invalid format");
+        }
+
+        return it;
+    }
+
+    template<typename FormatContext>
+    auto format(const QString& s, FormatContext& ctx)
+    {
+        if (quoted)
+        {
+            std::stringstream ss;
+            ss << std::quoted(s.toStdString());
+            return format_to(ctx.out(), ss.str());
+        }
+        else
+        {
+            return format_to(ctx.out(), s.toStdString());
+        }
     }
 };
