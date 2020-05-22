@@ -194,6 +194,8 @@ void BaslerCamThread::run()
         {
             try
             {
+                const auto begin = std::chrono::steady_clock::now();
+
                 if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
                 {
                     // Watchdog demands heartbeats at an interval of at most 60 seconds
@@ -217,9 +219,7 @@ void BaslerCamThread::run()
                     throw std::logic_error("Not implemented");
                 }
 
-                // get time after getting the data
-                const std::chrono::steady_clock::time_point begin =
-                    std::chrono::steady_clock::now();
+                const auto end = std::chrono::steady_clock::now();
 
                 // get image data
                 img_width          = _grabbed->GetWidth();
@@ -227,9 +227,8 @@ void BaslerCamThread::run()
                 p_image            = (uint8_t*) _grabbed->GetBuffer();
                 n_current_frame_id = _grabbed->GetImageNumber();
 
-                // get time after getting the data
+                // Get the timestamp
                 const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
-                const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
                 // the camera specific tick count. The Basler acA4096-30um
                 // clock freq is 1 GHz (1 tick per 1 ns)
                 const uint64_t n_current_camera_tick_count = _grabbed->GetTimeStamp();
