@@ -84,7 +84,7 @@ void VideoWriteThread::run()
         size_t frameIndex             = 0;
         for (; frameIndex < videoStream.framesPerFile; frameIndex++)
         {
-            std::shared_ptr<GrayscaleImage> img;
+            VideoStream::Image img;
             videoStream.pop(img);
             if (!img)
             {

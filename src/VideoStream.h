@@ -34,5 +34,5 @@ public:
     const std::unordered_map<std::string, std::string> encoderOptions;
 
 private:
-    std::shared_ptr<ConcurrentQueue<std::shared_ptr<GrayscaleImage>>> _queue;
+    std::shared_ptr<ConcurrentQueue<Image>> _queue;
 };

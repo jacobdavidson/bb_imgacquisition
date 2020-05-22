@@ -12,7 +12,7 @@ VideoStream::VideoStream(std::string                                  _id,
 , framesPerSecond{_framesPerSecond}
 , framesPerFile{_framesPerFile}
 , encoderOptions{_encoderOptions}
-, _queue{new ConcurrentQueue<std::shared_ptr<GrayscaleImage>>()}
+, _queue{new ConcurrentQueue<Image>()}
 {
 }
 
