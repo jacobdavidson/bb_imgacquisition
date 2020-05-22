@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <chrono>
 #include <optional>
 
 #include <QDebug>
@@ -46,6 +47,8 @@ BaslerCamThread::BaslerCamThread(Config config, VideoStream videoStream, Watchdo
 
 void BaslerCamThread::initCamera()
 {
+    using namespace std::chrono_literals;
+
     if (_config.serial.empty())
     {
         throw std::runtime_error(fmt::format("{}: Camera serial empty", _videoStream.id));
@@ -125,6 +128,7 @@ void BaslerCamThread::initCamera()
 
         if (cameraSeries == "ace" && cameraInterface == Pylon::BaslerUsbDeviceClass)
         {
+            _nsPerTick = 1ns;
         }
         else
         {
@@ -224,18 +228,20 @@ void BaslerCamThread::startCapture()
 
 void BaslerCamThread::run()
 {
+    using namespace std::chrono_literals;
+
     const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
     const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
+    uint64_t lastImageNumber = 0;
+
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
-    uint64_t                 n_last_camera_tick_count{0};
-    uint64_t                 n_last_frame_id{0};
-    boost::posix_time::ptime lastCameraTimestamp;
+    auto currCameraTime      = std::chrono::system_clock::time_point{};
+    auto lastCameraTimestamp = 0ns;
 
     uint8_t* p_image;
     uint     img_width, img_height;
-    uint64_t n_current_frame_id;
 
     for (size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
     {
@@ -273,61 +279,56 @@ void BaslerCamThread::run()
                 const auto end = std::chrono::steady_clock::now();
 
                 // get image data
-                img_width          = _grabbed->GetWidth();
-                img_height         = _grabbed->GetHeight();
-                p_image            = (uint8_t*) _grabbed->GetBuffer();
-                n_current_frame_id = _grabbed->GetImageNumber();
+                img_width  = _grabbed->GetWidth();
+                img_height = _grabbed->GetHeight();
+                p_image    = (uint8_t*) _grabbed->GetBuffer();
+
+                const auto currImageNumber = _grabbed->GetImageNumber();
 
                 // Get the timestamp
-                const auto wallClockNow = boost::posix_time::microsec_clock::universal_time();
-                // the camera specific tick count. The Basler acA4096-30um
-                // clock freq is 1 GHz (1 tick per 1 ns)
-                const uint64_t n_current_camera_tick_count = _grabbed->GetTimeStamp();
+                const auto currWallClockTime = std::chrono::system_clock::now();
+                // NOTE: Camera time starts when the camera is powered on.
+                //       It thus resets whenever power is turned off and on again.
+                const auto currCameraTimestamp = _nsPerTick * _grabbed->GetTimeStamp();
 
                 // Image sequence sanity check.
-                if (n_last_frame_id != 0 && n_current_frame_id != n_last_frame_id + 1)
+                if (lastImageNumber != 0 && currImageNumber != lastImageNumber + 1)
                 {
                     logWarning(
                         "{}: Camera lost frame: This frame: #{} last frame: #{} timestamp: {}",
                         _videoStream.id,
-                        n_current_frame_id,
-                        n_last_frame_id,
-                        boost::posix_time::to_iso_extended_string(wallClockNow));
-
-                    // add camera handling
-                    // ...
+                        currImageNumber,
+                        lastImageNumber,
+                        currWallClockTime);
                 }
-                n_last_frame_id = n_current_frame_id;
+                lastImageNumber = currImageNumber;
 
-                // If last timestamp is later than current timestamp, we have
-                // to reset the camera timestamps.
-                if (n_last_camera_tick_count == 0 ||
-                    (n_last_camera_tick_count > n_current_camera_tick_count))
+                if (lastCameraTimestamp == 0ns || lastCameraTimestamp > currCameraTimestamp)
                 {
-                    if (n_last_camera_tick_count != 0 && lastCameraTimestamp > wallClockNow &&
-                        loopCount > 10)
+                    if (lastCameraTimestamp != 0ns && currCameraTime > currWallClockTime &&
+                        loopCount > 0)
                     {
                         logWarning(
-                            "{}: Camera clock faster than wall time. Last camera time: {} wall "
-                            "clock: {}",
+                            "{}: Camera clock faster than wall time. Last camera time: {:e.6} "
+                            "wall "
+                            "clock: {:e.6}",
                             _videoStream.id,
-                            boost::posix_time::to_iso_extended_string(lastCameraTimestamp),
-                            boost::posix_time::to_iso_extended_string(wallClockNow));
+                            currCameraTime,
+                            currWallClockTime);
                     }
-                    lastCameraTimestamp = wallClockNow;
+                    currCameraTime = currWallClockTime;
                 }
                 else
                 {
-                    const int64_t tick_delta = static_cast<const int64_t>(
-                        n_current_camera_tick_count - n_last_camera_tick_count);
-                    // TODO: Add tick to microsecond conversion factor as config setting
-                    assert(tick_delta >= 0);
-                    lastCameraTimestamp += boost::posix_time::microseconds(tick_delta * 1000);
+                    const auto elapsed = currCameraTimestamp - lastCameraTimestamp;
+                    assert(elapsed >= 0ns);
+                    currCameraTime += elapsed;
                 }
-                n_last_camera_tick_count = n_current_camera_tick_count;
+                lastCameraTimestamp = currCameraTimestamp;
 
                 // Check if processing a frame took longer than X seconds. If
                 // so, log the event.
+                // TODO: Why this number: 2 * (1000000 / 6)
                 const int64_t duration =
                     std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
                 if (duration > 2 * (1000000 / 6))
@@ -368,10 +369,10 @@ void BaslerCamThread::run()
                 cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
             wholeImageMatrix = croppedImageMatrix;
         }
-        const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
-                                               lastCameraTimestamp) +
-                                           "Z";
-        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, frameTimestamp);
+
+        auto buf = std::make_shared<GrayscaleImage>(vwidth,
+                                                    vheight,
+                                                    fmt::format("{:e.6}", currCameraTime));
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
         _videoStream.push(buf);

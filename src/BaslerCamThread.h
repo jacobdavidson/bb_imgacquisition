@@ -5,6 +5,7 @@
 #include <mutex>
 #include <string>
 #include <optional>
+#include <chrono>
 
 #include <pylon/PylonIncludes.h>
 #include <pylon/usb/BaslerUsbInstantCamera.h>
@@ -32,6 +33,8 @@ private:
 
     // Pylon camera object
     Pylon::CBaslerUsbInstantCamera _camera;
+    //! Timestamp Tick Frequency converted to nanoseconds
+    std::chrono::nanoseconds _nsPerTick;
     // Pylon camera capture result
     Pylon::CGrabResultPtr _grabbed;
 
