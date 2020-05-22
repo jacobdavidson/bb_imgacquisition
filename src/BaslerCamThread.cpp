@@ -281,7 +281,7 @@ void BaslerCamThread::run()
                 // get image data
                 img_width  = _grabbed->GetWidth();
                 img_height = _grabbed->GetHeight();
-                p_image    = (uint8_t*) _grabbed->GetBuffer();
+                p_image    = static_cast<uint8_t*>(_grabbed->GetBuffer());
 
                 const auto currImageNumber = _grabbed->GetImageNumber();
 
