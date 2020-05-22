@@ -2,11 +2,9 @@
 
 #pragma once
 
-#include "CamThread.h"
 #include <FlyCapture2.h>
 
-#include "Watchdog.h"
-#include <mutex>
+#include "CamThread.h"
 
 /*!\brief Thread object which acquires images from a camera.
  *

@@ -2,36 +2,12 @@
 
 #include "Flea3CamThread.h"
 
-#include <cstdlib>
-#include <iostream>
 #include <chrono>
 
-#include <qdir.h> //QT stuff
-#include <qtextstream.h>
-
-#include <FlyCapture2.h>
-
-#include "format.h"
-
 #include "Watchdog.h"
-#include "settings/Settings.h"
-#include "settings/utility.h"
-#include "GrayscaleImage.h"
+#include "format.h"
 #include "log.h"
-
-#include <sstream> //stringstreams
-
-#include <ctime> //get time
-#include <time.h>
-
-#if __linux__
-    #include <unistd.h> //sleep
-    #include <sys/time.h>
-#else
-    #include <stdint.h>
-#endif
-
-#include <opencv2/opencv.hpp>
+#include "GrayscaleImage.h"
 
 // Flea3CamThread constructor
 Flea3CamThread::Flea3CamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
