@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <chrono>
 
 #include <qdir.h> //QT stuff
 #include <qtextstream.h>
@@ -364,23 +365,16 @@ void Flea3CamThread::startCapture()
 
 void Flea3CamThread::run()
 {
-    int                     vwidth  = _config.width;
-    int                     vheight = _config.height;
-    FlyCapture2::BusManager busMgr;
-    FlyCapture2::PGRGuid    guid;
+    using namespace std::chrono_literals;
 
-    unsigned int oldTimeUs = 1000000;
-    unsigned int difTimeStampUs;
-
-    auto begin = std::chrono::steady_clock::now();
-    auto end   = std::chrono::steady_clock::now();
+    int vwidth  = _config.width;
+    int vheight = _config.height;
 
     // The first frame usually contains weird metadata. So we grab it and discard it.
     {
         FlyCapture2::Image cimg;
         _Camera.RetrieveBuffer(&cimg);
         _Camera.RetrieveBuffer(&cimg);
-        _TimeStamp = cimg.GetTimeStamp();
     }
 
     while (!isInterruptionRequested())
@@ -388,68 +382,39 @@ void Flea3CamThread::run()
         _watchdog->pulse();
         FlyCapture2::Image cimg;
 
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        // Retrieve image and metadata
-        FlyCapture2::Error e = _Camera.RetrieveBuffer(&cimg);
-        // Get the timestamp
-        std::string currentTimestamp = get_utc_time();
+        const auto begin = std::chrono::steady_clock::now();
+        if (const auto err = _Camera.RetrieveBuffer(&cimg); err != FlyCapture2::PGRERROR_OK)
+        {
+            throw std::runtime_error(fmt::format("{}: Failed to grab camera image: {}",
+                                                 _videoStream.id,
+                                                 err.GetDescription()));
+        }
+        const auto end = std::chrono::steady_clock::now();
 
-        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+        // Get the timestamp
+        const auto currWallClockTime = std::chrono::system_clock::now();
 
         // Check if processing a frame took longer than 0.4 seconds. If so, log the event.
         if (const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(begin -
                                                                                         end);
-            duration > std::chrono::milliseconds(400))
+            duration > 400ms)
         {
             logWarning("Warning: Video Stream {}: Processing time too long: {}",
                        _videoStream.id,
                        duration);
         }
 
-        // In case an error occurs, simply log it and restart the application.
-        // Sometimes fetching images starts to fail and cameras need to be re-initialized.
-        // However, this will solve the issue in the general case
-        if (e.GetType() != FlyCapture2::PGRERROR_OK)
-        {
-            throw std::runtime_error(fmt::format("{}: Failed to grab camera image: {}",
-                                                 _videoStream.id,
-                                                 e.GetDescription()));
-        }
-
-        // Grab metadata and timestamps from the images
-        _ImInfo      = cimg.GetMetadata();
-        _FrameNumber = _ImInfo.embeddedFrameCounter;
-        _TimeStamp   = cimg.GetTimeStamp();
-
-        //////////////////////////////////////////////
-
-        if (_TimeStamp.microSeconds > oldTimeUs)
-        {
-            difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs;
-        }
-        else
-        {
-            difTimeStampUs = _TimeStamp.microSeconds - oldTimeUs + 1000000;
-        }
-
-        oldTimeUs = _TimeStamp.microSeconds;
-
-        ///////////////////////////////////
-
-        // Prepare and put the image into the buffer
-        // std::string currentTimestamp(timeresult);
-
         // Move image to buffer for further procession
-        std::shared_ptr<GrayscaleImage> buf = std::shared_ptr<GrayscaleImage>(
-            new GrayscaleImage(vwidth, vheight, currentTimestamp));
+        auto buf = std::make_shared<GrayscaleImage>(vwidth,
+                                                    vheight,
+                                                    fmt::format("{:e.6}", currWallClockTime));
         memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 
         _videoStream.push(buf);
     }
+
     _Camera.StopCapture();
     _Camera.Disconnect();
-
-    return;
 }
 
 // We will use Format7 to set the video parameters instead of DCAM, so it becomes handy to print
