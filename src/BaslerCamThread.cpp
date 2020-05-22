@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 
 #include <QDebug>
 #include <qdir.h> //QT stuff
@@ -64,24 +65,74 @@ void BaslerCamThread::initCamera()
                 fmt::format("{}: Could not enumerate cameras", _videoStream.id));
         }
 
-        bool camFound = false;
+        std::optional<Pylon::CDeviceInfo> camDeviceInfo;
         for (size_t i = 0; i < devices.size(); i++)
         {
             if (devices[i].GetSerialNumber() == _config.serial.c_str())
             {
-                _camera.Attach(tlFactory.CreateDevice(devices[i]));
-                _camera.Open();
-
-                camFound = true;
+                camDeviceInfo = devices[i];
                 break;
             }
         }
 
-        if (!camFound)
+        if (!camDeviceInfo)
         {
             throw std::runtime_error(
                 fmt::format("{}: No camera matching serial: {}", _videoStream.id, _config.serial));
         }
+
+        // NOTE: Basler camera models appear to use the naming convention
+        //       (series)(...)(interface)(mono/color)[suffix]
+
+        const auto cameraModel = std::string(camDeviceInfo->GetModelName());
+        logInfo("{}: Camera model: {}", _videoStream.id, cameraModel);
+
+        if (cameraModel.size() < 2)
+        {
+            throw std::runtime_error(
+                fmt::format("{}: Cannot determine camera series from model name {}",
+                            _videoStream.id,
+                            cameraModel));
+        }
+
+        const auto cameraSeries = [](auto code) {
+            if (code == "ac")
+                return "ace";
+            else if (code == "da")
+                return "dart";
+            else if (code == "pu")
+                return "pulse";
+            else
+                return "unknown";
+        }(cameraModel.substr(0, 2));
+
+        const auto cameraInterface = camDeviceInfo->GetDeviceClass();
+
+        // clang-format off
+        //
+        // Pylon SDK states the following about camera timestamp support:
+        //
+        // Camera Model                         | Timestamp Tick Frequency
+        //
+        // All ace USB 3.0 camera models        | 1 GHz (= 1 000 000 000 ticks per second, 1 tick = 1 ns)
+        // All ace GigE camera models           | 125 MHz (= 125 000 000  ticks per second, 1 tick = 8 ns) or 1 GHz (= 1 000 000 000 ticks per second, 1 tick = 1 ns)
+        // All dart BCON for LVDS camera models | Timestamp Latch feature not supported
+        // All dart BCON for MIPI camera models | Timestamp Latch feature not supported
+        // All dart USB 3.0 camera models       | Timestamp Latch feature not supported
+        // All pulse USB 3.0 camera models      | Timestamp Latch feature not supported
+        //
+        // clang-format on
+
+        if (cameraSeries == "ace" && cameraInterface == Pylon::BaslerUsbDeviceClass)
+        {
+        }
+        else
+        {
+            throw std::runtime_error(fmt::format("{}: Only ace USB 3.0 cameras supported"));
+        }
+
+        _camera.Attach(tlFactory.CreateDevice(*camDeviceInfo));
+        _camera.Open();
 
         logInfo("{}: Camera resolution: {}x{}",
                 _videoStream.id,
