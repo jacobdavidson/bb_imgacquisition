@@ -14,7 +14,7 @@ message(STATUS "Source version: ${SOURCE_VERSION}")
 # string(TIMESTAMP BUILD_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
 # message(STATUS "Source version: ${SOURCE_VERSION}")
 
-project(bb_imageacquisition LANGUAGES CXX)
+project(bb_imgacquisition LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -38,9 +38,7 @@ find_package(OpenCV REQUIRED)
 
 find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
 
-set(EXE_NAME bb_ImageAcquistion)
-
-add_executable(${EXE_NAME}
+add_executable(${PROJECT_NAME}
 	src/format.h
 	src/log.h
 	src/log.cpp
@@ -66,9 +64,9 @@ add_executable(${EXE_NAME}
 	src/main.cpp
 )
 
-set_target_properties(${EXE_NAME} PROPERTIES AUTOMOC ON)
+set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON)
 
-target_link_libraries(${EXE_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	${CMAKE_DL_LIBS}
 	Threads::Threads
 	fmt
@@ -108,35 +106,35 @@ else()
 endif()
 
 if(Flea3 IN_LIST CAMERA_BACKENDS)
-	target_compile_definitions(${EXE_NAME} PRIVATE USE_FLEA3)
-	target_sources(${EXE_NAME} PRIVATE src/Flea3CamThread.h src/Flea3CamThread.cpp)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_FLEA3)
+	target_sources(${PROJECT_NAME} PRIVATE src/Flea3CamThread.h src/Flea3CamThread.cpp)
 
-	target_link_libraries(${EXE_NAME} PRIVATE FlyCapture2)
+	target_link_libraries(${PROJECT_NAME} PRIVATE FlyCapture2)
 endif()
 
 if(XIMEA IN_LIST CAMERA_BACKENDS)
-	target_sources(${EXE_NAME} PRIVATE src/XimeaCamThread.h src/XimeaCamThread.cpp)
-	target_compile_definitions(${EXE_NAME} PRIVATE USE_XIMEA)
+	target_sources(${PROJECT_NAME} PRIVATE src/XimeaCamThread.h src/XimeaCamThread.cpp)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_XIMEA)
 
-	target_link_libraries(${EXE_NAME} PRIVATE XIMEA)
+	target_link_libraries(${PROJECT_NAME} PRIVATE XIMEA)
 endif()
 
 if(Basler IN_LIST CAMERA_BACKENDS)
-	target_sources(${EXE_NAME} PRIVATE src/BaslerCamThread.h src/BaslerCamThread.cpp)
-	target_compile_definitions(${EXE_NAME} PRIVATE USE_BASLER)
+	target_sources(${PROJECT_NAME} PRIVATE src/BaslerCamThread.h src/BaslerCamThread.cpp)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BASLER)
 
-	target_link_libraries(${EXE_NAME} PRIVATE Pylon5::Base Pylon5::Utility Pylon5::GenAPI Pylon5::GCBase)
+	target_link_libraries(${PROJECT_NAME} PRIVATE Pylon5::Base Pylon5::Utility Pylon5::GenAPI Pylon5::GCBase)
 endif()
 
 message(STATUS "Enabled camera backends: ${CAMERA_BACKENDS}")
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	target_compile_options(${EXE_NAME} PRIVATE -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer)
-	target_compile_options(${EXE_NAME} PRIVATE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT)
+	target_compile_options(${PROJECT_NAME} PRIVATE -MMD -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer)
+	target_compile_options(${PROJECT_NAME} PRIVATE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT)
 endif()
 
 configure_file(src/version.cpp.in "${CMAKE_CURRENT_BINARY_DIR}/version.cpp" @ONLY)
-target_sources(${EXE_NAME} PRIVATE src/version.h "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
+target_sources(${PROJECT_NAME} PRIVATE src/version.h "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
 
 add_library(build_timestamp STATIC EXCLUDE_FROM_ALL "${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.cpp")
 add_custom_command(
@@ -147,8 +145,8 @@ add_custom_command(
 		-P ${CMAKE_CURRENT_SOURCE_DIR}/src/cmake/BuildTimestamp.cmake
 	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/build_timestamp.cpp.in")
 
-target_link_libraries(${EXE_NAME} PRIVATE build_timestamp)
-add_custom_command(TARGET ${EXE_NAME} PRE_LINK
+target_link_libraries(${PROJECT_NAME} PRIVATE build_timestamp)
+add_custom_command(TARGET ${PROJECT_NAME} PRE_LINK
 	COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_SOURCE_DIR}/src/build_timestamp.cpp.in"
 	COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target build_timestamp
 )
