@@ -1,5 +1,5 @@
 {
-    "tmp_path": "data/tmp",
+    "tmp_directory": "data/tmp",
     "out_directory": "data/out",
     "video_encoders": {
         "h265_hw_0": "hevc_nvenc"

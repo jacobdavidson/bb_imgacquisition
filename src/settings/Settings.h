@@ -131,7 +131,7 @@ public:
     const std::vector<VideoStream>&                     videoStreams() const;
     const std::unordered_map<std::string, std::string>& videoEncoders() const;
 
-    const std::string tmpPath() const;
+    const std::string tmpDirectory() const;
     const std::string outDirectory() const;
 
 private:
@@ -141,6 +141,6 @@ private:
 
     std::unordered_map<std::string, std::string> _videoEncoders;
 
-    std::string _tmpPath;
+    std::string _tmpDirectory;
     std::string _outDirectory;
 };

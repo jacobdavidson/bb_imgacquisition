@@ -160,7 +160,7 @@ void SettingsIAC::loadNewSettings()
         _videoEncoders.emplace(id, name.get_value<std::string>());
     }
 
-    _tmpPath      = _ptree.get<std::string>("tmp_path");
+    _tmpDirectory = _ptree.get<std::string>("tmp_directory");
     _outDirectory = _ptree.get<std::string>("out_directory");
 }
 
@@ -174,9 +174,9 @@ const std::unordered_map<std::string, std::string>& SettingsIAC::videoEncoders()
     return _videoEncoders;
 }
 
-const std::string SettingsIAC::tmpPath() const
+const std::string SettingsIAC::tmpDirectory() const
 {
-    return _tmpPath;
+    return _tmpDirectory;
 }
 
 const std::string SettingsIAC::outDirectory() const
