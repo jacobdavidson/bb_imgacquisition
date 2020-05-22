@@ -11,7 +11,6 @@
 #include <QTimer>
 
 #include "settings/Settings.h"
-#include "settings/utility.h"
 #include "Watchdog.h"
 #include "PlatformAdapter.h"
 #include "log.h"

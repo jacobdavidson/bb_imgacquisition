@@ -13,7 +13,6 @@
 
 #include "Watchdog.h"
 #include "settings/Settings.h"
-#include "settings/utility.h"
 #include "GrayscaleImage.h"
 #include "log.h"
 

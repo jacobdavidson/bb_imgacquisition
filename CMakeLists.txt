@@ -57,8 +57,6 @@ add_executable(${EXE_NAME}
 	src/VideoFileWriter.cpp
 	src/Watchdog.h
 	src/Watchdog.cpp
-	src/settings/utility.h
-	src/settings/utility.cpp
 	src/settings/Settings.h
 	src/settings/Settings.cpp
 	src/CamThread.h

@@ -4,7 +4,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "settings/utility.h"
 #include "settings/Settings.h"
 // The order is important!
 #include "VideoWriteThread.h"

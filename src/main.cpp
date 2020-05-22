@@ -2,7 +2,6 @@
 
 #include "ImgAcquisitionApp.h"
 #include "settings/Settings.h"
-#include "settings/utility.h"
 
 int main(int argc, char* argv[])
 {
