@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <chrono>
 
 #include <QDebug>
 #include <qdir.h> //QT stuff
@@ -18,18 +19,11 @@
 #include <sstream>
 
 #include <array>
-#include <ctime>
-#include <time.h>
 
 #include <opencv2/opencv.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
-#include <boost/date_time/local_time/local_time.hpp>
-#include <boost/date_time/c_local_time_adjustor.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time.hpp>
 
 XimeaCamThread::XimeaCamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
 : CamThread(config, videoStream, watchdog)
@@ -259,14 +253,17 @@ void XimeaCamThread::startCapture()
 
 void XimeaCamThread::run()
 {
+    using namespace std::chrono_literals;
+
     const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
     const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
+    uint64_t lastImageSequenceNumber = 0;
+
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
-    uint64_t                 lastCameraTimestampMicroseconds{0};
-    uint64_t                 lastImageSequenceNumber{0};
-    boost::posix_time::ptime lastCameraTimestamp;
+    auto currCameraTime      = std::chrono::system_clock::time_point{};
+    auto lastCameraTimestamp = 0us;
 
     // Preallocate image buffer on stack in order to save performance later.
     std::array<unsigned char, 3008 * 4112> imageBuffer;
@@ -289,17 +286,22 @@ void XimeaCamThread::run()
         const auto end = std::chrono::steady_clock::now();
 
         // Get the timestamp
-        const auto     wallClockNow = boost::posix_time::microsec_clock::universal_time();
-        const uint64_t currentCameraTimestampMicroseconds = image.tsUSec;
+        const auto currWallClockTime = std::chrono::system_clock::now();
+        // NOTE: Camera time is cyclic (if available):
+        //   xiMU: not implemented
+        //   xiQ, xiD: 305 hours, recorded at start of data readout
+        //   xiC,xiB,xiT,xiX: 2339 years, recorded at start of exposure
+        const auto currCameraTimestamp = std::chrono::microseconds(image.tsUSec) +
+                                         std::chrono::seconds(image.tsSec);
 
         // Image sequence sanity check.
         if (lastImageSequenceNumber != 0 && image.nframe != lastImageSequenceNumber + 1)
         {
-            logWarning("{}: Camera lost frame: This frame: #{} last frame: #{} timestamp: {}",
+            logWarning("{}: Camera lost frame: This frame: #{} last frame: #{} timestamp: {:e.6}",
                        _videoStream.id,
                        image.nframe,
                        lastImageSequenceNumber,
-                       boost::posix_time::to_iso_extended_string(wallClockNow));
+                       currWallClockTime);
 
             for (auto& what : std::map<std::string, int>{
                      {"Transport layer loss: ", XI_CNT_SEL_TRANSPORT_SKIPPED_FRAMES},
@@ -313,30 +315,28 @@ void XimeaCamThread::run()
         }
         lastImageSequenceNumber = image.nframe;
 
-        // Reset the camera timestamp?
-        if (lastCameraTimestampMicroseconds == 0 ||
-            (lastCameraTimestampMicroseconds > currentCameraTimestampMicroseconds))
+        // NOTE: If we detected camera model we could calculate the timestamp difference modulo
+        //       timer cycle instead.
+        if (lastCameraTimestamp == 0us || lastCameraTimestamp > currCameraTimestamp)
         {
-            if (lastCameraTimestampMicroseconds != 0 && lastCameraTimestamp > wallClockNow &&
-                loopCount > 10)
+            if (lastCameraTimestamp != 0us && currCameraTime > currWallClockTime && loopCount > 10)
             {
                 logWarning(
-                    "{}: Camera clock faster than wall time. Last camera time: {} wall "
-                    "clock: {}",
+                    "{}: Camera clock faster than wall time. Last camera time: {:e.6} wall "
+                    "clock: {:e.6}",
                     _videoStream.id,
-                    boost::posix_time::to_iso_extended_string(lastCameraTimestamp),
-                    boost::posix_time::to_iso_extended_string(wallClockNow));
+                    currCameraTime,
+                    currWallClockTime);
             }
-            lastCameraTimestamp = wallClockNow;
+            currCameraTime = currWallClockTime;
         }
         else
         {
-            const int64_t microsecondDelta = static_cast<const int64_t>(
-                currentCameraTimestampMicroseconds - lastCameraTimestampMicroseconds);
-            assert(microsecondDelta >= 0);
-            lastCameraTimestamp += boost::posix_time::microseconds(microsecondDelta);
+            const auto elapsed = currCameraTimestamp - lastCameraTimestamp;
+            assert(elapsed >= 0us);
+            currCameraTime += elapsed;
         }
-        lastCameraTimestampMicroseconds = currentCameraTimestampMicroseconds;
+        lastCameraTimestamp = currCameraTimestamp;
 
         // Skip the first X images to allow the camera buffer to be flushed.
         if (loopCount < 10)
@@ -372,10 +372,10 @@ void XimeaCamThread::run()
                 cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
             croppedImageMatrix.copyTo(wholeImageMatrix);
         }
-        const std::string frameTimestamp = boost::posix_time::to_iso_extended_string(
-                                               lastCameraTimestamp) +
-                                           "Z";
-        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, frameTimestamp);
+
+        auto buf = std::make_shared<GrayscaleImage>(vwidth,
+                                                    vheight,
+                                                    fmt::format("{:e.6}", currCameraTime));
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
         _videoStream.push(buf);
