@@ -1,5 +1,4 @@
 {
-    "log_directory": ".\/data\/log\/Cam_%s\/",
     "tmp_path": "data/tmp",
     "out_directory": "data/out",
     "video_encoders": {
