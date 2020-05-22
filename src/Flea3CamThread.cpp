@@ -381,9 +381,7 @@ void Flea3CamThread::run()
         }
 
         // Move image to buffer for further procession
-        auto buf = std::make_shared<GrayscaleImage>(vwidth,
-                                                    vheight,
-                                                    fmt::format("{:e.6}", currWallClockTime));
+        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, currWallClockTime);
         memcpy(&buf.get()->data[0], cimg.GetData(), vwidth * vheight);
 
         _videoStream.push(buf);

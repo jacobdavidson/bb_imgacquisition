@@ -370,9 +370,7 @@ void BaslerCamThread::run()
             wholeImageMatrix = croppedImageMatrix;
         }
 
-        auto buf = std::make_shared<GrayscaleImage>(vwidth,
-                                                    vheight,
-                                                    fmt::format("{:e.6}", currCameraTime));
+        auto buf = std::make_shared<GrayscaleImage>(vwidth, vheight, currCameraTime);
         memcpy(&buf.get()->data[0], wholeImageMatrix.data, vwidth * vheight);
 
         _videoStream.push(buf);

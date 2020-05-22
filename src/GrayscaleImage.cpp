@@ -2,7 +2,7 @@
 
 #include "GrayscaleImage.h"
 
-GrayscaleImage::GrayscaleImage(int w, int h, std::string t)
+GrayscaleImage::GrayscaleImage(int w, int h, std::chrono::system_clock::time_point t)
 : timestamp{t}
 , width{w}
 , height{h}

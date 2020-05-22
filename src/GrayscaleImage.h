@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include <string>
 #include <vector>
+#include <chrono>
 
 struct GrayscaleImage
 {
-    std::string          timestamp;
-    int                  width;
-    int                  height;
-    std::vector<uint8_t> data;
+    std::chrono::system_clock::time_point timestamp;
+    int                                   width;
+    int                                   height;
+    std::vector<uint8_t>                  data;
 
-    GrayscaleImage(int w, int h, std::string t);
+    GrayscaleImage(int w, int h, std::chrono::system_clock::time_point t);
 };
