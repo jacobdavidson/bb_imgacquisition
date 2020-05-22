@@ -11,7 +11,7 @@
 class VideoStream final
 {
 public:
-    using Image = std::shared_ptr<GrayscaleImage>;
+    using Image = GrayscaleImage;
 
     VideoStream(std::string                                  id,
                 std::tuple<size_t, size_t>                   resolution,

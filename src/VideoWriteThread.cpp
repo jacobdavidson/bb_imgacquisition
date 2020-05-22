@@ -86,13 +86,13 @@ void VideoWriteThread::run()
         {
             VideoStream::Image img;
             videoStream.pop(img);
-            if (!img)
+            if (img.data.empty())
             {
                 videoStreamClosedEarly = true;
                 break;
             }
 
-            f.write(*img);
+            f.write(img);
 
             if (frameIndex % debugInterval == 0)
             {
@@ -101,7 +101,7 @@ void VideoWriteThread::run()
 
             if (frameTimestamps.is_open())
             {
-                frameTimestamps << fmt::format("{:e.6}\n", img->timestamp);
+                frameTimestamps << fmt::format("{:e.6}\n", img.timestamp);
                 frameTimestamps.flush();
             }
         }

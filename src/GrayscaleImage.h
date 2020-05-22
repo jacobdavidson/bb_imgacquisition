@@ -2,15 +2,17 @@
 
 #pragma once
 
-#include <vector>
 #include <chrono>
+
+#include <QVector>
 
 struct GrayscaleImage
 {
     std::chrono::system_clock::time_point timestamp;
     int                                   width;
     int                                   height;
-    std::vector<uint8_t>                  data;
+    QVector<uint8_t>                      data;
 
+    GrayscaleImage() = default;
     GrayscaleImage(int w, int h, std::chrono::system_clock::time_point t);
 };
