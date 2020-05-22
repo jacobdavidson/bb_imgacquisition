@@ -345,7 +345,7 @@ void XimeaCamThread::run()
         }
 
         // Check if processing a frame took longer than X seconds. If so, log the event.
-        // TODO: Why this number: 2 * (1000000 / 6
+        // TODO: Why this number: 2 * (1000000 / 6)
         if (const auto duration =
                 std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
             duration > 2 * (1000000 / 6))
