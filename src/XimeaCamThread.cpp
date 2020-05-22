@@ -2,28 +2,15 @@
 
 #include "XimeaCamThread.h"
 
-#include <cstdlib>
-#include <iostream>
+#include <array>
 #include <chrono>
 
-#include <QDebug>
-#include <qdir.h> //QT stuff
-#include <qtextstream.h>
-
-#include "Watchdog.h"
-#include "settings/Settings.h"
-#include "settings/utility.h"
-#include "GrayscaleImage.h"
-#include "log.h"
-
-#include <sstream>
-
-#include <array>
-
 #include <opencv2/opencv.hpp>
-
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
+#include "log.h"
+#include "Watchdog.h"
 
 XimeaCamThread::XimeaCamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
 : CamThread(config, videoStream, watchdog)

@@ -2,15 +2,11 @@
 
 #pragma once
 
-#ifdef WINDOWS
-    #include <windows.h>
-#endif
-#include "CamThread.h"
+#include <string>
+
 #include <xiApi.h>
 
-#include "Watchdog.h"
-#include <mutex>
-#include <string>
+#include "CamThread.h"
 
 /*!\brief Thread object which acquires images from a camera.
  *
@@ -23,9 +19,6 @@ class XimeaCamThread : public CamThread
 public:
     XimeaCamThread(Config config, VideoStream videoStream, Watchdog* watchdog);
 
-    //! Serial number of the camera
-    std::string _Serial;
-
 private:
     void initCamera();
     void startCapture();
@@ -34,9 +27,6 @@ private:
     // void                PrintCameraInfo(CameraInfo *pCamInfo);
 
     void enforce(XI_RETURN errorCode, const std::string& operation = "");
-
-    //! Deprecated JPeg compression parameter
-    // JPEGOption            _jpegConf;
 
     //! Handle returned by xiOpenDevice.
     HANDLE _Camera;
