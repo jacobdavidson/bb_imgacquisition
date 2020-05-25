@@ -5,9 +5,6 @@
 
 int main(int argc, char* argv[])
 {
-    SettingsIAC::setConf("configImAcq.json");
-    SettingsIAC::getInstance();
-
     ImgAcquisitionApp app(argc, argv);
 
     return app.exec();

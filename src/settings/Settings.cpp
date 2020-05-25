@@ -2,18 +2,53 @@
 
 #include "Settings.h"
 
+#include <fstream>
+
 #include "boost/program_options.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/foreach.hpp>
 
+#include <QStandardPaths>
+#include <QDir>
+
 #include "../format.h"
+#include "../log.h"
 
-const boost::property_tree::ptree SettingsIAC::getDefaultParams()
+SettingsIAC::SettingsIAC()
 {
+    const auto configLocation = QDir(
+        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
+    if (!configLocation.exists())
+    {
+        configLocation.mkpath(".");
+    }
 
-    boost::property_tree::ptree pt;
-    // std::string                 app = SettingsIAC::setConf("");
+    const auto configFilename = configLocation.absoluteFilePath("config.json").toStdString();
+
+    std::fstream configFile;
+    configFile.open(configFilename, std::ios::in);
+    if (configFile.good())
+    {
+        configFile.imbue(std::locale::classic());
+        boost::property_tree::read_json(configFile, _ptree);
+        loadNewSettings();
+    }
+    else
+    {
+        configFile.open(configFilename, std::ios::out | std::ios::trunc);
+        configFile.imbue(std::locale::classic());
+        _ptree = detectSettings();
+        boost::property_tree::write_json(configFile, _ptree);
+        logInfo("New settings file created: Edit it manually and run application again: {}",
+                configFilename);
+        std::exit(0);
+    }
+}
+
+const boost::property_tree::ptree SettingsIAC::detectSettings() const
+{
+    boost::property_tree::ptree tree;
 
     // for (int i = 0; i < 4; i++)
     // {
@@ -70,7 +105,7 @@ const boost::property_tree::ptree SettingsIAC::getDefaultParams()
     // pt.put(IMACQUISITION::EXCHANGEDIR, "./data/out/Cam_%u/");
     // pt.put(IMACQUISITION::CAMCOUNT, 2);
 
-    return pt;
+    return tree;
 }
 
 void SettingsIAC::loadNewSettings()

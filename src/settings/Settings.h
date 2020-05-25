@@ -7,7 +7,6 @@
 #include <variant>
 
 #include <string>
-#include <fstream>
 #include <iostream>
 
 #include <boost/optional.hpp>
@@ -21,37 +20,11 @@ class SettingsIAC
 {
 
 private:
+    const boost::property_tree::ptree detectSettings() const;
+
     void loadNewSettings();
 
-    /* This is a singleton. Get it using something like:
-     * SettingsIAC *myInstance = SettingsIAC::getInstance();
-     */
-    SettingsIAC()
-    {
-        // Setting default file, if unset
-        std::string confFile = setConf("");
-        if (confFile == "")
-            confFile = "configImAcq.json";
-
-        std::ifstream conf(confFile.c_str());
-        if (conf.good())
-        {
-            boost::property_tree::read_json(confFile, _ptree);
-            loadNewSettings();
-        }
-        else
-        {
-            _ptree = getDefaultParams();
-            boost::property_tree::write_json(confFile, _ptree);
-            std::cout << "**********************************" << std::endl;
-            std::cout << "* Created default configuration. *" << std::endl;
-            std::cout << "* Please adjust the config or    *" << std::endl;
-            std::cout << "* and run again. You might also  *" << std::endl;
-            std::cout << "* just stick with the defaults.  *" << std::endl;
-            std::cout << "**********************************" << std::endl;
-            exit(0);
-        }
-    }
+    SettingsIAC();
 
     // C++ 11 style
     // =======
@@ -61,18 +34,6 @@ private:
 public:
     // To set options from CLI
     boost::property_tree::ptree _ptree;
-
-    // Make the config file adjustable. Retrieve via empty string.
-    // The config file will determine which app is being run.
-    // This majorly influences the default settings.
-    // See Settings.cpp and ParamNames.h for details.
-    static std::string setConf(std::string c)
-    {
-        static std::string confFile;
-        if (c != "")
-            confFile = c;
-        return confFile;
-    }
 
     static SettingsIAC* getInstance()
     {
