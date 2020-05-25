@@ -28,9 +28,6 @@ void VideoWriteThread::run()
 
     SettingsIAC* set = SettingsIAC::getInstance();
 
-    // For logging encoding times
-    double elapsedTimeP, avgtimeP;
-
     while (!isInterruptionRequested())
     {
         std::vector<size_t> sizes;
