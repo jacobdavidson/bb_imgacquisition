@@ -4,7 +4,7 @@
 
 VideoStream::VideoStream(std::string                                  _id,
                          std::tuple<size_t, size_t>                   _resolution,
-                         size_t                                       _framesPerSecond,
+                         float                                        _framesPerSecond,
                          size_t                                       _framesPerFile,
                          std::unordered_map<std::string, std::string> _encoderOptions)
 : id{_id}

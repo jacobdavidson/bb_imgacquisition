@@ -138,44 +138,12 @@ void XimeaCamera::initCamera()
 
     // Select configured properties.
 
-    // Exposure
-    if (!_config.exposure || !*_config.exposure)
-    {
-        throw std::runtime_error("Manual camera exposure required");
-    }
-
-    // Disable auto-exposure.
-    enforce(xiSetParamInt(_Camera, XI_PRM_AEAG, 0), "xiSetParamInt XI_PRM_AEAG");
-
-    enforce(xiSetParamInt(_Camera, XI_PRM_EXPOSURE, **_config.exposure),
-            "xiSetParamInt XI_PRM_EXPOSURE");
-
-    // Disable burst exposure - the default is off, but we make sure here.
-    enforce(xiSetParamInt(_Camera, XI_PRM_TRG_SELECTOR, XI_TRG_SEL_FRAME_START),
-            "xiSetParamInt XI_PRM_TRG_SELECTOR");
-    enforce(xiSetParamInt(_Camera, XI_PRM_EXPOSURE_BURST_COUNT, 1),
-            "xiSetParamInt XI_PRM_EXPOSURE_BURST_COUNT");
-
     // The Ximea camera does not support 4000x3000 pixels.
     // enforce(xiSetParamInt(_Camera, XI_PRM_WIDTH, 4000), "xiSetParamInt XI_PRM_WIDTH");
     // enforce(xiSetParamInt(_Camera, XI_PRM_HEIGHT, 3000), "xiSetParamInt XI_PRM_HEIGHT");
 
-    // Gain.
-    if (!_config.gain || !*_config.gain)
-    {
-        throw std::runtime_error("Manual camera gain required");
-    }
-    enforce(xiSetParamInt(_Camera, XI_PRM_GAIN_SELECTOR, XI_GAIN_SELECTOR_ALL),
-            "xiSetParamInt XI_PRM_GAIN_SELECTOR");
-    enforce(xiSetParamFloat(_Camera, XI_PRM_GAIN, static_cast<float>(**_config.gain)),
-            "xiSetParamFloat XI_PRM_GAIN");
-
-    // Whitebalance.
-    if (tryAllXimeaCamSettings && _config.whitebalance)
-    {
-        enforce(xiSetParamInt(_Camera, XI_PRM_AUTO_WB, *_config.whitebalance),
-                "xiSetParamInt XI_PRM_AUTO_WB");
-    }
+    enforce(xiSetParamInt(_Camera, XI_PRM_TRG_SELECTOR, XI_TRG_SEL_FRAME_START),
+            "xiSetParamInt XI_PRM_TRG_SELECTOR");
 
     if (auto* trigger = std::get_if<Config::SoftwareTrigger>(&_config.trigger))
     {
@@ -200,6 +168,73 @@ void XimeaCamera::initCamera()
     else
     {
         throw std::logic_error("Not implemented");
+    }
+
+    if (_config.blacklevel)
+    {
+        logWarning("{}: Blacklevel parameter not implemented for Basler cameras", _videoStream.id);
+    }
+
+    if (_config.exposure)
+    {
+        // Explicitly enforce 1 exposure per frame
+        enforce(xiSetParamInt(_Camera, XI_PRM_EXPOSURE_BURST_COUNT, 1),
+                "xiSetParamInt XI_PRM_EXPOSURE_BURST_COUNT");
+    }
+
+    if (_config.exposure && _config.gain)
+    {
+        const auto autoExposure = std::holds_alternative<Config::Parameter_Auto>(
+            *_config.exposure);
+        const auto autoGain = std::holds_alternative<Config::Parameter_Auto>(*_config.exposure);
+
+        if (autoExposure && autoGain)
+        {
+            enforce(xiSetParamInt(_Camera, XI_PRM_AEAG, 1), "xiSetParamInt XI_PRM_AEAG");
+        }
+        else if (!autoExposure && !autoGain)
+        {
+            enforce(xiSetParamInt(_Camera, XI_PRM_AEAG, 0), "xiSetParamInt XI_PRM_AEAG");
+
+            enforce(xiSetParamInt(_Camera,
+                                  XI_PRM_EXPOSURE,
+                                  std::get<Config::Parameter_Manual<float>>(*_config.exposure)),
+                    "xiSetParamInt XI_PRM_EXPOSURE");
+
+            enforce(xiSetParamInt(_Camera, XI_PRM_GAIN_SELECTOR, XI_GAIN_SELECTOR_ALL),
+                    "xiSetParamInt XI_PRM_GAIN_SELECTOR");
+            enforce(xiSetParamFloat(_Camera,
+                                    XI_PRM_GAIN,
+                                    std::get<Config::Parameter_Manual<float>>(*_config.gain)),
+                    "xiSetParamFloat XI_PRM_GAIN");
+        }
+        else
+        {
+            throw std::runtime_error(
+                fmt::format("{}: Automatic gain enables automatic exposure and vice versa on "
+                            "XIMEA cameras",
+                            _videoStream.id));
+        }
+    }
+    else if (_config.exposure)
+    {
+        enforce(xiSetParamInt(_Camera, XI_PRM_AEAG, 0), "xiSetParamInt XI_PRM_AEAG");
+
+        enforce(xiSetParamInt(_Camera,
+                              XI_PRM_EXPOSURE,
+                              std::get<Config::Parameter_Manual<float>>(*_config.exposure)),
+                "xiSetParamInt XI_PRM_EXPOSURE");
+    }
+    else if (_config.gain)
+    {
+        enforce(xiSetParamInt(_Camera, XI_PRM_AEAG, 0), "xiSetParamInt XI_PRM_AEAG");
+
+        enforce(xiSetParamInt(_Camera, XI_PRM_GAIN_SELECTOR, XI_GAIN_SELECTOR_ALL),
+                "xiSetParamInt XI_PRM_GAIN_SELECTOR");
+        enforce(xiSetParamFloat(_Camera,
+                                XI_PRM_GAIN,
+                                std::get<Config::Parameter_Manual<float>>(*_config.gain)),
+                "xiSetParamFloat XI_PRM_GAIN");
     }
 
     // The default is no buffering.

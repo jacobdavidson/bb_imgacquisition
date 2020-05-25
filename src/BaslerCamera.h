@@ -6,6 +6,7 @@
 #include <string>
 #include <optional>
 #include <chrono>
+#include <vector>
 
 #include <pylon/PylonIncludes.h>
 #include <pylon/usb/BaslerUsbInstantCamera.h>
@@ -26,6 +27,8 @@ private:
 
 public:
     BaslerCamera(Config config, VideoStream videoStream, Watchdog* watchdog);
+
+    static std::vector<Config> getAvailable();
 
 private:
     void initCamera();

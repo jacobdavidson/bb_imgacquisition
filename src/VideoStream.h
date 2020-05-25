@@ -15,7 +15,7 @@ public:
 
     VideoStream(std::string                                  id,
                 std::tuple<size_t, size_t>                   resolution,
-                size_t                                       _framesPerSecond,
+                float                                        _framesPerSecond,
                 size_t                                       _framesPerFile,
                 std::unordered_map<std::string, std::string> encoderOptions);
 
@@ -29,7 +29,7 @@ public:
 
     const std::string                                  id;
     const std::tuple<size_t, size_t>                   resolution;
-    const size_t                                       framesPerSecond;
+    const float                                        framesPerSecond;
     const size_t                                       framesPerFile;
     const std::unordered_map<std::string, std::string> encoderOptions;
 

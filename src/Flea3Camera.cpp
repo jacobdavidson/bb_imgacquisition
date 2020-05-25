@@ -9,6 +9,11 @@
 #include "log.h"
 #include "GrayscaleImage.h"
 
+template<typename T>
+struct dependent_false : std::false_type
+{
+};
+
 // Flea3Camera constructor
 Flea3Camera::Flea3Camera(Config config, VideoStream videoStream, Watchdog* watchdog)
 : Camera(config, videoStream, watchdog)
@@ -47,20 +52,17 @@ void Flea3Camera::initCamera()
 
     // Properties to be modified
 
-    FlyCapture2::Property brightness;
-    brightness.type = FlyCapture2::BRIGHTNESS;
+    FlyCapture2::Property blacklevel;
+    blacklevel.type = FlyCapture2::BRIGHTNESS;
 
     FlyCapture2::Property exposure;
-    exposure.type = FlyCapture2::AUTO_EXPOSURE;
-
-    FlyCapture2::Property shutter;
-    shutter.type = FlyCapture2::SHUTTER;
-
-    FlyCapture2::Property frmRate;
-    frmRate.type = FlyCapture2::FRAME_RATE;
+    exposure.type = FlyCapture2::SHUTTER;
 
     FlyCapture2::Property gain;
     gain.type = FlyCapture2::GAIN;
+
+    FlyCapture2::Property frmRate;
+    frmRate.type = FlyCapture2::FRAME_RATE;
 
     FlyCapture2::Property wBalance;
     wBalance.type = FlyCapture2::WHITE_BALANCE;
@@ -183,45 +185,65 @@ void Flea3Camera::initCamera()
 
     /////////////////// ALL THE PROCESS WITH PROPERTIES  ////////////////////////////////
 
-    //-------------------- BRIGHTNESS STARTS        -----------------------------------
-    enforce(_Camera.GetProperty(&brightness));
+    //-------------------- BLACKLEVEL STARTS        -----------------------------------
 
-    brightness.onOff = static_cast<bool>(_config.blacklevel);
-    if (brightness.onOff)
+    if (_config.blacklevel)
     {
-        brightness.autoManualMode = !static_cast<bool>(*_config.blacklevel);
-        if (!brightness.autoManualMode)
-        {
-            brightness.absValue = **_config.blacklevel;
-        }
+        enforce(_Camera.GetProperty(&blacklevel));
+
+        blacklevel.onOff = true;
+        std::visit(
+            [&blacklevel](auto&& value) {
+                using T = std::decay_t<decltype(value)>;
+
+                if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
+                    blacklevel.autoManualMode = true;
+                else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
+                {
+                    blacklevel.autoManualMode = false;
+                    blacklevel.absValue       = value;
+                }
+                else
+                    static_assert(dependent_false<T>::value);
+            },
+            *_config.blacklevel);
+
+        enforce(_Camera.SetProperty(&blacklevel));
     }
 
-    enforce(_Camera.SetProperty(&brightness));
+    enforce(_Camera.GetProperty(&blacklevel));
 
-    enforce(_Camera.GetProperty(&brightness));
-
-    logInfo("{}: Brightness parameter is {} and {:.2f}",
+    logInfo("{}: Blacklevel parameter is {} and {:.2f}",
             _videoStream.id,
-            brightness.onOff ? "on" : "off",
-            brightness.absValue);
+            blacklevel.onOff ? "on" : "off",
+            blacklevel.absValue);
 
-    //-------------------- BROGHTNESS ENDS          -----------------------------------
+    //-------------------- BLACKLEVEL ENDS          -----------------------------------
 
     //-------------------- EXPOSURE STARTS          -----------------------------------
-    enforce(_Camera.GetProperty(&exposure));
-
-    exposure.onOff = static_cast<bool>(_config.exposure);
-    if (exposure.onOff)
+    if (_config.exposure)
     {
-        exposure.autoManualMode = !static_cast<bool>(*_config.exposure);
-        if (!exposure.autoManualMode)
-        {
-            exposure.absValue = **_config.exposure;
-        }
+        enforce(_Camera.GetProperty(&exposure));
+
+        exposure.onOff = true;
+        std::visit(
+            [&exposure](auto&& value) {
+                using T = std::decay_t<decltype(value)>;
+
+                if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
+                    exposure.autoManualMode = true;
+                else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
+                {
+                    exposure.autoManualMode = false;
+                    exposure.absValue       = value;
+                }
+                else
+                    static_assert(dependent_false<T>::value);
+            },
+            *_config.exposure);
+
+        enforce(_Camera.SetProperty(&exposure));
     }
-
-    enforce(_Camera.SetProperty(&exposure));
-
     enforce(_Camera.GetProperty(&exposure));
 
     logInfo("{}: Exposure parameter is {} and {}",
@@ -231,60 +253,37 @@ void Flea3Camera::initCamera()
 
     //-------------------- EXPOSURE ENDS -----------------------------------
 
-    //-------------------- SHUTTER STARTS           -----------------------------------
-    enforce(_Camera.GetProperty(&shutter));
-
-    shutter.onOff = static_cast<bool>(_config.shutter);
-    if (shutter.onOff)
-    {
-        shutter.autoManualMode = !static_cast<bool>(*_config.shutter);
-        if (!shutter.autoManualMode)
-        {
-            shutter.absValue = **_config.shutter;
-        }
-    }
-
-    enforce(_Camera.SetProperty(&shutter));
-    enforce(_Camera.GetProperty(&shutter));
-
-    logInfo("{}: Shutter parameter is {} and {:.2f}",
-            _videoStream.id,
-            shutter.autoManualMode ? "auto" : "manual",
-            shutter.absValue);
-
-    //-------------------- SHUTTER ENDS             -----------------------------------
-
     //-------------------- GAIN STARTS              -----------------------------------
-    enforce(_Camera.GetProperty(&gain));
-
-    gain.onOff = static_cast<bool>(_config.gain);
-    if (gain.onOff)
+    if (_config.gain)
     {
-        gain.autoManualMode = !static_cast<bool>(*_config.gain);
-        if (!gain.autoManualMode)
-        {
-            gain.absValue = **_config.gain;
-        }
+        enforce(_Camera.GetProperty(&gain));
+
+        gain.onOff = true;
+        std::visit(
+            [&gain](auto&& value) {
+                using T = std::decay_t<decltype(value)>;
+
+                if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
+                    gain.autoManualMode = true;
+                else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
+                {
+                    gain.autoManualMode = false;
+                    gain.absValue       = value;
+                }
+                else
+                    static_assert(dependent_false<T>::value);
+            },
+            *_config.gain);
+
+        enforce(_Camera.SetProperty(&gain));
     }
-
-    enforce(_Camera.SetProperty(&gain));
-
     enforce(_Camera.GetProperty(&gain));
 
-    logInfo("{}: Gain parameter is {}", _videoStream.id, gain.autoManualMode ? "auto" : "manual");
+    logInfo("{}: Gain parameter is {} and {}",
+            _videoStream.id,
+            gain.onOff ? "on" : "off",
+            gain.autoManualMode ? "auto" : "manual");
     //-------------------- GAIN ENDS                -----------------------------------
-
-    //-------------------- WHITE BALANCE STARTS     -----------------------------------
-    enforce(_Camera.GetProperty(&wBalance));
-
-    wBalance.onOff = static_cast<bool>(_config.whitebalance) && *_config.whitebalance;
-
-    enforce(_Camera.SetProperty(&wBalance));
-
-    enforce(_Camera.GetProperty(&wBalance));
-
-    logInfo("{}: White Balance parameter is {}", _videoStream.id, wBalance.onOff ? "on" : "off");
-    //-------------------- WHITE BALANCE ENDS       -----------------------------------
 
     //-------------------- TRIGGER MODE STARTS      -----------------------------------
 

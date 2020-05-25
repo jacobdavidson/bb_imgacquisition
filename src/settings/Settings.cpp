@@ -7,13 +7,21 @@
 #include "boost/program_options.hpp"
 
 #include <boost/property_tree/ptree.hpp>
-#include <boost/foreach.hpp>
 
 #include <QStandardPaths>
 #include <QDir>
 
 #include "../format.h"
 #include "../log.h"
+
+#if defined(USE_BASLER) && USE_BASLER
+    #include "../BaslerCamera.h"
+#endif
+
+template<typename T>
+struct dependent_false : std::false_type
+{
+};
 
 SettingsIAC::SettingsIAC()
 {
@@ -48,65 +56,98 @@ SettingsIAC::SettingsIAC()
 
 const boost::property_tree::ptree SettingsIAC::detectSettings() const
 {
-    boost::property_tree::ptree tree;
+    auto tree = boost::property_tree::ptree{};
 
-    // for (int i = 0; i < 4; i++)
-    // {
+    tree.put("tmp_directory", "data/tmp");
+    tree.put("out_directory", "data/out");
 
-    //     boost::property_tree::ptree hd;
-    //     hd.put(IMACQUISITION::BUFFERCONF::CAMID, i);
-    //     hd.put(IMACQUISITION::BUFFERCONF::SERIAL, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::SERIAL_STRING, "");
-    //     hd.put(IMACQUISITION::BUFFERCONF::ENABLED, 1);
-    //     hd.put(IMACQUISITION::BUFFERCONF::VIDEO_WIDTH, 4000);
-    //     hd.put(IMACQUISITION::BUFFERCONF::VIDEO_HEIGHT, 3000);
-    //     hd.put(IMACQUISITION::BUFFERCONF::BITRATE, 1000000);
-    //     hd.put(IMACQUISITION::BUFFERCONF::RCMODE, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::QP, 25);
-    //     hd.put(IMACQUISITION::BUFFERCONF::FRAMESPERVIDEO, 500);
-    //     hd.put(IMACQUISITION::BUFFERCONF::FPS, 3);
-    //     hd.put(IMACQUISITION::BUFFERCONF::PRESET, 2);
-    //     hd.put(IMACQUISITION::BUFFERCONF::HWBUFSIZE, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::BRIGHTNESSONOFF, 1);
-    //     hd.put(IMACQUISITION::BUFFERCONF::BRIGHTNESSAUTO, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::BRIGHTNESS, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::EXPOSUREONOFF, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::EXPOSUREAUTO, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::SHUTTER, 40);
-    //     hd.put(IMACQUISITION::BUFFERCONF::SHUTTERONOFF, 1);
-    //     hd.put(IMACQUISITION::BUFFERCONF::SHUTTERAUTO, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::GAIN, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::GAINONOFF, 1);
-    //     hd.put(IMACQUISITION::BUFFERCONF::GAINAUTO, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::WHITEBALANCE, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::HWTRIGGER, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::HWTRIGGERPARAM, 0);
-    //     hd.put(IMACQUISITION::BUFFERCONF::HWTRIGGERSOURCE, 0);
+    auto& videoEncoders = tree.put_child("video_encoders", {});
+    videoEncoders.put("h265_sw_0", "libx265");
 
-    //     boost::property_tree::ptree ld;
-    //     ld.put(IMACQUISITION::BUFFERCONF::CAMID, i);
-    //     ld.put(IMACQUISITION::BUFFERCONF::SERIAL, 0);
-    //     ld.put(IMACQUISITION::BUFFERCONF::SERIAL_STRING, "");
-    //     ld.put(IMACQUISITION::BUFFERCONF::ENABLED, 1);
-    //     ld.put(IMACQUISITION::BUFFERCONF::VIDEO_WIDTH, 2000);
-    //     ld.put(IMACQUISITION::BUFFERCONF::VIDEO_HEIGHT, 1500);
-    //     ld.put(IMACQUISITION::BUFFERCONF::BITRATE, 1000000);
-    //     ld.put(IMACQUISITION::BUFFERCONF::RCMODE, 0);
-    //     ld.put(IMACQUISITION::BUFFERCONF::QP, 35);
-    //     ld.put(IMACQUISITION::BUFFERCONF::FRAMESPERVIDEO, 500);
-    //     ld.put(IMACQUISITION::BUFFERCONF::FPS, 3);
-    //     ld.put(IMACQUISITION::BUFFERCONF::PRESET, 2);
-    //     pt.add_child(IMACQUISITION::BUFFER, hd);
-    //     pt.add_child(IMACQUISITION::BUFFER, ld);
-    // }
+    auto& videoStreams = tree.put_child("video_streams", {});
 
-    // pt.put(IMACQUISITION::LOGDIR, "./data/log/Cam_%d/");
-    // pt.put(IMACQUISITION::IMDIR, "./data/tmp/Cam_%u/Cam_%u_%s--%s");
-    // pt.put(IMACQUISITION::EXCHANGEDIR, "./data/out/Cam_%u/");
-    // pt.put(IMACQUISITION::CAMCOUNT, 2);
+    std::size_t camIndex = 0;
+
+    auto addVideoStreamForCameraConfig = [&camIndex, &videoStreams](VideoStream::Camera config) {
+        auto& videoStreamTree = videoStreams.put_child(fmt::format("Cam-{}", camIndex++), {});
+
+        auto& cameraTree = videoStreamTree.put_child("camera", {});
+        cameraTree.put("backend", config.backend);
+        cameraTree.put("serial", config.serial);
+        cameraTree.put("width", config.width);
+        cameraTree.put("height", config.height);
+
+        auto& triggerTree = cameraTree.put_child("trigger", {});
+
+        std::visit(
+            [&](auto&& value) {
+                using T = std::decay_t<decltype(value)>;
+
+                if constexpr (std::is_same_v<T, VideoStream::Camera::HardwareTrigger>)
+                {
+                    triggerTree.put("type", "hardware");
+                    triggerTree.put("source", value.source);
+
+                    videoStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
+                }
+                else if constexpr (std::is_same_v<T, VideoStream::Camera::SoftwareTrigger>)
+                {
+                    triggerTree.put("type", "software");
+                    triggerTree.put("frames_per_second", value.framesPerSecond);
+
+                    videoStreamTree.put("frames_per_second", value.framesPerSecond);
+                }
+                else
+                    static_assert(dependent_false<T>::value);
+            },
+            config.trigger);
+
+        videoStreamTree.put("frames_per_file", 500);
+
+        auto& encoderTree = videoStreamTree.put_child("encoder", {});
+
+        encoderTree.put("id", "h265_sw_0");
+
+        auto& encoderOptions = encoderTree.put_child("options", {});
+        encoderOptions.put("preset", "5");
+        encoderOptions.put("x265-params", "log-level=error");
+    };
+
+#if defined(USE_BASLER) && USE_BASLER
+    for (auto config : BaslerCamera::getAvailable())
+    {
+        addVideoStreamForCameraConfig(config);
+    }
+#endif
+
+    tree.put_child("video_streams", videoStreams);
 
     return tree;
 }
+
+template<typename T>
+auto parseParam(const boost::property_tree::ptree& tree, const std::string& name)
+    -> std::optional<SettingsIAC::VideoStream::Camera::Parameter<T>>
+{
+    if (auto strValue = tree.get_optional<std::string>(name); strValue)
+    {
+        if (*strValue == "auto")
+        {
+            return SettingsIAC::VideoStream::Camera::Parameter_Auto{};
+        }
+        else if (auto value = tree.get_optional<T>(name); value)
+        {
+            return SettingsIAC::VideoStream::Camera::Parameter_Manual<T>{*value};
+        }
+
+        throw std::runtime_error(
+            fmt::format("Invalid value for camera parameter \'{}\': Expected \"auto\" or "
+                        "appropriately typed value",
+                        name));
+    }
+
+    return {};
+};
 
 void SettingsIAC::loadNewSettings()
 {
@@ -135,7 +176,7 @@ void SettingsIAC::loadNewSettings()
         else if (triggerType == "software")
         {
             VideoStream::Camera::SoftwareTrigger trigger;
-            trigger.framesPerSecond = triggerTree.get<size_t>("frames_per_second");
+            trigger.framesPerSecond = triggerTree.get<float>("frames_per_second");
             stream.camera.trigger   = trigger;
         }
         else
@@ -169,14 +210,11 @@ void SettingsIAC::loadNewSettings()
             return boost::none;
         };
 
-        stream.camera.blacklevel = parseAutoIntParam(cameraTree, "blacklevel");
-        stream.camera.exposure   = parseAutoIntParam(cameraTree, "exposure");
-        stream.camera.shutter    = parseAutoIntParam(cameraTree, "shutter");
-        stream.camera.gain       = parseAutoIntParam(cameraTree, "gain");
+        stream.camera.blacklevel = parseParam<float>(cameraTree, "blacklevel");
+        stream.camera.exposure   = parseParam<float>(cameraTree, "exposure");
+        stream.camera.gain       = parseParam<float>(cameraTree, "gain");
 
-        stream.camera.whitebalance = cameraTree.get_optional<bool>("whitebalance");
-
-        stream.framesPerSecond = videoStreamTree.get<size_t>("frames_per_second");
+        stream.framesPerSecond = videoStreamTree.get<float>("frames_per_second");
         stream.framesPerFile   = videoStreamTree.get<size_t>("frames_per_file");
 
         const auto& encoderTree = videoStreamTree.get_child("encoder");

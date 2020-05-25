@@ -7,35 +7,89 @@
 #include <chrono>
 #include <optional>
 
-#include <QDebug>
-#include <qdir.h> //QT stuff
-#include <qtextstream.h>
-
 #include "Watchdog.h"
 #include "settings/Settings.h"
 #include "GrayscaleImage.h"
 #include "log.h"
 
-#include <sstream> //stringstreams
-
-#include <array>
-#include <ctime> //get time
-#include <time.h>
-
 #include <opencv2/opencv.hpp>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
-#include <boost/date_time/local_time/local_time.hpp>
-#include <boost/date_time/c_local_time_adjustor.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time.hpp>
+#include <pylon/usb/BaslerUsbInstantCamera.h>
 
 template<typename T>
 struct dependent_false : std::false_type
 {
 };
+
+auto BaslerCamera::getAvailable() -> std::vector<Config>
+{
+    using namespace Pylon;
+    using namespace Basler_UsbCameraParams;
+
+    auto  pylon   = PylonAutoInitTerm{};
+    auto& factory = CTlFactory::GetInstance();
+
+    auto deviceInfos = DeviceInfoList_t{};
+    if (auto r = factory.EnumerateDevices(deviceInfos); r < 0)
+    {
+        return {};
+    }
+
+    std::vector<Config> cameraConfigs;
+    for (const auto deviceInfo : deviceInfos)
+    {
+        Config config;
+        config.backend = "basler";
+        config.serial  = deviceInfo.GetSerialNumber();
+
+        if (deviceInfo.GetDeviceClass() != BaslerUsbDeviceClass)
+        {
+            continue;
+        }
+
+        auto camera = CBaslerUsbInstantCamera(factory.CreateDevice(deviceInfo));
+        camera.Open();
+
+        config.width  = camera.Width();
+        config.height = camera.Height();
+
+        if (camera.TriggerMode() == TriggerMode_On &&
+            TriggerSource_Line1 <= camera.TriggerSource() &&
+            camera.TriggerSource() <= TriggerSource_Line4)
+        {
+            config.trigger = Config::HardwareTrigger{camera.TriggerSource()};
+        }
+        else
+        {
+            config.trigger = Config::SoftwareTrigger{
+                static_cast<float>(camera.ResultingFrameRate())};
+        }
+
+        config.blacklevel = Config::Parameter_Manual<float>(camera.BlackLevel());
+
+        if (camera.ExposureAuto() == ExposureAuto_Off)
+        {
+            config.exposure = Config::Parameter_Manual<float>(camera.ExposureTime());
+        }
+        else
+        {
+            config.exposure = Config::Parameter_Auto{};
+        }
+
+        if (camera.GainAuto() == GainAuto_Off)
+        {
+            config.gain = Config::Parameter_Manual<float>(camera.Gain());
+        }
+        else
+        {
+            config.gain = Config::Parameter_Auto{};
+        }
+
+        cameraConfigs.push_back(config);
+    }
+
+    return cameraConfigs;
+}
 
 BaslerCamera::BaslerCamera(Config config, VideoStream videoStream, Watchdog* watchdog)
 : Camera(config, videoStream, watchdog)
@@ -149,8 +203,6 @@ void BaslerCamera::initCamera()
                 _camera.Width(),
                 _camera.Height());
 
-        // TODO: Set cam params as set in config file
-
         std::visit(
             [this](auto&& trigger) {
                 const auto mapTriggerSource =
@@ -203,6 +255,67 @@ void BaslerCamera::initCamera()
                 }
             },
             _config.trigger);
+
+        if (_config.blacklevel)
+        {
+            std::visit(
+                [this](auto&& value) {
+                    using T = std::decay_t<decltype(value)>;
+
+                    if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
+                        logWarning("{}: Automatic black level not supported on Basler cameras",
+                                   _videoStream.id);
+                    else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
+                        _camera.BlackLevel = value;
+                    else
+                        static_assert(dependent_false<T>::value);
+                },
+                *_config.blacklevel);
+        }
+
+        if (_config.exposure && _config.gain)
+        {
+            const auto autoExposure = std::holds_alternative<Config::Parameter_Auto>(
+                *_config.exposure);
+            const auto autoGain = std::holds_alternative<Config::Parameter_Auto>(
+                *_config.exposure);
+
+            if (autoExposure && autoGain)
+            {
+                _camera.ExposureAuto = Basler_UsbCameraParams::ExposureAuto_Continuous;
+                _camera.GainAuto     = Basler_UsbCameraParams::GainAuto_Continuous;
+            }
+            else if (!autoExposure && !autoGain)
+            {
+                _camera.ExposureAuto = Basler_UsbCameraParams::ExposureAuto_Off;
+                _camera.GainAuto     = Basler_UsbCameraParams::GainAuto_Off;
+
+                _camera.ExposureTime = std::get<Config::Parameter_Manual<float>>(
+                    *_config.exposure);
+                _camera.Gain = std::get<Config::Parameter_Manual<float>>(*_config.gain);
+            }
+            else
+            {
+                throw std::runtime_error(
+                    fmt::format("{}: Automatic gain enables automatic exposure and vice versa on "
+                                "Basler cameras",
+                                _videoStream.id));
+            }
+        }
+        else if (_config.exposure)
+        {
+            _camera.ExposureAuto = Basler_UsbCameraParams::ExposureAuto_Off;
+            _camera.GainAuto     = Basler_UsbCameraParams::GainAuto_Off;
+
+            _camera.ExposureTime = std::get<Config::Parameter_Manual<float>>(*_config.exposure);
+        }
+        else if (_config.gain)
+        {
+            _camera.ExposureAuto = Basler_UsbCameraParams::ExposureAuto_Off;
+            _camera.GainAuto     = Basler_UsbCameraParams::GainAuto_Off;
+
+            _camera.Gain = std::get<Config::Parameter_Manual<float>>(*_config.gain);
+        }
     }
     catch (Pylon::GenericException e)
     {

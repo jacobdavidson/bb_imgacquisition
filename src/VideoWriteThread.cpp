@@ -62,6 +62,7 @@ void VideoWriteThread::run()
 
         const auto tmpVideoFilename = tmpDir / fmt::format("{}.mp4", startTime);
 
+        // FIXME: framesPerSecond is a float, should be properly converted to rational
         VideoFileWriter f(tmpVideoFilename.string(),
                           {static_cast<int>(width),
                            static_cast<int>(height),

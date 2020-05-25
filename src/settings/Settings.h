@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
+#include <optional>
 
 #include <string>
 #include <iostream>
@@ -60,24 +61,32 @@ public:
 
             struct SoftwareTrigger final
             {
-                size_t framesPerSecond;
+                float framesPerSecond;
             };
+
+            struct Parameter_Auto final
+            {
+            };
+
+            template<typename T>
+            using Parameter_Manual = T;
+
+            template<typename T>
+            using Parameter = std::variant<Parameter_Auto, Parameter_Manual<T>>;
 
             std::variant<HardwareTrigger, SoftwareTrigger> trigger;
 
             boost::optional<int> buffer_size;
             boost::optional<int> throughput_limit;
 
-            boost::optional<boost::optional<int>> blacklevel;
-            boost::optional<boost::optional<int>> exposure;
-            boost::optional<boost::optional<int>> shutter;
-            boost::optional<boost::optional<int>> gain;
-            boost::optional<bool>                 whitebalance;
+            std::optional<Parameter<float>> blacklevel;
+            std::optional<Parameter<float>> exposure;
+            std::optional<Parameter<float>> gain;
         };
 
         Camera camera;
 
-        size_t framesPerSecond;
+        float  framesPerSecond;
         size_t framesPerFile;
 
         struct Encoder final
