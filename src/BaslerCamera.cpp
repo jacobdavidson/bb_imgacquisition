@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "BaslerCamThread.h"
+#include "BaslerCamera.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -37,14 +37,14 @@ struct dependent_false : std::false_type
 {
 };
 
-BaslerCamThread::BaslerCamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
-: CamThread(config, videoStream, watchdog)
+BaslerCamera::BaslerCamera(Config config, VideoStream videoStream, Watchdog* watchdog)
+: Camera(config, videoStream, watchdog)
 {
     initCamera();
     startCapture();
 }
 
-void BaslerCamThread::initCamera()
+void BaslerCamera::initCamera()
 {
     using namespace std::chrono_literals;
 
@@ -211,7 +211,7 @@ void BaslerCamThread::initCamera()
     }
 }
 
-void BaslerCamThread::startCapture()
+void BaslerCamera::startCapture()
 {
     try
     {
@@ -225,7 +225,7 @@ void BaslerCamThread::startCapture()
     }
 }
 
-void BaslerCamThread::run()
+void BaslerCamera::run()
 {
     using namespace std::chrono_literals;
 

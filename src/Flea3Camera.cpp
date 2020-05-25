@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "Flea3CamThread.h"
+#include "Flea3Camera.h"
 
 #include <chrono>
 
@@ -9,15 +9,15 @@
 #include "log.h"
 #include "GrayscaleImage.h"
 
-// Flea3CamThread constructor
-Flea3CamThread::Flea3CamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
-: CamThread(config, videoStream, watchdog)
+// Flea3Camera constructor
+Flea3Camera::Flea3Camera(Config config, VideoStream videoStream, Watchdog* watchdog)
+: Camera(config, videoStream, watchdog)
 {
     initCamera();
     startCapture();
 }
 
-void Flea3CamThread::initCamera()
+void Flea3Camera::initCamera()
 {
     // SET VIDEO MODE HERE!!!
     FlyCapture2::Format7Info fmt7Info;
@@ -333,13 +333,13 @@ void Flea3CamThread::initCamera()
 }
 
 // This function starts the streaming from the camera
-void Flea3CamThread::startCapture()
+void Flea3Camera::startCapture()
 {
     // Start isochronous image capture
     enforce(_Camera.StartCapture());
 }
 
-void Flea3CamThread::run()
+void Flea3Camera::run()
 {
     using namespace std::chrono_literals;
 
@@ -393,7 +393,7 @@ void Flea3CamThread::run()
 
 // We will use Format7 to set the video parameters instead of DCAM, so it becomes handy to print
 // this info
-void Flea3CamThread::PrintFormat7Capabilities(FlyCapture2::Format7Info fmt7Info)
+void Flea3Camera::PrintFormat7Capabilities(FlyCapture2::Format7Info fmt7Info)
 {
     logInfo("{}: Max image pixels: {}x{}", _videoStream.id, fmt7Info.maxWidth, fmt7Info.maxHeight);
     logInfo("{}: Image Unit size: {}x{}",
@@ -408,7 +408,7 @@ void Flea3CamThread::PrintFormat7Capabilities(FlyCapture2::Format7Info fmt7Info)
 }
 
 // Just prints the camera's info
-void Flea3CamThread::PrintCameraInfo(FlyCapture2::CameraInfo* pCamInfo)
+void Flea3Camera::PrintCameraInfo(FlyCapture2::CameraInfo* pCamInfo)
 {
     logInfo("{}: Camera serial: {}", _videoStream.id, pCamInfo->serialNumber);
     logInfo("{}: Camera model: {}", _videoStream.id, std::string_view(pCamInfo->modelName));
@@ -425,7 +425,7 @@ void Flea3CamThread::PrintCameraInfo(FlyCapture2::CameraInfo* pCamInfo)
             std::string_view(pCamInfo->firmwareBuildTime));
 }
 
-void Flea3CamThread::enforce(FlyCapture2::Error error)
+void Flea3Camera::enforce(FlyCapture2::Error error)
 {
     if (error != FlyCapture2::PGRERROR_OK)
     {

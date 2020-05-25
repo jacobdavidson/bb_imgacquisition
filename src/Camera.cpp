@@ -1,54 +1,54 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "CamThread.h"
+#include "Camera.h"
 
 #include "format.h"
 
 #if defined(USE_FLEA3) && USE_FLEA3
-    #include "Flea3CamThread.h"
+    #include "Flea3Camera.h"
 #endif
 
 #if defined(USE_XIMEA) && USE_XIMEA
-    #include "XimeaCamThread.h"
+    #include "XimeaCamera.h"
 #endif
 
 #if defined(USE_BASLER) && USE_BASLER
-    #include "BaslerCamThread.h"
+    #include "BaslerCamera.h"
 #endif
 
-CamThread::CamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
+Camera::Camera(Config config, VideoStream videoStream, Watchdog* watchdog)
 : _config{config}
 , _videoStream{videoStream}
 , _watchdog{watchdog}
 {
 }
 
-CamThread::~CamThread()
+Camera::~Camera()
 {
     // Signal stream end to blocking consumer thread
     _videoStream.push({});
 }
 
-CamThread* CamThread::make(Config config, VideoStream videoStream, Watchdog* watchdog)
+Camera* Camera::make(Config config, VideoStream videoStream, Watchdog* watchdog)
 {
 #if defined(USE_FLEA3) && USE_FLEA3
     if (config.backend == "flea3")
     {
-        return new Flea3CamThread(config, videoStream, watchdog);
+        return new Flea3Camera(config, videoStream, watchdog);
     }
 #endif
 
 #if defined(USE_XIMEA) && USE_XIMEA
     if (config.backend == "ximea")
     {
-        return new XimeaCamThread(config, videoStream, watchdog);
+        return new XimeaCamera(config, videoStream, watchdog);
     }
 #endif
 
 #if defined(USE_BASLER) && USE_BASLER
     if (config.backend == "basler")
     {
-        return new BaslerCamThread(config, videoStream, watchdog);
+        return new BaslerCamera(config, videoStream, watchdog);
     }
 #endif
 

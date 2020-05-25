@@ -6,18 +6,18 @@
 
 #include <xiApi.h>
 
-#include "CamThread.h"
+#include "Camera.h"
 
 /*!\brief Thread object which acquires images from a camera.
  *
  * Contains functions to initialize the cameras and run the acquistion.
  */
-class XimeaCamThread : public CamThread
+class XimeaCamera : public Camera
 {
     Q_OBJECT
 
 public:
-    XimeaCamThread(Config config, VideoStream videoStream, Watchdog* watchdog);
+    XimeaCamera(Config config, VideoStream videoStream, Watchdog* watchdog);
 
 private:
     void initCamera();

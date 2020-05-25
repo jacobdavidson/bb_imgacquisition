@@ -57,8 +57,8 @@ add_executable(${PROJECT_NAME}
 	src/Watchdog.cpp
 	src/settings/Settings.h
 	src/settings/Settings.cpp
-	src/CamThread.h
-	src/CamThread.cpp
+	src/Camera.h
+	src/Camera.cpp
 	src/ImgAcquisitionApp.h
 	src/ImgAcquisitionApp.cpp
 	src/main.cpp
@@ -107,20 +107,20 @@ endif()
 
 if(Flea3 IN_LIST CAMERA_BACKENDS)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_FLEA3)
-	target_sources(${PROJECT_NAME} PRIVATE src/Flea3CamThread.h src/Flea3CamThread.cpp)
+	target_sources(${PROJECT_NAME} PRIVATE src/Flea3Camera.h src/Flea3Camera.cpp)
 
 	target_link_libraries(${PROJECT_NAME} PRIVATE FlyCapture2)
 endif()
 
 if(XIMEA IN_LIST CAMERA_BACKENDS)
-	target_sources(${PROJECT_NAME} PRIVATE src/XimeaCamThread.h src/XimeaCamThread.cpp)
+	target_sources(${PROJECT_NAME} PRIVATE src/XimeaCamera.h src/XimeaCamera.cpp)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_XIMEA)
 
 	target_link_libraries(${PROJECT_NAME} PRIVATE XIMEA)
 endif()
 
 if(Basler IN_LIST CAMERA_BACKENDS)
-	target_sources(${PROJECT_NAME} PRIVATE src/BaslerCamThread.h src/BaslerCamThread.cpp)
+	target_sources(${PROJECT_NAME} PRIVATE src/BaslerCamera.h src/BaslerCamera.cpp)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BASLER)
 
 	target_link_libraries(${PROJECT_NAME} PRIVATE Pylon5::Base Pylon5::Utility Pylon5::GenAPI Pylon5::GCBase)

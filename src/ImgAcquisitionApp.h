@@ -9,7 +9,7 @@
 #include <QCoreApplication>
 #include <QtGui/QKeyEvent>
 
-#include "CamThread.h"
+#include "Camera.h"
 #include "VideoWriteThread.h"
 #include "Watchdog.h"
 
@@ -33,8 +33,8 @@ public:
 private:
     Watchdog _watchdog;
 
-    //! A vector of the class CamThread, they are accessed from the constructor
-    std::vector<std::unique_ptr<CamThread>> _cameraThreads;
+    //! A vector of the class Camera, they are accessed from the constructor
+    std::vector<std::unique_ptr<Camera>> _cameraThreads;
 
     //! Number of detected cameras
     unsigned int _numCameras;

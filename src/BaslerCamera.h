@@ -10,14 +10,14 @@
 #include <pylon/PylonIncludes.h>
 #include <pylon/usb/BaslerUsbInstantCamera.h>
 
-#include "CamThread.h"
+#include "Camera.h"
 #include "Watchdog.h"
 
 /*!\brief Thread object which acquires images from a camera.
  *
  * Contains functions to initialize the cameras and run the acquistion.
  */
-class BaslerCamThread : public CamThread
+class BaslerCamera : public Camera
 {
     Q_OBJECT
 
@@ -25,7 +25,7 @@ private:
     Pylon::PylonAutoInitTerm pylon;
 
 public:
-    BaslerCamThread(Config config, VideoStream videoStream, Watchdog* watchdog);
+    BaslerCamera(Config config, VideoStream videoStream, Watchdog* watchdog);
 
 private:
     void initCamera();

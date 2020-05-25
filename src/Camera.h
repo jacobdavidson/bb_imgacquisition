@@ -17,22 +17,22 @@ class Watchdog;
  *
  * Contains functions to initialize the cameras and run the acquistion.
  */
-class CamThread : public QThread
+class Camera : public QThread
 {
     Q_OBJECT
 
 protected:
     using Config = SettingsIAC::VideoStream::Camera;
 
-    CamThread(Config config, VideoStream videoStream, Watchdog* watchdog);
+    Camera(Config config, VideoStream videoStream, Watchdog* watchdog);
 
     Config      _config;
     VideoStream _videoStream;
     Watchdog*   _watchdog;
 
 public:
-    virtual ~CamThread();
+    virtual ~Camera();
 
 public:
-    static CamThread* make(Config config, VideoStream videoStream, Watchdog* watchdog);
+    static Camera* make(Config config, VideoStream videoStream, Watchdog* watchdog);
 };

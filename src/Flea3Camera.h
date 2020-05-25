@@ -4,19 +4,19 @@
 
 #include <FlyCapture2.h>
 
-#include "CamThread.h"
+#include "Camera.h"
 
 /*!\brief Thread object which acquires images from a camera.
  *
  * Inherits from Qthread for threading.
  * Contains functions to initialize the cameras and run the acquistion.
  */
-class Flea3CamThread : public CamThread
+class Flea3Camera : public Camera
 {
     Q_OBJECT
 
 public:
-    Flea3CamThread(Config config, VideoStream videoStream, Watchdog* watchdog);
+    Flea3Camera(Config config, VideoStream videoStream, Watchdog* watchdog);
 
 private:
     void initCamera();

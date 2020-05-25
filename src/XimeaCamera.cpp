@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "XimeaCamThread.h"
+#include "XimeaCamera.h"
 
 #include <array>
 #include <chrono>
@@ -12,14 +12,14 @@
 #include "log.h"
 #include "Watchdog.h"
 
-XimeaCamThread::XimeaCamThread(Config config, VideoStream videoStream, Watchdog* watchdog)
-: CamThread(config, videoStream, watchdog)
+XimeaCamera::XimeaCamera(Config config, VideoStream videoStream, Watchdog* watchdog)
+: Camera(config, videoStream, watchdog)
 {
     initCamera();
     startCapture();
 }
 
-void XimeaCamThread::initCamera()
+void XimeaCamera::initCamera()
 {
     // Try settings that our mc124mg does not support.
     // This might become relevant with other XIMEA cams.
@@ -233,12 +233,12 @@ void XimeaCamThread::initCamera()
 }
 
 // This function starts the streaming from the camera
-void XimeaCamThread::startCapture()
+void XimeaCamera::startCapture()
 {
     enforce(xiStartAcquisition(_Camera), "xiStartAcquisition");
 }
 
-void XimeaCamThread::run()
+void XimeaCamera::run()
 {
     using namespace std::chrono_literals;
 
@@ -370,7 +370,7 @@ void XimeaCamThread::run()
     enforce(xiCloseDevice(_Camera), "xiCloseDevice");
 }
 
-void XimeaCamThread::enforce(XI_RETURN errorCode, const std::string& operation)
+void XimeaCamera::enforce(XI_RETURN errorCode, const std::string& operation)
 {
     if (errorCode != XI_OK)
     {

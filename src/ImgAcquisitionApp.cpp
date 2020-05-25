@@ -77,7 +77,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
                                        cfg.framesPerSecond,
                                        cfg.framesPerFile,
                                        cfg.encoder.options};
-        _cameraThreads.emplace_back(CamThread::make(cfg.camera, videoStream, &_watchdog));
+        _cameraThreads.emplace_back(Camera::make(cfg.camera, videoStream, &_watchdog));
 
         if (_videoWriterThreads.count(cfg.encoder.id))
         {
