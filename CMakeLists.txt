@@ -38,9 +38,9 @@ add_executable(${PROJECT_NAME}
 	src/util/format.h
 	src/util/log.h
 	src/util/log.cpp
-	src/ConcurrentQueue.h
-	src/PlatformAdapter.h
-	src/PlatformAdapter.cpp
+	src/util/ConcurrentQueue.h
+	src/util/PlatformAdapter.h
+	src/util/PlatformAdapter.cpp
 	src/GrayscaleImage.h
 	src/GrayscaleImage.cpp
 	src/ImageStream.h

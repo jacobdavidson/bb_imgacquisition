@@ -8,8 +8,8 @@
 
 #include "Settings.h"
 #include "Watchdog.h"
-#include "PlatformAdapter.h"
 #include "util/log.h"
+#include "util/PlatformAdapter.h"
 
 #include "source_version.h"
 #include "build_timestamp.h"
