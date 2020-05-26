@@ -4,8 +4,6 @@
 
 #include <fstream>
 
-#include "boost/program_options.hpp"
-
 #include <boost/property_tree/ptree.hpp>
 
 #include <QStandardPaths>
@@ -47,6 +45,82 @@ auto parseParam(const boost::property_tree::ptree& tree, const std::string& name
     return {};
 };
 
+boost::property_tree::ptree detectSettings()
+{
+    auto tree = boost::property_tree::ptree{};
+
+    tree.put("tmp_directory", "data/tmp");
+    tree.put("out_directory", "data/out");
+
+    auto& videoEncoders = tree.put_child("video_encoders", {});
+    videoEncoders.put("h265_sw_0", "libx265");
+
+    auto& videoStreams = tree.put_child("video_streams", {});
+
+    std::size_t camIndex = 0;
+
+    auto addVideoStreamForCameraConfig = [&camIndex,
+                                          &videoStreams](Settings::VideoStream::Camera config) {
+        auto& videoStreamTree = videoStreams.put_child(fmt::format("Cam-{}", camIndex++), {});
+
+        auto& cameraTree = videoStreamTree.put_child("camera", {});
+        cameraTree.put("backend", config.backend);
+        cameraTree.put("serial", config.serial);
+
+        cameraTree.put("offset_x", config.offset_x);
+        cameraTree.put("offset_y", config.offset_y);
+        cameraTree.put("width", config.width);
+        cameraTree.put("height", config.height);
+
+        auto& triggerTree = cameraTree.put_child("trigger", {});
+
+        std::visit(
+            [&](auto&& value) {
+                using T = std::decay_t<decltype(value)>;
+
+                if constexpr (std::is_same_v<T, Settings::VideoStream::Camera::HardwareTrigger>)
+                {
+                    triggerTree.put("type", "hardware");
+                    triggerTree.put("source", value.source);
+
+                    videoStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
+                }
+                else if constexpr (std::is_same_v<T,
+                                                  Settings::VideoStream::Camera::SoftwareTrigger>)
+                {
+                    triggerTree.put("type", "software");
+                    triggerTree.put("frames_per_second", value.framesPerSecond);
+
+                    videoStreamTree.put("frames_per_second", value.framesPerSecond);
+                }
+                else
+                    static_assert(dependent_false<T>::value);
+            },
+            config.trigger);
+
+        videoStreamTree.put("frames_per_file", 500);
+
+        auto& encoderTree = videoStreamTree.put_child("encoder", {});
+
+        encoderTree.put("id", "h265_sw_0");
+
+        auto& encoderOptions = encoderTree.put_child("options", {});
+        encoderOptions.put("preset", "5");
+        encoderOptions.put("x265-params", "log-level=error");
+    };
+
+#if defined(USE_BASLER) && USE_BASLER
+    for (auto config : BaslerCamera::getAvailable())
+    {
+        addVideoStreamForCameraConfig(config);
+    }
+#endif
+
+    tree.put_child("video_streams", videoStreams);
+
+    return tree;
+}
+
 const Settings& Settings::instance()
 {
     static const Settings instance;
@@ -70,17 +144,17 @@ Settings::Settings()
     {
         configFile.open(configFilename, std::ios::out | std::ios::trunc);
         configFile.imbue(std::locale::classic());
-        _tree = detectSettings();
-        boost::property_tree::write_json(configFile, _tree);
+        boost::property_tree::write_json(configFile, detectSettings());
         logInfo("New settings file created: Edit it manually and run application again: {}",
                 configFilename);
         std::exit(0);
     }
 
     configFile.imbue(std::locale::classic());
-    boost::property_tree::read_json(configFile, _tree);
+    auto tree = boost::property_tree::ptree{};
+    boost::property_tree::read_json(configFile, tree);
 
-    for (const auto& [videoStreamId, videoStreamTree] : _tree.get_child("video_streams"))
+    for (const auto& [videoStreamId, videoStreamTree] : tree.get_child("video_streams"))
     {
         VideoStream stream;
 
@@ -137,87 +211,13 @@ Settings::Settings()
         _videoStreams.push_back(stream);
     }
 
-    for (auto& [id, name] : _tree.get_child("video_encoders"))
+    for (auto& [id, name] : tree.get_child("video_encoders"))
     {
         _videoEncoders.emplace(id, name.get_value<std::string>());
     }
 
-    _tmpDirectory = _tree.get<std::string>("tmp_directory");
-    _outDirectory = _tree.get<std::string>("out_directory");
-}
-
-const boost::property_tree::ptree Settings::detectSettings() const
-{
-    auto tree = boost::property_tree::ptree{};
-
-    tree.put("tmp_directory", "data/tmp");
-    tree.put("out_directory", "data/out");
-
-    auto& videoEncoders = tree.put_child("video_encoders", {});
-    videoEncoders.put("h265_sw_0", "libx265");
-
-    auto& videoStreams = tree.put_child("video_streams", {});
-
-    std::size_t camIndex = 0;
-
-    auto addVideoStreamForCameraConfig = [&camIndex, &videoStreams](VideoStream::Camera config) {
-        auto& videoStreamTree = videoStreams.put_child(fmt::format("Cam-{}", camIndex++), {});
-
-        auto& cameraTree = videoStreamTree.put_child("camera", {});
-        cameraTree.put("backend", config.backend);
-        cameraTree.put("serial", config.serial);
-
-        cameraTree.put("offset_x", config.offset_x);
-        cameraTree.put("offset_y", config.offset_y);
-        cameraTree.put("width", config.width);
-        cameraTree.put("height", config.height);
-
-        auto& triggerTree = cameraTree.put_child("trigger", {});
-
-        std::visit(
-            [&](auto&& value) {
-                using T = std::decay_t<decltype(value)>;
-
-                if constexpr (std::is_same_v<T, VideoStream::Camera::HardwareTrigger>)
-                {
-                    triggerTree.put("type", "hardware");
-                    triggerTree.put("source", value.source);
-
-                    videoStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
-                }
-                else if constexpr (std::is_same_v<T, VideoStream::Camera::SoftwareTrigger>)
-                {
-                    triggerTree.put("type", "software");
-                    triggerTree.put("frames_per_second", value.framesPerSecond);
-
-                    videoStreamTree.put("frames_per_second", value.framesPerSecond);
-                }
-                else
-                    static_assert(dependent_false<T>::value);
-            },
-            config.trigger);
-
-        videoStreamTree.put("frames_per_file", 500);
-
-        auto& encoderTree = videoStreamTree.put_child("encoder", {});
-
-        encoderTree.put("id", "h265_sw_0");
-
-        auto& encoderOptions = encoderTree.put_child("options", {});
-        encoderOptions.put("preset", "5");
-        encoderOptions.put("x265-params", "log-level=error");
-    };
-
-#if defined(USE_BASLER) && USE_BASLER
-    for (auto config : BaslerCamera::getAvailable())
-    {
-        addVideoStreamForCameraConfig(config);
-    }
-#endif
-
-    tree.put_child("video_streams", videoStreams);
-
-    return tree;
+    _tmpDirectory = tree.get<std::string>("tmp_directory");
+    _outDirectory = tree.get<std::string>("out_directory");
 }
 
 const std::vector<Settings::VideoStream>& Settings::videoStreams() const

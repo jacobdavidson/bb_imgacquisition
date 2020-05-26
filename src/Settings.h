@@ -16,10 +16,7 @@
 
 class Settings
 {
-
 private:
-    const boost::property_tree::ptree detectSettings() const;
-
     Settings();
 
     Settings(const Settings&)     = delete;
@@ -95,10 +92,6 @@ public:
     const std::string outDirectory() const;
 
 private:
-    boost::property_tree::ptree _tree;
-
-    static const boost::property_tree::ptree getDefaultParams();
-
     std::vector<VideoStream> _videoStreams;
 
     std::unordered_map<std::string, std::string> _videoEncoders;
