@@ -23,6 +23,12 @@ struct dependent_false : std::false_type
 {
 };
 
+const Settings& Settings::instance()
+{
+    static const Settings instance;
+    return instance;
+}
+
 Settings::Settings()
 {
     const auto configLocation = QDir(

@@ -43,9 +43,10 @@ ImgAcquisitionApp::~ImgAcquisitionApp()
 ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 : QCoreApplication(argc, argv)
 {
-    int       numCameras  = 0;
-    int       camsStarted = 0;
-    Settings* set         = Settings::getInstance();
+    int numCameras  = 0;
+    int camsStarted = 0;
+
+    auto& settings = Settings::instance();
 
     const auto args = arguments();
 
@@ -63,12 +64,12 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 
     qRegisterMetaType<GrayscaleImage>("GrayscaleImage");
 
-    for (auto& [id, name] : set->videoEncoders())
+    for (auto& [id, name] : settings.videoEncoders())
     {
         _videoWriterThreads.emplace(id, name);
     }
 
-    for (const auto& cfg : set->videoStreams())
+    for (const auto& cfg : settings.videoStreams())
     {
         auto videoStream = VideoStream{cfg.id,
                                        {cfg.camera.width, cfg.camera.height},

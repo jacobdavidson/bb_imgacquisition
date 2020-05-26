@@ -32,15 +32,9 @@ private:
     void operator=(Settings const&) = delete;
 
 public:
-    // To set options from CLI
     boost::property_tree::ptree _ptree;
 
-    static Settings* getInstance()
-    {
-        static Settings instance; // Guaranteed to be destroyed.
-        // Instantiated on first use.
-        return &instance;
-    }
+    static const Settings& instance();
 
     struct VideoStream final
     {

@@ -24,7 +24,7 @@ void VideoWriteThread::add(VideoStream videoStream)
 
 void VideoWriteThread::run()
 {
-    Settings* set = Settings::getInstance();
+    const auto& settings = Settings::instance();
 
     while (!isInterruptionRequested())
     {
@@ -52,7 +52,7 @@ void VideoWriteThread::run()
 
         namespace fs = boost::filesystem;
 
-        const auto tmpDir = fs::path{set->tmpDirectory()} / videoStream.id.toStdString();
+        const auto tmpDir = fs::path{settings.tmpDirectory()} / videoStream.id.toStdString();
         if (!fs::exists(tmpDir))
         {
             fs::create_directories(tmpDir);
@@ -111,7 +111,8 @@ void VideoWriteThread::run()
         {
             try
             {
-                const auto outDir = fs::path{set->outDirectory()} / videoStream.id.toStdString();
+                const auto outDir = fs::path{settings.outDirectory()} /
+                                    videoStream.id.toStdString();
                 if (!fs::exists(outDir))
                 {
                     fs::create_directories(outDir);
