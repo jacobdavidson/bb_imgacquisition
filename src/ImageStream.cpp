@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "VideoStream.h"
+#include "ImageStream.h"
 
-VideoStream::VideoStream(std::string                                  _id,
+ImageStream::ImageStream(std::string                                  _id,
                          std::tuple<std::size_t, std::size_t>         _resolution,
                          float                                        _framesPerSecond,
                          std::size_t                                  _framesPerFile,
@@ -16,22 +16,22 @@ VideoStream::VideoStream(std::string                                  _id,
 {
 }
 
-void VideoStream::push(const Image& value)
+void ImageStream::push(const Image& value)
 {
     _queue->push(value);
 }
 
-void VideoStream::push(Image&& value)
+void ImageStream::push(Image&& value)
 {
     _queue->push(std::move(value));
 }
 
-void VideoStream::pop(Image& value)
+void ImageStream::pop(Image& value)
 {
     _queue->pop(value);
 }
 
-std::size_t VideoStream::size()
+std::size_t ImageStream::size()
 {
     return _queue->size();
 }

@@ -9,8 +9,8 @@
 #include "util/type_traits.h"
 #include "GrayscaleImage.h"
 
-Flea3Camera::Flea3Camera(Config config, VideoStream videoStream)
-: Camera(config, videoStream)
+Flea3Camera::Flea3Camera(Config config, ImageStream imageStream)
+: Camera(config, imageStream)
 {
     initCamera();
     startCapture();
@@ -67,7 +67,7 @@ void Flea3Camera::initCamera()
     if (auto err = busMgr.GetNumOfCameras(&numCameras); err != FlyCapture2::PGRERROR_OK)
     {
         throw std::runtime_error(fmt::format("{}: Could not enumerate cameras: {}",
-                                             _videoStream.id,
+                                             _imageStream.id,
                                              err.GetDescription()));
     }
 
@@ -80,7 +80,7 @@ void Flea3Camera::initCamera()
             err != FlyCapture2::PGRERROR_OK)
         {
             throw std::runtime_error(fmt::format("{}: Could not read camera serial: {}",
-                                                 _videoStream.id,
+                                                 _imageStream.id,
                                                  err.GetDescription()));
         }
         if (serial == std::stoull(_config.serial))
@@ -94,7 +94,7 @@ void Flea3Camera::initCamera()
     if (!camFound)
     {
         throw std::runtime_error(
-            fmt::format("{}: No camera matching serial: {}", _videoStream.id, _config.serial));
+            fmt::format("{}: No camera matching serial: {}", _imageStream.id, _config.serial));
     }
 
     // Gets the PGRGuid from the camera
@@ -121,7 +121,7 @@ void Flea3Camera::initCamera()
 
     if (!supported)
     {
-        throw std::runtime_error(fmt::format("{}: Invalid Format7 settings ", _videoStream.id));
+        throw std::runtime_error(fmt::format("{}: Invalid Format7 settings ", _imageStream.id));
     }
 
     // Set the settings to the camera
@@ -160,7 +160,7 @@ void Flea3Camera::initCamera()
     }
     else
     {
-        logInfo("{}: Embedded camera timestamp is not available", _videoStream.id);
+        logInfo("{}: Embedded camera timestamp is not available", _imageStream.id);
     }
 
     if (EmbeddedInfo.frameCounter.available == true)
@@ -170,7 +170,7 @@ void Flea3Camera::initCamera()
     }
     else
     {
-        logInfo("{}: Embedded camera frame counter is not available", _videoStream.id);
+        logInfo("{}: Embedded camera frame counter is not available", _imageStream.id);
     }
 
     enforce(_Camera.SetEmbeddedImageInfo(&EmbeddedInfo));
@@ -208,7 +208,7 @@ void Flea3Camera::initCamera()
     enforce(_Camera.GetProperty(&blacklevel));
 
     logInfo("{}: Blacklevel parameter is {} and {:.2f}",
-            _videoStream.id,
+            _imageStream.id,
             blacklevel.onOff ? "on" : "off",
             blacklevel.absValue);
 
@@ -241,7 +241,7 @@ void Flea3Camera::initCamera()
     enforce(_Camera.GetProperty(&exposure));
 
     logInfo("{}: Exposure parameter is {} and {}",
-            _videoStream.id,
+            _imageStream.id,
             exposure.onOff ? "on" : "off",
             exposure.autoManualMode ? "auto" : "manual");
 
@@ -274,7 +274,7 @@ void Flea3Camera::initCamera()
     enforce(_Camera.GetProperty(&gain));
 
     logInfo("{}: Gain parameter is {} and {}",
-            _videoStream.id,
+            _imageStream.id,
             gain.onOff ? "on" : "off",
             gain.autoManualMode ? "auto" : "manual");
     //-------------------- GAIN ENDS                -----------------------------------
@@ -315,7 +315,7 @@ void Flea3Camera::initCamera()
 
         enforce(_Camera.GetProperty(&frmRate));
 
-        logInfo("{}: Frame rate is {:.2f} fps", _videoStream.id, frmRate.absValue);
+        logInfo("{}: Frame rate is {:.2f} fps", _imageStream.id, frmRate.absValue);
     }
 
     //-------------------- FRAME RATE ENDS          -----------------------------------
@@ -354,7 +354,7 @@ void Flea3Camera::run()
         if (const auto err = _Camera.RetrieveBuffer(&cimg); err != FlyCapture2::PGRERROR_OK)
         {
             throw std::runtime_error(fmt::format("{}: Failed to grab camera image: {}",
-                                                 _videoStream.id,
+                                                 _imageStream.id,
                                                  err.GetDescription()));
         }
         const auto end = std::chrono::steady_clock::now();
@@ -367,14 +367,14 @@ void Flea3Camera::run()
                                                                                         end);
             duration > 400ms)
         {
-            logWarning("{}: Processing time too long: {}", _videoStream.id, duration);
+            logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
 
         // Move image to buffer for further procession
         auto buf = GrayscaleImage(vwidth, vheight, currWallClockTime);
         memcpy(&buf.data[0], cimg.GetData(), vwidth * vheight);
 
-        _videoStream.push(buf);
+        _imageStream.push(buf);
         emit imageCaptured(buf);
     }
 
@@ -386,33 +386,33 @@ void Flea3Camera::run()
 // this info
 void Flea3Camera::PrintFormat7Capabilities(FlyCapture2::Format7Info fmt7Info)
 {
-    logInfo("{}: Max image pixels: {}x{}", _videoStream.id, fmt7Info.maxWidth, fmt7Info.maxHeight);
+    logInfo("{}: Max image pixels: {}x{}", _imageStream.id, fmt7Info.maxWidth, fmt7Info.maxHeight);
     logInfo("{}: Image Unit size: {}x{}",
-            _videoStream.id,
+            _imageStream.id,
             fmt7Info.imageHStepSize,
             fmt7Info.imageVStepSize);
     logInfo("{}: Offset Unit size: {}x{}",
-            _videoStream.id,
+            _imageStream.id,
             fmt7Info.offsetHStepSize,
             fmt7Info.offsetVStepSize);
-    logInfo("{}: Pixel format bitfield: {}", _videoStream.id, fmt7Info.pixelFormatBitField);
+    logInfo("{}: Pixel format bitfield: {}", _imageStream.id, fmt7Info.pixelFormatBitField);
 }
 
 // Just prints the camera's info
 void Flea3Camera::PrintCameraInfo(FlyCapture2::CameraInfo* pCamInfo)
 {
-    logInfo("{}: Camera serial: {}", _videoStream.id, pCamInfo->serialNumber);
-    logInfo("{}: Camera model: {}", _videoStream.id, std::string_view(pCamInfo->modelName));
-    logInfo("{}: Camera vendor: {}", _videoStream.id, std::string_view(pCamInfo->vendorName));
-    logInfo("{}: Camera sensor: {}", _videoStream.id, std::string_view(pCamInfo->sensorInfo));
+    logInfo("{}: Camera serial: {}", _imageStream.id, pCamInfo->serialNumber);
+    logInfo("{}: Camera model: {}", _imageStream.id, std::string_view(pCamInfo->modelName));
+    logInfo("{}: Camera vendor: {}", _imageStream.id, std::string_view(pCamInfo->vendorName));
+    logInfo("{}: Camera sensor: {}", _imageStream.id, std::string_view(pCamInfo->sensorInfo));
     logInfo("{}: Camera resolution: {}",
-            _videoStream.id,
+            _imageStream.id,
             std::string_view(pCamInfo->sensorResolution));
     logInfo("{}: Camera firmware version: {}",
-            _videoStream.id,
+            _imageStream.id,
             std::string_view(pCamInfo->firmwareVersion));
     logInfo("{}: Camera firmware build time: {}",
-            _videoStream.id,
+            _imageStream.id,
             std::string_view(pCamInfo->firmwareBuildTime));
 }
 
@@ -421,6 +421,6 @@ void Flea3Camera::enforce(FlyCapture2::Error error)
     if (error != FlyCapture2::PGRERROR_OK)
     {
         throw std::runtime_error(
-            fmt::format("{}: Camera error: {}", _videoStream.id, error.GetDescription()));
+            fmt::format("{}: Camera error: {}", _imageStream.id, error.GetDescription()));
     }
 }

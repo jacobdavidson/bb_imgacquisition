@@ -6,7 +6,7 @@
 
 #include <QThread>
 
-#include "VideoStream.h"
+#include "ImageStream.h"
 
 /**
  * @brief The VideoWriteThread class
@@ -30,11 +30,11 @@ class VideoWriteThread final : public QThread
 public:
     VideoWriteThread(std::string encoderName);
 
-    void add(VideoStream videoStream);
+    void add(ImageStream imageStream);
 
 private:
     const std::string        _encoderName;
-    std::vector<VideoStream> _videoStreams;
+    std::vector<ImageStream> _imageStreams;
 
     void run();
 };

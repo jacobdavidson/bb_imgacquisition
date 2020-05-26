@@ -52,7 +52,7 @@ private:
 
     AVFormatContext* _formatContext;
 
-    AVStream* _videoStream;
+    AVStream* _imageStream;
 
     AVCodecContext* _codecContext;
 

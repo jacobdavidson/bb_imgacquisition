@@ -21,7 +21,7 @@ private:
 public:
     static const Settings& instance();
 
-    struct VideoStream final
+    struct ImageStream final
     {
         std::string id;
 
@@ -39,14 +39,14 @@ public:
         Encoder encoder;
     };
 
-    const std::vector<VideoStream>&                     videoStreams() const;
+    const std::vector<ImageStream>&                     imageStreams() const;
     const std::unordered_map<std::string, std::string>& videoEncoders() const;
 
     const std::string tmpDirectory() const;
     const std::string outDirectory() const;
 
 private:
-    std::vector<VideoStream> _videoStreams;
+    std::vector<ImageStream> _imageStreams;
 
     std::unordered_map<std::string, std::string> _videoEncoders;
 

@@ -16,38 +16,38 @@
     #include "BaslerCamera.h"
 #endif
 
-Camera::Camera(Config config, VideoStream videoStream)
+Camera::Camera(Config config, ImageStream imageStream)
 : _config{config}
-, _videoStream{videoStream}
+, _imageStream{imageStream}
 {
 }
 
 Camera::~Camera()
 {
     // Signal stream end to blocking consumer thread
-    _videoStream.push({});
+    _imageStream.push({});
 }
 
-Camera* Camera::make(Config config, VideoStream videoStream)
+Camera* Camera::make(Config config, ImageStream imageStream)
 {
 #if defined(USE_FLEA3) && USE_FLEA3
     if (config.backend == "flea3")
     {
-        return new Flea3Camera(config, videoStream);
+        return new Flea3Camera(config, imageStream);
     }
 #endif
 
 #if defined(USE_XIMEA) && USE_XIMEA
     if (config.backend == "ximea")
     {
-        return new XimeaCamera(config, videoStream);
+        return new XimeaCamera(config, imageStream);
     }
 #endif
 
 #if defined(USE_BASLER) && USE_BASLER
     if (config.backend == "basler")
     {
-        return new BaslerCamera(config, videoStream);
+        return new BaslerCamera(config, imageStream);
     }
 #endif
 

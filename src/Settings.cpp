@@ -52,14 +52,14 @@ boost::property_tree::ptree detectSettings()
     auto& videoEncoders = tree.put_child("encoders", {});
     videoEncoders.put("h265_sw_0", "libx265");
 
-    auto& videoStreams = tree.put_child("streams", {});
+    auto& imageStreams = tree.put_child("streams", {});
 
     std::size_t camIndex = 0;
 
-    auto addVideoStreamForCameraConfig = [&camIndex, &videoStreams](Camera::Config config) {
-        auto& videoStreamTree = videoStreams.put_child(fmt::format("Cam-{}", camIndex++), {});
+    auto addImageStreamForCameraConfig = [&camIndex, &imageStreams](Camera::Config config) {
+        auto& imageStreamTree = imageStreams.put_child(fmt::format("Cam-{}", camIndex++), {});
 
-        auto& cameraTree = videoStreamTree.put_child("camera", {});
+        auto& cameraTree = imageStreamTree.put_child("camera", {});
         cameraTree.put("backend", config.backend);
         cameraTree.put("serial", config.serial);
 
@@ -79,23 +79,23 @@ boost::property_tree::ptree detectSettings()
                     triggerTree.put("type", "hardware");
                     triggerTree.put("source", value.source);
 
-                    videoStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
+                    imageStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
                 }
                 else if constexpr (std::is_same_v<T, Camera::Config::SoftwareTrigger>)
                 {
                     triggerTree.put("type", "software");
                     triggerTree.put("frames_per_second", value.framesPerSecond);
 
-                    videoStreamTree.put("frames_per_second", value.framesPerSecond);
+                    imageStreamTree.put("frames_per_second", value.framesPerSecond);
                 }
                 else
                     static_assert(false_type<T>::value);
             },
             config.trigger);
 
-        videoStreamTree.put("frames_per_file", 500);
+        imageStreamTree.put("frames_per_file", 500);
 
-        auto& encoderTree = videoStreamTree.put_child("encoder", {});
+        auto& encoderTree = imageStreamTree.put_child("encoder", {});
 
         encoderTree.put("id", "h265_sw_0");
 
@@ -107,7 +107,7 @@ boost::property_tree::ptree detectSettings()
 #if defined(USE_BASLER) && USE_BASLER
     for (auto config : BaslerCamera::getAvailable())
     {
-        addVideoStreamForCameraConfig(config);
+        addImageStreamForCameraConfig(config);
     }
 #endif
 
@@ -147,13 +147,13 @@ Settings::Settings()
     auto tree = boost::property_tree::ptree{};
     boost::property_tree::read_json(configFile, tree);
 
-    for (const auto& [videoStreamId, videoStreamTree] : tree.get_child("streams"))
+    for (const auto& [imageStreamId, imageStreamTree] : tree.get_child("streams"))
     {
-        VideoStream stream;
+        ImageStream stream;
 
-        stream.id = videoStreamId;
+        stream.id = imageStreamId;
 
-        const auto& cameraTree = videoStreamTree.get_child("camera");
+        const auto& cameraTree = imageStreamTree.get_child("camera");
 
         stream.camera.backend = cameraTree.get<std::string>("backend");
         stream.camera.serial  = cameraTree.get<std::string>("serial");
@@ -190,10 +190,10 @@ Settings::Settings()
         stream.camera.exposure   = parseParam<float>(cameraTree, "exposure");
         stream.camera.gain       = parseParam<float>(cameraTree, "gain");
 
-        stream.framesPerSecond = videoStreamTree.get<float>("frames_per_second");
-        stream.framesPerFile   = videoStreamTree.get<std::size_t>("frames_per_file");
+        stream.framesPerSecond = imageStreamTree.get<float>("frames_per_second");
+        stream.framesPerFile   = imageStreamTree.get<std::size_t>("frames_per_file");
 
-        const auto& encoderTree = videoStreamTree.get_child("encoder");
+        const auto& encoderTree = imageStreamTree.get_child("encoder");
         stream.encoder.id       = encoderTree.get<std::string>("id");
 
         for (const auto& [key, value] : encoderTree.get_child("options"))
@@ -201,7 +201,7 @@ Settings::Settings()
             stream.encoder.options.emplace(key, value.get_value<std::string>());
         }
 
-        _videoStreams.push_back(stream);
+        _imageStreams.push_back(stream);
     }
 
     for (auto& [id, name] : tree.get_child("encoders"))
@@ -213,9 +213,9 @@ Settings::Settings()
     _outDirectory = tree.get<std::string>("out_directory");
 }
 
-const std::vector<Settings::VideoStream>& Settings::videoStreams() const
+const std::vector<Settings::ImageStream>& Settings::imageStreams() const
 {
-    return _videoStreams;
+    return _imageStreams;
 }
 
 const std::unordered_map<std::string, std::string>& Settings::videoEncoders() const

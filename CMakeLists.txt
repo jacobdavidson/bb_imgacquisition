@@ -43,8 +43,8 @@ add_executable(${PROJECT_NAME}
 	src/PlatformAdapter.cpp
 	src/GrayscaleImage.h
 	src/GrayscaleImage.cpp
-	src/VideoStream.h
-	src/VideoStream.cpp
+	src/ImageStream.h
+	src/ImageStream.cpp
 	src/VideoWriteThread.h
 	src/VideoWriteThread.cpp
 	src/VideoFileWriter.h

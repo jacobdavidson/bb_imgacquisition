@@ -19,7 +19,7 @@ private:
     Pylon::PylonAutoInitTerm pylon;
 
 public:
-    BaslerCamera(Config config, VideoStream videoStream);
+    BaslerCamera(Config config, ImageStream imageStream);
 
     static std::vector<Config> getAvailable();
 

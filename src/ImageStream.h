@@ -8,12 +8,12 @@
 #include "ConcurrentQueue.h"
 #include "GrayscaleImage.h"
 
-class VideoStream final
+class ImageStream final
 {
 public:
     using Image = GrayscaleImage;
 
-    VideoStream(std::string                                  id,
+    ImageStream(std::string                                  id,
                 std::tuple<std::size_t, std::size_t>         resolution,
                 float                                        _framesPerSecond,
                 std::size_t                                  _framesPerFile,

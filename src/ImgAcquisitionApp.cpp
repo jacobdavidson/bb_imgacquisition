@@ -26,7 +26,7 @@ ImgAcquisitionApp::~ImgAcquisitionApp()
         thread->wait();
     }
 
-    // Ensure empty image is added to end of each video stream to signal possible termination
+    // Ensure empty image is added to end of each image stream to signal possible termination
     // within video file to video writers
     _cameraThreads.clear();
 
@@ -67,14 +67,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         _videoWriterThreads.emplace(id, name);
     }
 
-    for (const auto& cfg : settings.videoStreams())
+    for (const auto& cfg : settings.imageStreams())
     {
-        auto videoStream = VideoStream{cfg.id,
+        auto imageStream = ImageStream{cfg.id,
                                        {cfg.camera.width, cfg.camera.height},
                                        cfg.framesPerSecond,
                                        cfg.framesPerFile,
                                        cfg.encoder.options};
-        _cameraThreads.emplace_back(Camera::make(cfg.camera, videoStream));
+        _cameraThreads.emplace_back(Camera::make(cfg.camera, imageStream));
         const auto watchIndex = _watchdog.watch(cfg.id);
         QObject::connect(
             _cameraThreads.back().get(),
@@ -83,7 +83,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 
         if (_videoWriterThreads.count(cfg.encoder.id))
         {
-            _videoWriterThreads.at(cfg.encoder.id).add(videoStream);
+            _videoWriterThreads.at(cfg.encoder.id).add(imageStream);
         }
         else
         {

@@ -13,8 +13,8 @@
 #include "util/log.h"
 #include "GrayscaleImage.h"
 
-XimeaCamera::XimeaCamera(Config config, VideoStream videoStream)
-: Camera(config, videoStream)
+XimeaCamera::XimeaCamera(Config config, ImageStream imageStream)
+: Camera(config, imageStream)
 {
     initCamera();
     startCapture();
@@ -34,7 +34,7 @@ void XimeaCamera::initCamera()
 
     if (_config.serial.empty())
     {
-        throw std::runtime_error(fmt::format("{}: Camera serial empty", _videoStream.id));
+        throw std::runtime_error(fmt::format("{}: Camera serial empty", _imageStream.id));
     }
 
     DWORD numCameras;
@@ -66,7 +66,7 @@ void XimeaCamera::initCamera()
         }
         else
         {
-            logWarning("{}: Failed to get serial of camera #{}", _videoStream.id, i);
+            logWarning("{}: Failed to get serial of camera #{}", _imageStream.id, i);
         }
 
         // Close the camera if mismatch.
@@ -76,7 +76,7 @@ void XimeaCamera::initCamera()
     if (!camFound)
     {
         throw std::runtime_error(
-            fmt::format("{}: No camera matching serial: {}", _videoStream.id, _config.serial));
+            fmt::format("{}: No camera matching serial: {}", _imageStream.id, _config.serial));
     }
 
     // Print some interesting meta data.
@@ -90,17 +90,17 @@ void XimeaCamera::initCamera()
             if (xiGetParamFloat(_Camera, XI_PRM_TEMP, &temperature) == XI_OK)
             {
                 logInfo("{}: Camera sensor temperature  at{:.5f} °C",
-                        _videoStream.id,
+                        _imageStream.id,
                         temperature);
             }
             else
             {
-                logInfo("{}: Failed to get camera sensor temperature", _videoStream.id);
+                logInfo("{}: Failed to get camera sensor temperature", _imageStream.id);
             }
         }
         else
         {
-            logInfo("{}: Camera sensor temperature unavailable", _videoStream.id);
+            logInfo("{}: Camera sensor temperature unavailable", _imageStream.id);
         }
     }
 
@@ -109,11 +109,11 @@ void XimeaCamera::initCamera()
         float focusDistance = 0;
         if (xiGetParamFloat(_Camera, XI_PRM_LENS_FOCUS_DISTANCE, &focusDistance) == XI_OK)
         {
-            logInfo("{}: Camera focus distance at {:.5f} cm", _videoStream.id, focusDistance);
+            logInfo("{}: Camera focus distance at {:.5f} cm", _imageStream.id, focusDistance);
         }
         else
         {
-            logInfo("{}: Camera focus distance unavailable", _videoStream.id);
+            logInfo("{}: Camera focus distance unavailable", _imageStream.id);
         }
     }
 
@@ -173,7 +173,7 @@ void XimeaCamera::initCamera()
 
     if (_config.blacklevel)
     {
-        logWarning("{}: Blacklevel parameter not implemented for Basler cameras", _videoStream.id);
+        logWarning("{}: Blacklevel parameter not implemented for Basler cameras", _imageStream.id);
     }
 
     if (_config.exposure)
@@ -214,7 +214,7 @@ void XimeaCamera::initCamera()
             throw std::runtime_error(
                 fmt::format("{}: Automatic gain enables automatic exposure and vice versa on "
                             "XIMEA cameras",
-                            _videoStream.id));
+                            _imageStream.id));
         }
     }
     else if (_config.exposure)
@@ -300,7 +300,7 @@ void XimeaCamera::run()
         if (const auto returnCode = xiGetImage(_Camera, 1000 * 2, &image); returnCode != XI_OK)
         {
             throw std::runtime_error(
-                fmt::format("{}: Failed to grab camera image: {}", _videoStream.id, returnCode));
+                fmt::format("{}: Failed to grab camera image: {}", _imageStream.id, returnCode));
         }
         const auto end = std::chrono::steady_clock::now();
 
@@ -316,7 +316,7 @@ void XimeaCamera::run()
         if (lastImageSequenceNumber != 0 && image.nframe != lastImageSequenceNumber + 1)
         {
             logWarning("{}: Camera lost frame: This frame: #{} last frame: #{} timestamp: {:e.6}",
-                       _videoStream.id,
+                       _imageStream.id,
                        image.nframe,
                        lastImageSequenceNumber,
                        currWallClockTime);
@@ -328,7 +328,7 @@ void XimeaCamera::run()
                 xiSetParamInt(_Camera, XI_PRM_COUNTER_SELECTOR, what.second);
                 int result = 0;
                 xiGetParamInt(_Camera, XI_PRM_COUNTER_VALUE, &result);
-                logWarning("{}: {}: {}", _videoStream.id, what.first, result);
+                logWarning("{}: {}: {}", _imageStream.id, what.first, result);
             }
         }
         lastImageSequenceNumber = image.nframe;
@@ -342,7 +342,7 @@ void XimeaCamera::run()
                 logWarning(
                     "{}: Camera clock faster than wall time. Last camera time: {:e.6} wall "
                     "clock: {:e.6}",
-                    _videoStream.id,
+                    _imageStream.id,
                     currCameraTime,
                     currWallClockTime);
             }
@@ -368,7 +368,7 @@ void XimeaCamera::run()
                 std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
             duration > 2 * (1000000 / 6))
         {
-            logWarning("{}: Processing time too long: {}", _videoStream.id, duration);
+            logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
 
         // Crop the image to the expected size (e.g. 4000x3000).
@@ -394,7 +394,7 @@ void XimeaCamera::run()
         auto buf = GrayscaleImage(vwidth, vheight, currCameraTime);
         memcpy(&buf.data[0], wholeImageMatrix.data, vwidth * vheight);
 
-        _videoStream.push(buf);
+        _imageStream.push(buf);
         emit imageCaptured(buf);
     }
 
@@ -407,6 +407,6 @@ void XimeaCamera::enforce(XI_RETURN errorCode, const std::string& operation)
     if (errorCode != XI_OK)
     {
         throw std::runtime_error(
-            fmt::format("{}: Camera error: {}: {}", _videoStream.id, operation, errorCode));
+            fmt::format("{}: Camera error: {}: {}", _imageStream.id, operation, errorCode));
     }
 }

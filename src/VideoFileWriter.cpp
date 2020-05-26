@@ -92,7 +92,7 @@ static void grayscaleToYUV420_uv(int           width,
 VideoFileWriter::VideoFileWriter(Config config)
 : _cfg(config)
 , _formatContext(nullptr)
-, _videoStream(nullptr)
+, _imageStream(nullptr)
 , _codecContext(nullptr)
 , _videoFrame(nullptr)
 , _videoPacket(nullptr)
@@ -128,7 +128,7 @@ VideoFileWriter::VideoFileWriter(const std::string& filename, Config config)
 {
     _filename = filename;
 
-    // Set up for encoding a single video stream and storing it in filename with
+    // Set up for encoding a single image stream and storing it in filename with
     // the container format automatically detected based on the filename suffix.
 
     if (auto r = avformat_alloc_output_context2(&_formatContext, NULL, NULL, _filename.c_str());
@@ -161,7 +161,7 @@ VideoFileWriter::VideoFileWriter(const std::string& filename, Config config)
             fmt::format("{}: Could not open for writing: {}", _filename, av_strerror(r)));
     }
 
-    if (!(_videoStream = avformat_new_stream(_formatContext, codec)))
+    if (!(_imageStream = avformat_new_stream(_formatContext, codec)))
     {
         throw std::runtime_error(fmt::format("{}: Could not create new video stream", _filename));
     }
@@ -224,9 +224,9 @@ VideoFileWriter::VideoFileWriter(const std::string& filename, Config config)
         _codecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     }
 
-    _videoStream->time_base      = _codecContext->time_base;
-    _videoStream->avg_frame_rate = _codecContext->framerate;
-    _videoStream->r_frame_rate   = _codecContext->framerate;
+    _imageStream->time_base      = _codecContext->time_base;
+    _imageStream->avg_frame_rate = _codecContext->framerate;
+    _imageStream->r_frame_rate   = _codecContext->framerate;
 
     if (auto r = avcodec_open2(_codecContext, codec, NULL); r < 0)
     {
@@ -234,7 +234,7 @@ VideoFileWriter::VideoFileWriter(const std::string& filename, Config config)
             fmt::format("{}: Could not initialize video encoder: {}", _filename, av_strerror(r)));
     }
 
-    if (auto r = avcodec_parameters_from_context(_videoStream->codecpar, _codecContext); r < 0)
+    if (auto r = avcodec_parameters_from_context(_imageStream->codecpar, _codecContext); r < 0)
     {
         throw std::runtime_error(
             fmt::format("{}: Could not copy video encoder settings to video stream: {}",
@@ -333,7 +333,7 @@ void VideoFileWriter::encodeFrame(AVFrame* frame)
             throw std::runtime_error(fmt::format("Could not encode frame: {}", av_strerror(r)));
         }
 
-        av_packet_rescale_ts(_videoPacket, _codecContext->time_base, _videoStream->time_base);
+        av_packet_rescale_ts(_videoPacket, _codecContext->time_base, _imageStream->time_base);
 
         av_write_frame(_formatContext, _videoPacket);
         av_packet_unref(_videoPacket);

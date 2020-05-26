@@ -84,8 +84,8 @@ auto BaslerCamera::getAvailable() -> std::vector<Config>
     return cameraConfigs;
 }
 
-BaslerCamera::BaslerCamera(Config config, VideoStream videoStream)
-: Camera(config, videoStream)
+BaslerCamera::BaslerCamera(Config config, ImageStream imageStream)
+: Camera(config, imageStream)
 {
     initCamera();
     startCapture();
@@ -97,7 +97,7 @@ void BaslerCamera::initCamera()
 
     if (_config.serial.empty())
     {
-        throw std::runtime_error(fmt::format("{}: Camera serial empty", _videoStream.id));
+        throw std::runtime_error(fmt::format("{}: Camera serial empty", _imageStream.id));
     }
 
     try
@@ -110,7 +110,7 @@ void BaslerCamera::initCamera()
         if (auto r = factory.EnumerateDevices(devices); r < 0)
         {
             throw std::runtime_error(
-                fmt::format("{}: Could not enumerate cameras", _videoStream.id));
+                fmt::format("{}: Could not enumerate cameras", _imageStream.id));
         }
 
         std::optional<Pylon::CDeviceInfo> camDeviceInfo;
@@ -126,20 +126,20 @@ void BaslerCamera::initCamera()
         if (!camDeviceInfo)
         {
             throw std::runtime_error(
-                fmt::format("{}: No camera matching serial: {}", _videoStream.id, _config.serial));
+                fmt::format("{}: No camera matching serial: {}", _imageStream.id, _config.serial));
         }
 
         // NOTE: Basler camera models appear to use the naming convention
         //       (series)(...)(interface)(mono/color)[suffix]
 
         const auto cameraModel = std::string(camDeviceInfo->GetModelName());
-        logInfo("{}: Camera model: {}", _videoStream.id, cameraModel);
+        logInfo("{}: Camera model: {}", _imageStream.id, cameraModel);
 
         if (cameraModel.size() < 2)
         {
             throw std::runtime_error(
                 fmt::format("{}: Cannot determine camera series from model name {}",
-                            _videoStream.id,
+                            _imageStream.id,
                             cameraModel));
         }
 
@@ -184,7 +184,7 @@ void BaslerCamera::initCamera()
         _camera.Open();
 
         logInfo("{}: Camera resolution: {}x{}",
-                _videoStream.id,
+                _imageStream.id,
                 _camera.SensorWidth(),
                 _camera.SensorHeight());
 
@@ -194,7 +194,7 @@ void BaslerCamera::initCamera()
         _camera.Height  = _config.height;
 
         logInfo("{}: Camera region of interest: ({},{}),{}x{}",
-                _videoStream.id,
+                _imageStream.id,
                 _camera.OffsetX(),
                 _camera.OffsetY(),
                 _camera.Width(),
@@ -205,7 +205,7 @@ void BaslerCamera::initCamera()
         {
             throw std::runtime_error(
                 fmt::format("{}: Could not set camera region of intereset to ({},{}),{}x{}",
-                            _videoStream.id,
+                            _imageStream.id,
                             _config.offset_x,
                             _config.offset_y,
                             _config.width,
@@ -273,7 +273,7 @@ void BaslerCamera::initCamera()
 
                     if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
                         logWarning("{}: Automatic black level not supported on Basler cameras",
-                                   _videoStream.id);
+                                   _imageStream.id);
                     else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
                         _camera.BlackLevel = value;
                     else
@@ -308,7 +308,7 @@ void BaslerCamera::initCamera()
                 throw std::runtime_error(
                     fmt::format("{}: Automatic gain enables automatic exposure and vice versa on "
                                 "Basler cameras",
-                                _videoStream.id));
+                                _imageStream.id));
             }
         }
         else if (_config.exposure)
@@ -329,7 +329,7 @@ void BaslerCamera::initCamera()
     catch (Pylon::GenericException e)
     {
         throw std::runtime_error(
-            fmt::format("{}: Failed to initialize camera: {}", _videoStream.id, e.what()));
+            fmt::format("{}: Failed to initialize camera: {}", _imageStream.id, e.what()));
     }
 }
 
@@ -342,7 +342,7 @@ void BaslerCamera::startCapture()
     catch (Pylon::GenericException e)
     {
         throw std::runtime_error(fmt::format("{}: Failed to start capturing with camera: {}",
-                                             _videoStream.id,
+                                             _imageStream.id,
                                              e.what()));
     }
 }
@@ -385,7 +385,7 @@ void BaslerCamera::run()
                     if (!_grabbed)
                     {
                         logCritical("{}: Failed to grab camera image: {}",
-                                    _videoStream.id,
+                                    _imageStream.id,
                                     _grabbed->GetErrorDescription());
                         continue;
                     }
@@ -405,7 +405,7 @@ void BaslerCamera::run()
                 {
                     throw std::logic_error(
                         fmt::format("{}: Camera captured image of incorrect size: {}x{}",
-                                    _videoStream.id,
+                                    _imageStream.id,
                                     img_width,
                                     img_height));
                 }
@@ -422,7 +422,7 @@ void BaslerCamera::run()
                 {
                     logWarning(
                         "{}: Camera lost frame: This frame: #{} last frame: #{} timestamp: {}",
-                        _videoStream.id,
+                        _imageStream.id,
                         currImageNumber,
                         lastImageNumber,
                         currWallClockTime);
@@ -438,7 +438,7 @@ void BaslerCamera::run()
                             "{}: Camera clock faster than wall time. Last camera time: {:e.6} "
                             "wall "
                             "clock: {:e.6}",
-                            _videoStream.id,
+                            _imageStream.id,
                             currCameraTime,
                             currWallClockTime);
                     }
@@ -459,12 +459,12 @@ void BaslerCamera::run()
                     std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
                 if (duration > 2 * (1000000 / 6))
                 {
-                    logWarning("{}: Processing time too long: {}", _videoStream.id, duration);
+                    logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
                 }
             }
             catch (Pylon::GenericException e) // could not retrieve grab result
             {
-                logWarning("{}: Camera error: {}", _videoStream.id, e.what());
+                logWarning("{}: Camera error: {}", _imageStream.id, e.what());
 
                 // TODO: Terminate application if the problem persists and we get this error
                 // repeatedly
@@ -472,13 +472,13 @@ void BaslerCamera::run()
         }
         else
         {
-            throw std::runtime_error(fmt::format("{}: Camera stopped capturing", _videoStream.id));
+            throw std::runtime_error(fmt::format("{}: Camera stopped capturing", _imageStream.id));
         }
 
         auto buf = GrayscaleImage(_config.width, _config.height, currCameraTime);
         memcpy(&buf.data[0], p_image, _config.width * _config.height);
 
-        _videoStream.push(buf);
+        _imageStream.push(buf);
         emit imageCaptured(buf);
     }
 

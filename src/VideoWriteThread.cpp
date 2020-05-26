@@ -19,9 +19,9 @@ VideoWriteThread::VideoWriteThread(std::string encoderName)
 {
 }
 
-void VideoWriteThread::add(VideoStream videoStream)
+void VideoWriteThread::add(ImageStream imageStream)
 {
-    _videoStreams.push_back(std::move(videoStream));
+    _imageStreams.push_back(std::move(imageStream));
 }
 
 void VideoWriteThread::run()
@@ -31,7 +31,7 @@ void VideoWriteThread::run()
     while (!isInterruptionRequested())
     {
         std::vector<std::size_t> sizes;
-        for (auto& s : _videoStreams)
+        for (auto& s : _imageStreams)
         {
             const auto [width, height] = s.resolution;
             sizes.emplace_back(s.size() * width * height);
@@ -47,14 +47,14 @@ void VideoWriteThread::run()
             continue;
         }
 
-        auto videoStream           = _videoStreams[maxSizeIndex];
-        const auto [width, height] = videoStream.resolution;
+        auto imageStream           = _imageStreams[maxSizeIndex];
+        const auto [width, height] = imageStream.resolution;
 
         const auto startTime = std::chrono::system_clock::now();
 
         namespace fs = boost::filesystem;
 
-        const auto tmpDir = fs::path{settings.tmpDirectory()} / videoStream.id;
+        const auto tmpDir = fs::path{settings.tmpDirectory()} / imageStream.id;
         if (!fs::exists(tmpDir))
         {
             fs::create_directories(tmpDir);
@@ -66,8 +66,8 @@ void VideoWriteThread::run()
         VideoFileWriter f(tmpVideoFilename.string(),
                           {static_cast<int>(width),
                            static_cast<int>(height),
-                           {static_cast<int>(videoStream.framesPerSecond), 1},
-                           {_encoderName, videoStream.encoderOptions}});
+                           {static_cast<int>(imageStream.framesPerSecond), 1},
+                           {_encoderName, imageStream.encoderOptions}});
         logDebug("{}: New video file", tmpVideoFilename);
 
         const auto tmpFrameTimestampsFilename = tmpDir / fmt::format("{}.txt", startTime);
@@ -77,15 +77,15 @@ void VideoWriteThread::run()
 
         const std::size_t debugInterval = 100;
 
-        bool        videoStreamClosedEarly = false;
+        bool        imageStreamClosedEarly = false;
         std::size_t frameIndex             = 0;
-        for (; frameIndex < videoStream.framesPerFile; frameIndex++)
+        for (; frameIndex < imageStream.framesPerFile; frameIndex++)
         {
-            VideoStream::Image img;
-            videoStream.pop(img);
+            ImageStream::Image img;
+            imageStream.pop(img);
             if (img.data.empty())
             {
-                videoStreamClosedEarly = true;
+                imageStreamClosedEarly = true;
                 break;
             }
 
@@ -109,11 +109,11 @@ void VideoWriteThread::run()
 
         const auto endTime = std::chrono::system_clock::now();
 
-        if (!videoStreamClosedEarly)
+        if (!imageStreamClosedEarly)
         {
             try
             {
-                const auto outDir = fs::path{settings.outDirectory()} / videoStream.id;
+                const auto outDir = fs::path{settings.outDirectory()} / imageStream.id;
                 if (!fs::exists(outDir))
                 {
                     fs::create_directories(outDir);

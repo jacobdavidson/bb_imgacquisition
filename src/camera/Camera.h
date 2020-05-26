@@ -10,7 +10,7 @@
 
 #include <QThread>
 
-#include "VideoStream.h"
+#include "ImageStream.h"
 
 class Camera : public QThread
 {
@@ -58,15 +58,15 @@ public:
     };
 
 protected:
-    Camera(Config config, VideoStream videoStream);
+    Camera(Config config, ImageStream imageStream);
 
     Config      _config;
-    VideoStream _videoStream;
+    ImageStream _imageStream;
 
 public:
     virtual ~Camera();
 
-    static Camera* make(Config config, VideoStream videoStream);
+    static Camera* make(Config config, ImageStream imageStream);
 
 signals:
     void imageCaptured(GrayscaleImage image);
