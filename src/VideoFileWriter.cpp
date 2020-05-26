@@ -38,7 +38,10 @@ static const char* av_strerror(int errnum)
     return &errstr[0];
 }
 
-static void grayscaleToYUV420_y(const uint8_t* grayscale, int width, int height, uint8_t* yChannel)
+static void grayscaleToYUV420_y(const std::uint8_t* grayscale,
+                                int                 width,
+                                int                 height,
+                                std::uint8_t*       yChannel)
 {
     /*
      * RGB -> YUV:
@@ -58,12 +61,15 @@ static void grayscaleToYUV420_y(const uint8_t* grayscale, int width, int height,
     {
         for (int x = 0; x < width; x++)
         {
-            yChannel[y * width + x] = (uint8_t)(0.895 * (*grayscale++) + 16);
+            yChannel[y * width + x] = (std::uint8_t)(0.895 * (*grayscale++) + 16);
         }
     }
 }
 
-static void grayscaleToYUV420_uv(int width, int height, uint8_t* uChannel, uint8_t* vChannel)
+static void grayscaleToYUV420_uv(int           width,
+                                 int           height,
+                                 std::uint8_t* uChannel,
+                                 std::uint8_t* vChannel)
 {
     /*
      * RGB -> YUV:

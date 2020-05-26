@@ -37,7 +37,7 @@ public:
         _queue.pop();
     }
 
-    size_t size()
+    std::size_t size()
     {
         std::unique_lock<std::mutex> lock(_mutex);
         return _queue.size();

@@ -197,7 +197,7 @@ Settings::Settings()
         stream.camera.gain       = parseParam<float>(cameraTree, "gain");
 
         stream.framesPerSecond = videoStreamTree.get<float>("frames_per_second");
-        stream.framesPerFile   = videoStreamTree.get<size_t>("frames_per_file");
+        stream.framesPerFile   = videoStreamTree.get<std::size_t>("frames_per_file");
 
         const auto& encoderTree = videoStreamTree.get_child("encoder");
         stream.encoder.id       = encoderTree.get<std::string>("id");

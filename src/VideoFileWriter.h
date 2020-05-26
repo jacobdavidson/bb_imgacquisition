@@ -60,5 +60,5 @@ private:
     AVFrame*  _videoFrame;
     AVPacket* _videoPacket;
 
-    int64_t _videoFrameIndex;
+    std::int64_t _videoFrameIndex;
 };

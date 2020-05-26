@@ -30,7 +30,7 @@ void VideoWriteThread::run()
 
     while (!isInterruptionRequested())
     {
-        std::vector<size_t> sizes;
+        std::vector<std::size_t> sizes;
         for (auto& s : _videoStreams)
         {
             const auto [width, height] = s.resolution;
@@ -75,10 +75,10 @@ void VideoWriteThread::run()
         std::fstream frameTimestamps(tmpFrameTimestampsFilename.string(),
                                      std::ios::trunc | std::ios::out);
 
-        const size_t debugInterval = 100;
+        const std::size_t debugInterval = 100;
 
-        bool   videoStreamClosedEarly = false;
-        size_t frameIndex             = 0;
+        bool        videoStreamClosedEarly = false;
+        std::size_t frameIndex             = 0;
         for (; frameIndex < videoStream.framesPerFile; frameIndex++)
         {
             VideoStream::Image img;

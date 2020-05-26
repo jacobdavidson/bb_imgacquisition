@@ -3,9 +3,9 @@
 #include "VideoStream.h"
 
 VideoStream::VideoStream(std::string                                  _id,
-                         std::tuple<size_t, size_t>                   _resolution,
+                         std::tuple<std::size_t, std::size_t>         _resolution,
                          float                                        _framesPerSecond,
-                         size_t                                       _framesPerFile,
+                         std::size_t                                  _framesPerFile,
                          std::unordered_map<std::string, std::string> _encoderOptions)
 : id{_id}
 , resolution{_resolution}
@@ -31,7 +31,7 @@ void VideoStream::pop(Image& value)
     _queue->pop(value);
 }
 
-size_t VideoStream::size()
+std::size_t VideoStream::size()
 {
     return _queue->size();
 }

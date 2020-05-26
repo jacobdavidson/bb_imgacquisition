@@ -15,9 +15,9 @@ public:
     using Image = GrayscaleImage;
 
     VideoStream(std::string                                  id,
-                std::tuple<size_t, size_t>                   resolution,
+                std::tuple<std::size_t, std::size_t>         resolution,
                 float                                        _framesPerSecond,
-                size_t                                       _framesPerFile,
+                std::size_t                                  _framesPerFile,
                 std::unordered_map<std::string, std::string> encoderOptions);
 
     void push(const Image& value);
@@ -26,12 +26,12 @@ public:
 
     void pop(Image& value);
 
-    size_t size();
+    std::size_t size();
 
     const std::string                                  id;
-    const std::tuple<size_t, size_t>                   resolution;
+    const std::tuple<std::size_t, std::size_t>         resolution;
     const float                                        framesPerSecond;
-    const size_t                                       framesPerFile;
+    const std::size_t                                  framesPerFile;
     const std::unordered_map<std::string, std::string> encoderOptions;
 
 private:

@@ -280,7 +280,7 @@ void XimeaCamera::run()
     const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
     const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
-    uint64_t lastImageSequenceNumber = 0;
+    std::uint64_t lastImageSequenceNumber = 0;
 
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
@@ -290,7 +290,7 @@ void XimeaCamera::run()
     // Preallocate image buffer on stack in order to save performance later.
     std::array<unsigned char, 3008 * 4112> imageBuffer;
 
-    for (size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
+    for (std::size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
     {
         _watchdog->pulse();
 

@@ -28,8 +28,8 @@ public:
 
         Camera::Config camera;
 
-        float  framesPerSecond;
-        size_t framesPerFile;
+        float       framesPerSecond;
+        std::size_t framesPerFile;
 
         struct Encoder final
         {

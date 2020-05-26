@@ -23,7 +23,7 @@ struct fmt::formatter<std::chrono::time_point<Clock, Duration>, Char>
     char presentation = 'b';
 
     // Fractional second precision
-    std::optional<size_t> precision;
+    std::optional<std::size_t> precision;
 
     // Parses format specifications of the form ['b' | 'e'] ['.' ('1' - '9')].
     constexpr auto parse(fmt::format_parse_context& ctx)

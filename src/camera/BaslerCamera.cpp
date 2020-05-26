@@ -119,7 +119,7 @@ void BaslerCamera::initCamera()
         }
 
         std::optional<Pylon::CDeviceInfo> camDeviceInfo;
-        for (size_t i = 0; i < devices.size(); i++)
+        for (std::size_t i = 0; i < devices.size(); i++)
         {
             if (devices[i].GetSerialNumber() == _config.serial.c_str())
             {
@@ -359,17 +359,17 @@ void BaslerCamera::run()
     const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
     const unsigned int vheight = static_cast<unsigned int>(_config.height);
 
-    uint64_t lastImageNumber = 0;
+    std::uint64_t lastImageNumber = 0;
 
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
     // Software hangups (e.g. short CPU spikes) can thus be mitigated.
     auto currCameraTime      = std::chrono::system_clock::time_point{};
     auto lastCameraTimestamp = 0ns;
 
-    uint8_t* p_image;
-    uint     img_width, img_height;
+    std::uint8_t* p_image;
+    uint          img_width, img_height;
 
-    for (size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
+    for (std::size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
     {
         _watchdog->pulse();
 
@@ -406,7 +406,7 @@ void BaslerCamera::run()
 
                 img_width  = _grabbed->GetWidth();
                 img_height = _grabbed->GetHeight();
-                p_image    = static_cast<uint8_t*>(_grabbed->GetBuffer());
+                p_image    = static_cast<std::uint8_t*>(_grabbed->GetBuffer());
 
                 if (!(img_width == _config.width && img_height == _config.height))
                 {
@@ -462,7 +462,7 @@ void BaslerCamera::run()
                 // Check if processing a frame took longer than X seconds. If
                 // so, log the event.
                 // TODO: Why this number: 2 * (1000000 / 6)
-                const int64_t duration =
+                const std::int64_t duration =
                     std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
                 if (duration > 2 * (1000000 / 6))
                 {

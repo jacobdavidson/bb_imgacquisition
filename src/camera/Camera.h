@@ -62,7 +62,6 @@ public:
     };
 
 protected:
-
     Camera(Config config, VideoStream videoStream, Watchdog* watchdog);
 
     Config      _config;
