@@ -56,9 +56,9 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         std::exit(0);
     }
 
-    logInfo("Application: Start timestamp: {:e}", std::chrono::system_clock::now());
-    logInfo("Application: Source version: {}", g_SOURCE_VERSION);
-    logInfo("Application: Build timestamp: {}", g_BUILD_TIMESTAMP);
+    logInfo("Source version: {}", g_SOURCE_VERSION);
+    logInfo("Build timestamp: {}", g_BUILD_TIMESTAMP);
+    logInfo("Start timestamp: {:e}", std::chrono::system_clock::now());
 
     qRegisterMetaType<GrayscaleImage>("GrayscaleImage");
 
@@ -87,7 +87,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         }
         else
         {
-            logCritical("Application: Encoder with id {} referenced, but not configured",
+            logCritical("Encoder with id {} referenced, but not configured",
                         cfg.encoder.id);
         }
     }
@@ -97,14 +97,14 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         thread->start();
     }
 
-    logDebug("Application: Started {} camera threads", _cameraThreads.size());
+    logDebug("Started {} camera threads", _cameraThreads.size());
 
     for (auto& [id, thread] : _imageStreamsWriters)
     {
         thread.start();
     }
 
-    logDebug("Application: Started {} image streams writer threads", _imageStreamsWriters.size());
+    logDebug("Started {} image streams writer threads", _imageStreamsWriters.size());
 
     auto watchdogTimer = new QTimer(this);
     watchdogTimer->setInterval(500);
