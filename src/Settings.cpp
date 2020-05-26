@@ -111,8 +111,6 @@ boost::property_tree::ptree detectSettings()
     }
 #endif
 
-    tree.put_child("video_streams", videoStreams);
-
     return tree;
 }
 
