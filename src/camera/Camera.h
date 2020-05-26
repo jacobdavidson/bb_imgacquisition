@@ -8,7 +8,7 @@
 #include <QThread>
 
 #include "VideoStream.h"
-#include "settings/Settings.h"
+#include "Settings.h"
 
 // Forward declare not-required types.
 class Watchdog;

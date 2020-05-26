@@ -6,7 +6,7 @@
 
 #include <QTimer>
 
-#include "settings/Settings.h"
+#include "Settings.h"
 #include "Watchdog.h"
 #include "PlatformAdapter.h"
 #include "log.h"

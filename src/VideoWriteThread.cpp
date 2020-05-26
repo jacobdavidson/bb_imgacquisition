@@ -3,7 +3,7 @@
 #include <chrono>
 #include <fstream>
 
-#include "settings/Settings.h"
+#include "Settings.h"
 // The order is important!
 #include "VideoWriteThread.h"
 

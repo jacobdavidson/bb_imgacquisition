@@ -53,8 +53,8 @@ add_executable(${PROJECT_NAME}
 	src/VideoFileWriter.cpp
 	src/Watchdog.h
 	src/Watchdog.cpp
-	src/settings/Settings.h
-	src/settings/Settings.cpp
+	src/Settings.h
+	src/Settings.cpp
 	src/camera/Camera.h
 	src/camera/Camera.cpp
 	src/ImgAcquisitionApp.h
