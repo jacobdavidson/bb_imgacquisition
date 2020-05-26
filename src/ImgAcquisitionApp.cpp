@@ -10,8 +10,9 @@
 #include "Watchdog.h"
 #include "PlatformAdapter.h"
 #include "util/log.h"
-#include "util/version.h"
-#include "util/build_timestamp.h"
+
+#include "source_version.h"
+#include "build_timestamp.h"
 
 ImgAcquisitionApp::~ImgAcquisitionApp()
 {

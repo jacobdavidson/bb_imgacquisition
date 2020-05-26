@@ -1,5 +1,0 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-
-#include "util/version.h"
-
-const char g_SOURCE_VERSION[] = "@SOURCE_VERSION@";

@@ -1,5 +1,0 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-
-#include "util/build_timestamp.h"
-
-const char g_BUILD_TIMESTAMP[] = "@BUILD_TIMESTAMP@";
