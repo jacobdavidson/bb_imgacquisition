@@ -8,7 +8,7 @@
 #include <QCoreApplication>
 
 #include "camera/Camera.h"
-#include "VideoWriteThread.h"
+#include "ImageStreamsWriter.h"
 #include "Watchdog.h"
 
 class ImgAcquisitionApp : public QCoreApplication
@@ -24,5 +24,5 @@ private:
 
     std::vector<std::unique_ptr<Camera>> _cameraThreads;
 
-    std::unordered_map<std::string, VideoWriteThread> _videoWriterThreads;
+    std::unordered_map<std::string, ImageStreamsWriter> _imageStreamsWriters;
 };

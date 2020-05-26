@@ -7,24 +7,24 @@
 
 #include "Settings.h"
 // NOTE: The order of the includes below is important to avoid name clashes!
-#include "VideoWriteThread.h"
+#include "ImageStreamsWriter.h"
 
 #include "VideoFileWriter.h"
 
 #include "util/format.h"
 #include "util/log.h"
 
-VideoWriteThread::VideoWriteThread(std::string encoderName)
+ImageStreamsWriter::ImageStreamsWriter(std::string encoderName)
 : _encoderName{encoderName}
 {
 }
 
-void VideoWriteThread::add(ImageStream imageStream)
+void ImageStreamsWriter::add(ImageStream imageStream)
 {
     _imageStreams.push_back(std::move(imageStream));
 }
 
-void VideoWriteThread::run()
+void ImageStreamsWriter::run()
 {
     const auto& settings = Settings::instance();
 

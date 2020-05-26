@@ -45,8 +45,8 @@ add_executable(${PROJECT_NAME}
 	src/GrayscaleImage.cpp
 	src/ImageStream.h
 	src/ImageStream.cpp
-	src/VideoWriteThread.h
-	src/VideoWriteThread.cpp
+	src/ImageStreamsWriter.h
+	src/ImageStreamsWriter.cpp
 	src/VideoFileWriter.h
 	src/VideoFileWriter.cpp
 	src/Watchdog.h

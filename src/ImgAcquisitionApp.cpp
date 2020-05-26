@@ -30,12 +30,12 @@ ImgAcquisitionApp::~ImgAcquisitionApp()
     // within video file to video writers
     _cameraThreads.clear();
 
-    for (auto& [name, thread] : _videoWriterThreads)
+    for (auto& [name, thread] : _imageStreamsWriters)
     {
         thread.requestInterruption();
     }
 
-    for (auto& [name, thread] : _videoWriterThreads)
+    for (auto& [name, thread] : _imageStreamsWriters)
     {
         thread.wait();
     }
@@ -64,7 +64,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 
     for (auto& [id, name] : settings.videoEncoders())
     {
-        _videoWriterThreads.emplace(id, name);
+        _imageStreamsWriters.emplace(id, name);
     }
 
     for (const auto& cfg : settings.imageStreams())
@@ -81,9 +81,9 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
             &Camera::imageCaptured,
             [this, watchIndex](GrayscaleImage image) { _watchdog.pulse(watchIndex); });
 
-        if (_videoWriterThreads.count(cfg.encoder.id))
+        if (_imageStreamsWriters.count(cfg.encoder.id))
         {
-            _videoWriterThreads.at(cfg.encoder.id).add(imageStream);
+            _imageStreamsWriters.at(cfg.encoder.id).add(imageStream);
         }
         else
         {
@@ -99,12 +99,12 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 
     logDebug("Application: Started {} camera threads", _cameraThreads.size());
 
-    for (auto& [id, thread] : _videoWriterThreads)
+    for (auto& [id, thread] : _imageStreamsWriters)
     {
         thread.start();
     }
 
-    logDebug("Application: Started {} video writer threads", _videoWriterThreads.size());
+    logDebug("Application: Started {} image streams writer threads", _imageStreamsWriters.size());
 
     auto watchdogTimer = new QTimer(this);
     watchdogTimer->setInterval(500);
