@@ -23,7 +23,7 @@ struct dependent_false : std::false_type
 {
 };
 
-SettingsIAC::SettingsIAC()
+Settings::Settings()
 {
     const auto configLocation = QDir(
         QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
@@ -54,7 +54,7 @@ SettingsIAC::SettingsIAC()
     }
 }
 
-const boost::property_tree::ptree SettingsIAC::detectSettings() const
+const boost::property_tree::ptree Settings::detectSettings() const
 {
     auto tree = boost::property_tree::ptree{};
 
@@ -130,17 +130,17 @@ const boost::property_tree::ptree SettingsIAC::detectSettings() const
 
 template<typename T>
 auto parseParam(const boost::property_tree::ptree& tree, const std::string& name)
-    -> std::optional<SettingsIAC::VideoStream::Camera::Parameter<T>>
+    -> std::optional<Settings::VideoStream::Camera::Parameter<T>>
 {
     if (auto strValue = tree.get_optional<std::string>(name); strValue)
     {
         if (*strValue == "auto")
         {
-            return SettingsIAC::VideoStream::Camera::Parameter_Auto{};
+            return Settings::VideoStream::Camera::Parameter_Auto{};
         }
         else if (auto value = tree.get_optional<T>(name); value)
         {
-            return SettingsIAC::VideoStream::Camera::Parameter_Manual<T>{*value};
+            return Settings::VideoStream::Camera::Parameter_Manual<T>{*value};
         }
 
         throw std::runtime_error(
@@ -152,7 +152,7 @@ auto parseParam(const boost::property_tree::ptree& tree, const std::string& name
     return {};
 };
 
-void SettingsIAC::loadNewSettings()
+void Settings::loadNewSettings()
 {
     for (const auto& [videoStreamId, videoStreamTree] : _ptree.get_child("video_streams"))
     {
@@ -243,22 +243,22 @@ void SettingsIAC::loadNewSettings()
     _outDirectory = _ptree.get<std::string>("out_directory");
 }
 
-const std::vector<SettingsIAC::VideoStream>& SettingsIAC::videoStreams() const
+const std::vector<Settings::VideoStream>& Settings::videoStreams() const
 {
     return _videoStreams;
 }
 
-const std::unordered_map<std::string, std::string>& SettingsIAC::videoEncoders() const
+const std::unordered_map<std::string, std::string>& Settings::videoEncoders() const
 {
     return _videoEncoders;
 }
 
-const std::string SettingsIAC::tmpDirectory() const
+const std::string Settings::tmpDirectory() const
 {
     return _tmpDirectory;
 }
 
-const std::string SettingsIAC::outDirectory() const
+const std::string Settings::outDirectory() const
 {
     return _outDirectory;
 }

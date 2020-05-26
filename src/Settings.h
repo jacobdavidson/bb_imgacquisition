@@ -16,7 +16,7 @@
 
 #include <QString>
 
-class SettingsIAC
+class Settings
 {
 
 private:
@@ -24,20 +24,20 @@ private:
 
     void loadNewSettings();
 
-    SettingsIAC();
+    Settings();
 
     // C++ 11 style
     // =======
-    SettingsIAC(SettingsIAC const&) = delete;
-    void operator=(SettingsIAC const&) = delete;
+    Settings(Settings const&) = delete;
+    void operator=(Settings const&) = delete;
 
 public:
     // To set options from CLI
     boost::property_tree::ptree _ptree;
 
-    static SettingsIAC* getInstance()
+    static Settings* getInstance()
     {
-        static SettingsIAC instance; // Guaranteed to be destroyed.
+        static Settings instance; // Guaranteed to be destroyed.
         // Instantiated on first use.
         return &instance;
     }

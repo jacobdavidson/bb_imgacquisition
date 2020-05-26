@@ -24,7 +24,7 @@ void VideoWriteThread::add(VideoStream videoStream)
 
 void VideoWriteThread::run()
 {
-    SettingsIAC* set = SettingsIAC::getInstance();
+    Settings* set = Settings::getInstance();
 
     while (!isInterruptionRequested())
     {

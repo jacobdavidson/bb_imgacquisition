@@ -43,9 +43,9 @@ ImgAcquisitionApp::~ImgAcquisitionApp()
 ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 : QCoreApplication(argc, argv)
 {
-    int          numCameras  = 0;
-    int          camsStarted = 0;
-    SettingsIAC* set         = SettingsIAC::getInstance();
+    int       numCameras  = 0;
+    int       camsStarted = 0;
+    Settings* set         = Settings::getInstance();
 
     const auto args = arguments();
 

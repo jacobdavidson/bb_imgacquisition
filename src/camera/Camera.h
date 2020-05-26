@@ -22,7 +22,7 @@ class Camera : public QThread
     Q_OBJECT
 
 protected:
-    using Config = SettingsIAC::VideoStream::Camera;
+    using Config = Settings::VideoStream::Camera;
 
     Camera(Config config, VideoStream videoStream, Watchdog* watchdog);
 
