@@ -113,6 +113,12 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     connect(watchdogTimer, &QTimer::timeout, this, [this]() { _watchdog.check(); });
 
     auto* adapter = new PlatformAdapter(this);
-    QObject::connect(adapter, &PlatformAdapter::interruptReceived, this, QCoreApplication::quit);
-    QObject::connect(adapter, &PlatformAdapter::terminateReceived, this, QCoreApplication::quit);
+    QObject::connect(adapter, &PlatformAdapter::interruptReceived, this, &ImgAcquisitionApp::quit);
+    QObject::connect(adapter, &PlatformAdapter::terminateReceived, this, &ImgAcquisitionApp::quit);
+}
+
+void ImgAcquisitionApp::quit()
+{
+    std::cerr << std::endl;
+    QCoreApplication::quit();
 }

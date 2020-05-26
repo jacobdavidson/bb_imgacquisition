@@ -105,7 +105,6 @@ void ImageStreamsWriter::run()
 
         f.close();
         frameTimestamps.close();
-        logDebug("{}: Finished", tmpVideoFilename);
 
         const auto endTime = std::chrono::system_clock::now();
 
@@ -138,11 +137,17 @@ void ImageStreamsWriter::run()
                 fs::permissions(outFrameTimestampsFilename,
                                 fs::owner_read | fs::owner_write | fs::group_read |
                                     fs::group_write | fs::others_read | fs::others_write);
+
+                logInfo("{}: Finished", outVideoFilename);
             }
             catch (const fs::filesystem_error& e)
             {
                 logCritical("{}: Failed to finalize video file: {}", tmpVideoFilename, e.what());
             }
+        }
+        else
+        {
+            logInfo("{}: Interrupted", tmpVideoFilename);
         }
     }
 }

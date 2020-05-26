@@ -84,6 +84,8 @@ BaslerCamera::BaslerCamera(Config config, ImageStream imageStream)
 void BaslerCamera::initCamera()
 {
     using namespace std::chrono_literals;
+    using namespace Pylon;
+    using namespace Basler_UsbCameraParams;
 
     if (_config.serial.empty())
     {
@@ -92,10 +94,10 @@ void BaslerCamera::initCamera()
 
     try
     {
-        auto& factory = Pylon::CTlFactory::GetInstance();
+        auto& factory = CTlFactory::GetInstance();
 
         // Get all attached devices and return -1 if no device is found.
-        Pylon::DeviceInfoList_t devices;
+        DeviceInfoList_t devices;
 
         if (auto r = factory.EnumerateDevices(devices); r < 0)
         {
@@ -103,7 +105,7 @@ void BaslerCamera::initCamera()
                 fmt::format("{}: Could not enumerate cameras", _imageStream.id));
         }
 
-        std::optional<Pylon::CDeviceInfo> camDeviceInfo;
+        std::optional<CDeviceInfo> camDeviceInfo;
         for (std::size_t i = 0; i < devices.size(); i++)
         {
             if (devices[i].GetSerialNumber() == _config.serial.c_str())
@@ -161,7 +163,7 @@ void BaslerCamera::initCamera()
         //
         // clang-format on
 
-        if (cameraSeries == "ace" && cameraInterface == Pylon::BaslerUsbDeviceClass)
+        if (cameraSeries == "ace" && cameraInterface == BaslerUsbDeviceClass)
         {
             _nsPerTick = 1ns;
         }
@@ -204,18 +206,17 @@ void BaslerCamera::initCamera()
 
         std::visit(
             [this](auto&& trigger) {
-                const auto mapTriggerSource =
-                    [](int source) -> std::optional<Basler_UsbCameraParams::TriggerSourceEnums> {
+                const auto mapTriggerSource = [](int source) -> std::optional<TriggerSourceEnums> {
                     switch (source)
                     {
                     case 1:
-                        return Basler_UsbCameraParams::TriggerSource_Line1;
+                        return TriggerSource_Line1;
                     case 2:
-                        return Basler_UsbCameraParams::TriggerSource_Line2;
+                        return TriggerSource_Line2;
                     case 3:
-                        return Basler_UsbCameraParams::TriggerSource_Line3;
+                        return TriggerSource_Line3;
                     case 4:
-                        return Basler_UsbCameraParams::TriggerSource_Line4;
+                        return TriggerSource_Line4;
                     default:
                         return std::nullopt;
                     }
@@ -228,10 +229,9 @@ void BaslerCamera::initCamera()
                     auto triggerSource = mapTriggerSource(trigger.source);
                     if (triggerSource)
                     {
-                        _camera.TriggerSelector =
-                            Basler_UsbCameraParams::TriggerSelector_FrameStart;
-                        _camera.TriggerSource = *triggerSource;
-                        _camera.TriggerMode   = Basler_UsbCameraParams::TriggerMode_On;
+                        _camera.TriggerSelector = TriggerSelector_FrameStart;
+                        _camera.TriggerSource   = *triggerSource;
+                        _camera.TriggerMode     = TriggerMode_On;
 
                         _camera.AcquisitionFrameRateEnable = 0;
                     }
@@ -242,8 +242,8 @@ void BaslerCamera::initCamera()
                 }
                 else if constexpr (std::is_same_v<Trigger, Config::SoftwareTrigger>)
                 {
-                    _camera.TriggerSelector = Basler_UsbCameraParams::TriggerSelector_FrameStart;
-                    _camera.TriggerMode     = Basler_UsbCameraParams::TriggerMode_Off;
+                    _camera.TriggerSelector = TriggerSelector_FrameStart;
+                    _camera.TriggerMode     = TriggerMode_Off;
 
                     _camera.AcquisitionFrameRateEnable = 1;
                     _camera.AcquisitionFrameRate       = trigger.framesPerSecond;
@@ -281,13 +281,13 @@ void BaslerCamera::initCamera()
 
             if (autoExposure && autoGain)
             {
-                _camera.ExposureAuto = Basler_UsbCameraParams::ExposureAuto_Continuous;
-                _camera.GainAuto     = Basler_UsbCameraParams::GainAuto_Continuous;
+                _camera.ExposureAuto = ExposureAuto_Continuous;
+                _camera.GainAuto     = GainAuto_Continuous;
             }
             else if (!autoExposure && !autoGain)
             {
-                _camera.ExposureAuto = Basler_UsbCameraParams::ExposureAuto_Off;
-                _camera.GainAuto     = Basler_UsbCameraParams::GainAuto_Off;
+                _camera.ExposureAuto = ExposureAuto_Off;
+                _camera.GainAuto     = GainAuto_Off;
 
                 _camera.ExposureTime = std::get<Config::Parameter_Manual<float>>(
                     *_config.exposure);
@@ -303,20 +303,20 @@ void BaslerCamera::initCamera()
         }
         else if (_config.exposure)
         {
-            _camera.ExposureAuto = Basler_UsbCameraParams::ExposureAuto_Off;
-            _camera.GainAuto     = Basler_UsbCameraParams::GainAuto_Off;
+            _camera.ExposureAuto = ExposureAuto_Off;
+            _camera.GainAuto     = GainAuto_Off;
 
             _camera.ExposureTime = std::get<Config::Parameter_Manual<float>>(*_config.exposure);
         }
         else if (_config.gain)
         {
-            _camera.ExposureAuto = Basler_UsbCameraParams::ExposureAuto_Off;
-            _camera.GainAuto     = Basler_UsbCameraParams::GainAuto_Off;
+            _camera.ExposureAuto = ExposureAuto_Off;
+            _camera.GainAuto     = GainAuto_Off;
 
             _camera.Gain = std::get<Config::Parameter_Manual<float>>(*_config.gain);
         }
     }
-    catch (Pylon::GenericException e)
+    catch (GenericException e)
     {
         throw std::runtime_error(
             fmt::format("{}: Failed to initialize camera: {}", _imageStream.id, e.what()));
@@ -325,11 +325,13 @@ void BaslerCamera::initCamera()
 
 void BaslerCamera::startCapture()
 {
+    using namespace Pylon;
+
     try
     {
         _camera.StartGrabbing();
     }
-    catch (Pylon::GenericException e)
+    catch (GenericException e)
     {
         throw std::runtime_error(fmt::format("{}: Failed to start capturing with camera: {}",
                                              _imageStream.id,
@@ -340,6 +342,8 @@ void BaslerCamera::startCapture()
 void BaslerCamera::run()
 {
     using namespace std::chrono_literals;
+    using namespace Pylon;
+    using namespace Basler_UsbCameraParams;
 
     const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
     const unsigned int vheight = static_cast<unsigned int>(_config.height);
@@ -365,13 +369,13 @@ void BaslerCamera::run()
                 if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
                 {
                     // Watchdog demands heartbeats at an interval of at most 60 seconds
-                    _camera.RetrieveResult(30 * 1000, _grabbed, Pylon::TimeoutHandling_Return);
+                    _camera.RetrieveResult(30 * 1000, _grabbed, TimeoutHandling_Return);
                     if (!_grabbed)
                         continue;
                 }
                 else if (std::holds_alternative<Config::SoftwareTrigger>(_config.trigger))
                 {
-                    _camera.RetrieveResult(1000, _grabbed, Pylon::TimeoutHandling_Return);
+                    _camera.RetrieveResult(1000, _grabbed, TimeoutHandling_Return);
                     if (!_grabbed)
                     {
                         logCritical("{}: Failed to grab camera image: {}",
@@ -452,7 +456,7 @@ void BaslerCamera::run()
                     logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
                 }
             }
-            catch (Pylon::GenericException e) // could not retrieve grab result
+            catch (GenericException e) // could not retrieve grab result
             {
                 logWarning("{}: Camera error: {}", _imageStream.id, e.what());
 

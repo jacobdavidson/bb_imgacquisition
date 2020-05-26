@@ -19,6 +19,9 @@ public:
     ImgAcquisitionApp(int& argc, char** argv);
     ~ImgAcquisitionApp();
 
+private slots:
+    void quit();
+
 private:
     Watchdog _watchdog;
 
