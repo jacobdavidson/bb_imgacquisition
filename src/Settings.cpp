@@ -10,8 +10,8 @@
 #include <QStandardPaths>
 #include <QDir>
 
-#include "format.h"
-#include "log.h"
+#include "util/format.h"
+#include "util/log.h"
 
 #if defined(USE_BASLER) && USE_BASLER
     #include "camera/BaslerCamera.h"

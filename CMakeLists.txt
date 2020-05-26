@@ -34,9 +34,9 @@ find_package(OpenCV REQUIRED)
 find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
 
 add_executable(${PROJECT_NAME}
-	src/format.h
-	src/log.h
-	src/log.cpp
+	src/util/format.h
+	src/util/log.h
+	src/util/log.cpp
 	src/ConcurrentQueue.h
 	src/PlatformAdapter.h
 	src/PlatformAdapter.cpp
@@ -130,21 +130,21 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_compile_options(${PROJECT_NAME} PRIVATE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT)
 endif()
 
-configure_file(src/version.cpp.in "${CMAKE_CURRENT_BINARY_DIR}/version.cpp" @ONLY)
-target_sources(${PROJECT_NAME} PRIVATE src/version.h "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
+configure_file(src/util/version.cpp.in "${CMAKE_CURRENT_BINARY_DIR}/version.cpp" @ONLY)
+target_sources(${PROJECT_NAME} PRIVATE src/util/version.h "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
 
 add_library(build_timestamp STATIC EXCLUDE_FROM_ALL "${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.cpp")
 target_include_directories(build_timestamp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_custom_command(
 	OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.cpp"
 	COMMAND ${CMAKE_COMMAND}
-		-DSRC="${CMAKE_CURRENT_SOURCE_DIR}/src/build_timestamp.cpp.in"
+		-DSRC="${CMAKE_CURRENT_SOURCE_DIR}/src/util/build_timestamp.cpp.in"
 		-DDST="${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.cpp"
 		-P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildTimestamp.cmake
-	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/build_timestamp.cpp.in")
+	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/util/build_timestamp.cpp.in")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE build_timestamp)
 add_custom_command(TARGET ${PROJECT_NAME} PRE_LINK
-	COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_SOURCE_DIR}/src/build_timestamp.cpp.in"
+	COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_SOURCE_DIR}/src/util/build_timestamp.cpp.in"
 	COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target build_timestamp
 )

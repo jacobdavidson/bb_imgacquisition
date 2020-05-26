@@ -9,9 +9,9 @@
 #include "Settings.h"
 #include "Watchdog.h"
 #include "PlatformAdapter.h"
-#include "log.h"
-#include "version.h"
-#include "build_timestamp.h"
+#include "util/log.h"
+#include "util/version.h"
+#include "util/build_timestamp.h"
 
 ImgAcquisitionApp::~ImgAcquisitionApp()
 {

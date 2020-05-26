@@ -2,7 +2,7 @@
 
 #include "Camera.h"
 
-#include "format.h"
+#include "util/format.h"
 
 #if defined(USE_FLEA3) && USE_FLEA3
     #include "Flea3Camera.h"

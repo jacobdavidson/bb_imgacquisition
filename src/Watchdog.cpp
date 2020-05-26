@@ -1,6 +1,6 @@
 #include "Watchdog.h"
 
-#include "format.h"
+#include "util/format.h"
 
 void Watchdog::pulse()
 {

@@ -11,8 +11,8 @@
 
 #include "VideoFileWriter.h"
 
-#include "format.h"
-#include "log.h"
+#include "util/format.h"
+#include "util/log.h"
 
 VideoWriteThread::VideoWriteThread(std::string encoderName)
 : _encoderName{encoderName}

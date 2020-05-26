@@ -40,7 +40,7 @@ extern "C"
     #error Platform unsupported
 #endif
 
-#include "log.h"
+#include "util/log.h"
 
 class Implementation final
 {

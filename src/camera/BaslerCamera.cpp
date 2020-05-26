@@ -6,8 +6,8 @@
 #include <optional>
 
 #include "Watchdog.h"
-#include "format.h"
-#include "log.h"
+#include "util/format.h"
+#include "util/log.h"
 #include "GrayscaleImage.h"
 
 #include <pylon/usb/BaslerUsbInstantCamera.h>

@@ -10,8 +10,8 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include "Watchdog.h"
-#include "format.h"
-#include "log.h"
+#include "util/format.h"
+#include "util/log.h"
 #include "GrayscaleImage.h"
 
 XimeaCamera::XimeaCamera(Config config, VideoStream videoStream, Watchdog* watchdog)
