@@ -5,7 +5,6 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
-#include <iostream>
 #include <chrono>
 
 class Watchdog final

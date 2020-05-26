@@ -7,7 +7,6 @@
 #include <unordered_map>
 
 #include <QCoreApplication>
-#include <QtGui/QKeyEvent>
 
 #include "camera/Camera.h"
 #include "VideoWriteThread.h"

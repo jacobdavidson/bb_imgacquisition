@@ -3,11 +3,7 @@
 #include "ImgAcquisitionApp.h"
 
 #include <iostream>
-#include <fstream>
-#include <cstdio>
 
-#include <QDebug>
-#include <QDir>
 #include <QTimer>
 
 #include "settings/Settings.h"

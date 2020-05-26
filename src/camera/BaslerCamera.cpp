@@ -2,8 +2,6 @@
 
 #include "BaslerCamera.h"
 
-#include <cstdlib>
-#include <iostream>
 #include <chrono>
 #include <optional>
 
@@ -11,8 +9,6 @@
 #include "format.h"
 #include "log.h"
 #include "GrayscaleImage.h"
-
-#include <opencv2/opencv.hpp>
 
 #include <pylon/usb/BaslerUsbInstantCamera.h>
 

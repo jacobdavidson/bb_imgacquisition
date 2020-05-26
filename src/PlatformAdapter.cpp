@@ -7,7 +7,6 @@
 #include <mutex>
 #include <thread>
 #include <array>
-#include <iostream>
 
 #include <QMetaObject>
 

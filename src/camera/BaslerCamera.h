@@ -3,7 +3,6 @@
 #pragma once
 
 #include <mutex>
-#include <string>
 #include <optional>
 #include <chrono>
 #include <vector>

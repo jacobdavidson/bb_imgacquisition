@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "ImgAcquisitionApp.h"
-#include "settings/Settings.h"
 
 int main(int argc, char* argv[])
 {

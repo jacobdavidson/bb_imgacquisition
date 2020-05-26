@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <chrono>
-#include <iostream>
 #include <fstream>
 
 #include "settings/Settings.h"
@@ -25,7 +24,6 @@ void VideoWriteThread::add(VideoStream videoStream)
 
 void VideoWriteThread::run()
 {
-
     SettingsIAC* set = SettingsIAC::getInstance();
 
     while (!isInterruptionRequested())
