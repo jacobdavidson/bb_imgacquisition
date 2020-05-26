@@ -11,11 +11,11 @@
 #include <QStandardPaths>
 #include <QDir>
 
-#include "../format.h"
-#include "../log.h"
+#include "format.h"
+#include "log.h"
 
 #if defined(USE_BASLER) && USE_BASLER
-    #include "../BaslerCamera.h"
+    #include "camera/BaslerCamera.h"
 #endif
 
 template<typename T>

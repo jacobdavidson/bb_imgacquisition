@@ -8,9 +8,9 @@
 #include <optional>
 
 #include "Watchdog.h"
-#include "settings/Settings.h"
-#include "GrayscaleImage.h"
+#include "format.h"
 #include "log.h"
+#include "GrayscaleImage.h"
 
 #include <opencv2/opencv.hpp>
 

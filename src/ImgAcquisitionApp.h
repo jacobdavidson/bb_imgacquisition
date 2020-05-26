@@ -9,7 +9,7 @@
 #include <QCoreApplication>
 #include <QtGui/QKeyEvent>
 
-#include "Camera.h"
+#include "camera/Camera.h"
 #include "VideoWriteThread.h"
 #include "Watchdog.h"
 

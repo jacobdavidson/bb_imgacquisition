@@ -12,7 +12,6 @@
 #include <pylon/usb/BaslerUsbInstantCamera.h>
 
 #include "Camera.h"
-#include "Watchdog.h"
 
 /*!\brief Thread object which acquires images from a camera.
  *
