@@ -84,7 +84,7 @@ Settings::Settings()
     {
         VideoStream stream;
 
-        stream.id = QString::fromStdString(videoStreamId);
+        stream.id = videoStreamId;
 
         const auto& cameraTree = videoStreamTree.get_child("camera");
 

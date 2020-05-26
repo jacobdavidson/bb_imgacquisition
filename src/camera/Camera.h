@@ -4,7 +4,6 @@
 
 #include <memory>
 
-#include <QString>
 #include <QThread>
 
 #include "VideoStream.h"
@@ -32,5 +31,5 @@ public:
     static Camera* make(Config config, VideoStream videoStream, Watchdog* watchdog);
 
 signals:
-    void imageCaptured(QString videoStreamId, GrayscaleImage image);
+    void imageCaptured(GrayscaleImage image);
 };
