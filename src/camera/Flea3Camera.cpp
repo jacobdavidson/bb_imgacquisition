@@ -10,7 +10,6 @@
 #include "util/type_traits.h"
 #include "GrayscaleImage.h"
 
-// Flea3Camera constructor
 Flea3Camera::Flea3Camera(Config config, VideoStream videoStream, Watchdog* watchdog)
 : Camera(config, videoStream, watchdog)
 {
