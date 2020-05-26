@@ -15,9 +15,6 @@ private:
         _lastPulses;
 
 public:
-    //! Sends heartbeat for current thread, adding it to watched threads if necessary
     void pulse();
-
-    //! Check all watched threads
     void check();
 };

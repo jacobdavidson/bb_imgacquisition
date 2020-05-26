@@ -4,7 +4,7 @@
 #include <fstream>
 
 #include "Settings.h"
-// The order is important!
+// NOTE: The order of the includes below is important to avoid name clashes!
 #include "VideoWriteThread.h"
 
 #include "VideoFileWriter.h"

@@ -257,7 +257,6 @@ void XimeaCamera::initCamera()
         }
     }
 
-    // Set maximum transport buffer size.
     {
         int max_transport_buf_size{0};
         enforce(xiGetParamInt(_Camera,
@@ -269,7 +268,6 @@ void XimeaCamera::initCamera()
     }
 }
 
-// This function starts the streaming from the camera
 void XimeaCamera::startCapture()
 {
     enforce(xiStartAcquisition(_Camera), "xiStartAcquisition");
@@ -309,7 +307,6 @@ void XimeaCamera::run()
         }
         const auto end = std::chrono::steady_clock::now();
 
-        // Get the timestamp
         const auto currWallClockTime = std::chrono::system_clock::now();
         // NOTE: Camera time is cyclic (if available):
         //   xiMU: not implemented

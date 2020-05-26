@@ -107,13 +107,12 @@ void BaslerCamera::initCamera()
 
     try
     {
-        // Get the transport layer factory.
-        auto& tlFactory = Pylon::CTlFactory::GetInstance();
+        auto& factory = Pylon::CTlFactory::GetInstance();
 
         // Get all attached devices and return -1 if no device is found.
         Pylon::DeviceInfoList_t devices;
 
-        if (auto r = tlFactory.EnumerateDevices(devices); r < 0)
+        if (auto r = factory.EnumerateDevices(devices); r < 0)
         {
             throw std::runtime_error(
                 fmt::format("{}: Could not enumerate cameras", _videoStream.id));
@@ -186,7 +185,7 @@ void BaslerCamera::initCamera()
             throw std::runtime_error(fmt::format("{}: Only ace USB 3.0 cameras supported"));
         }
 
-        _camera.Attach(tlFactory.CreateDevice(*camDeviceInfo));
+        _camera.Attach(factory.CreateDevice(*camDeviceInfo));
         _camera.Open();
 
         logInfo("{}: Camera resolution: {}x{}",
@@ -405,7 +404,6 @@ void BaslerCamera::run()
 
                 const auto end = std::chrono::steady_clock::now();
 
-                // get image data
                 img_width  = _grabbed->GetWidth();
                 img_height = _grabbed->GetHeight();
                 p_image    = static_cast<uint8_t*>(_grabbed->GetBuffer());
@@ -421,7 +419,6 @@ void BaslerCamera::run()
 
                 const auto currImageNumber = _grabbed->GetImageNumber();
 
-                // Get the timestamp
                 const auto currWallClockTime = std::chrono::system_clock::now();
                 // NOTE: Camera time starts when the camera is powered on.
                 //       It thus resets whenever power is turned off and on again.

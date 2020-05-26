@@ -13,10 +13,6 @@
 // Forward declare not-required types.
 class Watchdog;
 
-/*!\brief Thread object which acquires images from a camera.
- *
- * Contains functions to initialize the cameras and run the acquistion.
- */
 class Camera : public QThread
 {
     Q_OBJECT
