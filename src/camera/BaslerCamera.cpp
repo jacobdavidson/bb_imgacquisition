@@ -210,6 +210,18 @@ void BaslerCamera::initCamera()
                 _camera.Width(),
                 _camera.Height());
 
+        if (!(_camera.OffsetX() == _config.offset_x && _camera.OffsetY() == _config.offset_y &&
+              _camera.Width() == _config.width && _camera.Height() == _config.height))
+        {
+            throw std::runtime_error(
+                fmt::format("{}: Could not set camera region of intereset to ({},{}),{}x{}",
+                            _videoStream.id,
+                            _config.offset_x,
+                            _config.offset_y,
+                            _config.width,
+                            _config.height));
+        }
+
         std::visit(
             [this](auto&& trigger) {
                 const auto mapTriggerSource =
@@ -468,29 +480,8 @@ void BaslerCamera::run()
             throw std::runtime_error(fmt::format("{}: Camera stopped capturing", _videoStream.id));
         }
 
-        // Move image to buffer for further procession
-        // Crop the image to the expected size (e.g. 4000x3000).
-        // This is necessary, because the encoder/codec requires the image sizes to be
-        // some multiple of X.
-        // TODO: Remove this part and add camera check if conforming with size requirements
-        cv::Mat            wholeImageMatrix(cv::Size(img_width, img_height),
-                                 CV_8UC1, /// FIXME: This should not be hardcoded, the pixel
-                                          /// type should be mapped from pylon to opencv
-                                 p_image,
-                                 cv::Mat::AUTO_STEP);
-        const unsigned int marginToBeCroppedX = (img_width > vwidth) ? img_width - vwidth : 0;
-        const unsigned int marginToBeCroppedY = (img_height > vheight) ? img_height - vheight : 0;
-        if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
-        {
-            const int cropLeft           = marginToBeCroppedX / 2;
-            const int cropTop            = marginToBeCroppedY / 2;
-            cv::Mat   croppedImageMatrix = wholeImageMatrix(
-                cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
-            wholeImageMatrix = croppedImageMatrix;
-        }
-
-        auto buf = GrayscaleImage(vwidth, vheight, currCameraTime);
-        memcpy(&buf.data[0], wholeImageMatrix.data, vwidth * vheight);
+        auto buf = GrayscaleImage(_config.width, _config.height, currCameraTime);
+        memcpy(&buf.data[0], p_image, _config.width * _config.height);
 
         _videoStream.push(buf);
         emit imageCaptured(_videoStream.id, buf);
