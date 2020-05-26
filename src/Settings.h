@@ -22,8 +22,6 @@ class Settings
 private:
     const boost::property_tree::ptree detectSettings() const;
 
-    void loadNewSettings();
-
     Settings();
 
     Settings(const Settings&)     = delete;

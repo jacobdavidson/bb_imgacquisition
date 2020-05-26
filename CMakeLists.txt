@@ -11,9 +11,6 @@ endif()
 
 message(STATUS "Source version: ${SOURCE_VERSION}")
 
-# string(TIMESTAMP BUILD_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
-# message(STATUS "Source version: ${SOURCE_VERSION}")
-
 project(bb_imgacquisition LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)

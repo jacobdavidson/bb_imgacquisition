@@ -23,6 +23,30 @@ struct dependent_false : std::false_type
 {
 };
 
+template<typename T>
+auto parseParam(const boost::property_tree::ptree& tree, const std::string& name)
+    -> std::optional<Settings::VideoStream::Camera::Parameter<T>>
+{
+    if (auto strValue = tree.get_optional<std::string>(name); strValue)
+    {
+        if (*strValue == "auto")
+        {
+            return Settings::VideoStream::Camera::Parameter_Auto{};
+        }
+        else if (auto value = tree.get_optional<T>(name); value)
+        {
+            return Settings::VideoStream::Camera::Parameter_Manual<T>{*value};
+        }
+
+        throw std::runtime_error(
+            fmt::format("Invalid value for camera parameter \'{}\': Expected \"auto\" or "
+                        "appropriately typed value",
+                        name));
+    }
+
+    return {};
+};
+
 const Settings& Settings::instance()
 {
     static const Settings instance;
@@ -42,13 +66,7 @@ Settings::Settings()
 
     std::fstream configFile;
     configFile.open(configFilename, std::ios::in);
-    if (configFile.good())
-    {
-        configFile.imbue(std::locale::classic());
-        boost::property_tree::read_json(configFile, _tree);
-        loadNewSettings();
-    }
-    else
+    if (!configFile.good())
     {
         configFile.open(configFilename, std::ios::out | std::ios::trunc);
         configFile.imbue(std::locale::classic());
@@ -58,6 +76,74 @@ Settings::Settings()
                 configFilename);
         std::exit(0);
     }
+
+    configFile.imbue(std::locale::classic());
+    boost::property_tree::read_json(configFile, _tree);
+
+    for (const auto& [videoStreamId, videoStreamTree] : _tree.get_child("video_streams"))
+    {
+        VideoStream stream;
+
+        stream.id = QString::fromStdString(videoStreamId);
+
+        const auto& cameraTree = videoStreamTree.get_child("camera");
+
+        stream.camera.backend = cameraTree.get<std::string>("backend");
+        stream.camera.serial  = cameraTree.get<std::string>("serial");
+
+        stream.camera.offset_x = cameraTree.get<int>("offset_x");
+        stream.camera.offset_y = cameraTree.get<int>("offset_y");
+        stream.camera.width    = cameraTree.get<int>("width");
+        stream.camera.height   = cameraTree.get<int>("height");
+
+        const auto& triggerTree = cameraTree.get_child("trigger");
+
+        const auto triggerType = triggerTree.get<std::string>("type");
+        if (triggerType == "hardware")
+        {
+            VideoStream::Camera::HardwareTrigger trigger;
+            trigger.source        = triggerTree.get<int>("source");
+            stream.camera.trigger = trigger;
+        }
+        else if (triggerType == "software")
+        {
+            VideoStream::Camera::SoftwareTrigger trigger;
+            trigger.framesPerSecond = triggerTree.get<float>("frames_per_second");
+            stream.camera.trigger   = trigger;
+        }
+        else
+        {
+            throw std::runtime_error(fmt::format("Invalid camera trigger type: {}", triggerType));
+        }
+
+        stream.camera.buffer_size      = cameraTree.get_optional<int>("buffer_size");
+        stream.camera.throughput_limit = cameraTree.get_optional<int>("throughput_limit");
+
+        stream.camera.blacklevel = parseParam<float>(cameraTree, "blacklevel");
+        stream.camera.exposure   = parseParam<float>(cameraTree, "exposure");
+        stream.camera.gain       = parseParam<float>(cameraTree, "gain");
+
+        stream.framesPerSecond = videoStreamTree.get<float>("frames_per_second");
+        stream.framesPerFile   = videoStreamTree.get<size_t>("frames_per_file");
+
+        const auto& encoderTree = videoStreamTree.get_child("encoder");
+        stream.encoder.id       = encoderTree.get<std::string>("id");
+
+        for (const auto& [key, value] : encoderTree.get_child("options"))
+        {
+            stream.encoder.options.emplace(key, value.get_value<std::string>());
+        }
+
+        _videoStreams.push_back(stream);
+    }
+
+    for (auto& [id, name] : _tree.get_child("video_encoders"))
+    {
+        _videoEncoders.emplace(id, name.get_value<std::string>());
+    }
+
+    _tmpDirectory = _tree.get<std::string>("tmp_directory");
+    _outDirectory = _tree.get<std::string>("out_directory");
 }
 
 const boost::property_tree::ptree Settings::detectSettings() const
@@ -132,121 +218,6 @@ const boost::property_tree::ptree Settings::detectSettings() const
     tree.put_child("video_streams", videoStreams);
 
     return tree;
-}
-
-template<typename T>
-auto parseParam(const boost::property_tree::ptree& tree, const std::string& name)
-    -> std::optional<Settings::VideoStream::Camera::Parameter<T>>
-{
-    if (auto strValue = tree.get_optional<std::string>(name); strValue)
-    {
-        if (*strValue == "auto")
-        {
-            return Settings::VideoStream::Camera::Parameter_Auto{};
-        }
-        else if (auto value = tree.get_optional<T>(name); value)
-        {
-            return Settings::VideoStream::Camera::Parameter_Manual<T>{*value};
-        }
-
-        throw std::runtime_error(
-            fmt::format("Invalid value for camera parameter \'{}\': Expected \"auto\" or "
-                        "appropriately typed value",
-                        name));
-    }
-
-    return {};
-};
-
-void Settings::loadNewSettings()
-{
-    for (const auto& [videoStreamId, videoStreamTree] : _tree.get_child("video_streams"))
-    {
-        VideoStream stream;
-
-        stream.id = QString::fromStdString(videoStreamId);
-
-        const auto& cameraTree = videoStreamTree.get_child("camera");
-
-        stream.camera.backend = cameraTree.get<std::string>("backend");
-        stream.camera.serial  = cameraTree.get<std::string>("serial");
-
-        stream.camera.offset_x = cameraTree.get<int>("offset_x");
-        stream.camera.offset_y = cameraTree.get<int>("offset_y");
-        stream.camera.width    = cameraTree.get<int>("width");
-        stream.camera.height   = cameraTree.get<int>("height");
-
-        const auto& triggerTree = cameraTree.get_child("trigger");
-
-        const auto triggerType = triggerTree.get<std::string>("type");
-        if (triggerType == "hardware")
-        {
-            VideoStream::Camera::HardwareTrigger trigger;
-            trigger.source        = triggerTree.get<int>("source");
-            stream.camera.trigger = trigger;
-        }
-        else if (triggerType == "software")
-        {
-            VideoStream::Camera::SoftwareTrigger trigger;
-            trigger.framesPerSecond = triggerTree.get<float>("frames_per_second");
-            stream.camera.trigger   = trigger;
-        }
-        else
-        {
-            throw std::runtime_error(fmt::format("Invalid camera trigger type: {}", triggerType));
-        }
-
-        stream.camera.buffer_size      = cameraTree.get_optional<int>("buffer_size");
-        stream.camera.throughput_limit = cameraTree.get_optional<int>("throughput_limit");
-
-        const auto parseAutoIntParam =
-            [](const boost::property_tree::ptree& tree,
-               const std::string&                 name) -> boost::optional<boost::optional<int>> {
-            if (auto strValue = tree.get_optional<std::string>(name); strValue)
-            {
-                if (*strValue == "auto")
-                {
-                    return {boost::none};
-                }
-                else if (auto intValue = tree.get_optional<int>(name); intValue)
-                {
-                    return {{intValue}};
-                }
-
-                throw std::runtime_error(
-                    fmt::format("Invalid value for camera parameter \'{}\': Expected \"auto\" or "
-                                "integer value",
-                                name));
-            }
-
-            return boost::none;
-        };
-
-        stream.camera.blacklevel = parseParam<float>(cameraTree, "blacklevel");
-        stream.camera.exposure   = parseParam<float>(cameraTree, "exposure");
-        stream.camera.gain       = parseParam<float>(cameraTree, "gain");
-
-        stream.framesPerSecond = videoStreamTree.get<float>("frames_per_second");
-        stream.framesPerFile   = videoStreamTree.get<size_t>("frames_per_file");
-
-        const auto& encoderTree = videoStreamTree.get_child("encoder");
-        stream.encoder.id       = encoderTree.get<std::string>("id");
-
-        for (const auto& [key, value] : encoderTree.get_child("options"))
-        {
-            stream.encoder.options.emplace(key, value.get_value<std::string>());
-        }
-
-        _videoStreams.push_back(stream);
-    }
-
-    for (auto& [id, name] : _tree.get_child("video_encoders"))
-    {
-        _videoEncoders.emplace(id, name.get_value<std::string>());
-    }
-
-    _tmpDirectory = _tree.get<std::string>("tmp_directory");
-    _outDirectory = _tree.get<std::string>("out_directory");
 }
 
 const std::vector<Settings::VideoStream>& Settings::videoStreams() const
