@@ -49,10 +49,10 @@ boost::property_tree::ptree detectSettings()
     tree.put("tmp_directory", "data/tmp");
     tree.put("out_directory", "data/out");
 
-    auto& videoEncoders = tree.put_child("video_encoders", {});
+    auto& videoEncoders = tree.put_child("encoders", {});
     videoEncoders.put("h265_sw_0", "libx265");
 
-    auto& videoStreams = tree.put_child("video_streams", {});
+    auto& videoStreams = tree.put_child("streams", {});
 
     std::size_t camIndex = 0;
 
@@ -147,7 +147,7 @@ Settings::Settings()
     auto tree = boost::property_tree::ptree{};
     boost::property_tree::read_json(configFile, tree);
 
-    for (const auto& [videoStreamId, videoStreamTree] : tree.get_child("video_streams"))
+    for (const auto& [videoStreamId, videoStreamTree] : tree.get_child("streams"))
     {
         VideoStream stream;
 
@@ -204,7 +204,7 @@ Settings::Settings()
         _videoStreams.push_back(stream);
     }
 
-    for (auto& [id, name] : tree.get_child("video_encoders"))
+    for (auto& [id, name] : tree.get_child("encoders"))
     {
         _videoEncoders.emplace(id, name.get_value<std::string>());
     }
