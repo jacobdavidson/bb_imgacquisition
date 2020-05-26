@@ -50,8 +50,10 @@ auto BaslerCamera::getAvailable() -> std::vector<Config>
         auto camera = CBaslerUsbInstantCamera(factory.CreateDevice(deviceInfo));
         camera.Open();
 
-        config.width  = camera.Width();
-        config.height = camera.Height();
+        config.offset_x = camera.OffsetX();
+        config.offset_y = camera.OffsetY();
+        config.width    = camera.Width();
+        config.height   = camera.Height();
 
         if (camera.TriggerMode() == TriggerMode_On &&
             TriggerSource_Line1 <= camera.TriggerSource() &&
@@ -195,6 +197,11 @@ void BaslerCamera::initCamera()
                 _videoStream.id,
                 _camera.SensorWidth(),
                 _camera.SensorHeight());
+
+        _camera.OffsetX = _config.offset_x;
+        _camera.OffsetY = _config.offset_y;
+        _camera.Width   = _config.width;
+        _camera.Height  = _config.height;
 
         logInfo("{}: Camera region of interest: ({},{}),{}x{}",
                 _videoStream.id,
