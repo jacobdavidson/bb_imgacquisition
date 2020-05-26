@@ -16,8 +16,6 @@ message(STATUS "Source version: ${SOURCE_VERSION}")
 
 project(bb_imgacquisition LANGUAGES CXX)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -63,6 +61,8 @@ add_executable(${PROJECT_NAME}
 	src/ImgAcquisitionApp.cpp
 	src/main.cpp
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON)
 
@@ -137,6 +137,7 @@ configure_file(src/version.cpp.in "${CMAKE_CURRENT_BINARY_DIR}/version.cpp" @ONL
 target_sources(${PROJECT_NAME} PRIVATE src/version.h "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
 
 add_library(build_timestamp STATIC EXCLUDE_FROM_ALL "${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.cpp")
+target_include_directories(build_timestamp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_custom_command(
 	OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.cpp"
 	COMMAND ${CMAKE_COMMAND}
