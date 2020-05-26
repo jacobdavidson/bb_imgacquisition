@@ -4,15 +4,10 @@
 
 #include <type_traits>
 #include <unordered_map>
-#include <variant>
-#include <optional>
 #include <string>
+#include <vector>
 
-#include <boost/optional.hpp>
-#include <boost/filesystem.hpp>
-
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include "camera/Camera.h"
 
 class Settings
 {
@@ -31,47 +26,7 @@ public:
     {
         std::string id;
 
-        struct Camera final
-        {
-            std::string backend;
-            std::string serial;
-
-            int offset_x;
-            int offset_y;
-            int width;
-            int height;
-
-            struct HardwareTrigger final
-            {
-                int source;
-            };
-
-            struct SoftwareTrigger final
-            {
-                float framesPerSecond;
-            };
-
-            struct Parameter_Auto final
-            {
-            };
-
-            template<typename T>
-            using Parameter_Manual = T;
-
-            template<typename T>
-            using Parameter = std::variant<Parameter_Auto, Parameter_Manual<T>>;
-
-            std::variant<HardwareTrigger, SoftwareTrigger> trigger;
-
-            boost::optional<int> buffer_size;
-            boost::optional<int> throughput_limit;
-
-            std::optional<Parameter<float>> blacklevel;
-            std::optional<Parameter<float>> exposure;
-            std::optional<Parameter<float>> gain;
-        };
-
-        Camera camera;
+        Camera::Config camera;
 
         float  framesPerSecond;
         size_t framesPerFile;

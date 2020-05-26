@@ -3,6 +3,8 @@
 #include <chrono>
 #include <fstream>
 
+#include <boost/filesystem.hpp>
+
 #include "Settings.h"
 // NOTE: The order of the includes below is important to avoid name clashes!
 #include "VideoWriteThread.h"

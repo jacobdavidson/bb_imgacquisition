@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include <QStandardPaths>
 #include <QDir>
@@ -23,17 +24,17 @@ struct dependent_false : std::false_type
 
 template<typename T>
 auto parseParam(const boost::property_tree::ptree& tree, const std::string& name)
-    -> std::optional<Settings::VideoStream::Camera::Parameter<T>>
+    -> std::optional<Camera::Config::Parameter<T>>
 {
     if (auto strValue = tree.get_optional<std::string>(name); strValue)
     {
         if (*strValue == "auto")
         {
-            return Settings::VideoStream::Camera::Parameter_Auto{};
+            return Camera::Config::Parameter_Auto{};
         }
         else if (auto value = tree.get_optional<T>(name); value)
         {
-            return Settings::VideoStream::Camera::Parameter_Manual<T>{*value};
+            return Camera::Config::Parameter_Manual<T>{*value};
         }
 
         throw std::runtime_error(
@@ -59,8 +60,7 @@ boost::property_tree::ptree detectSettings()
 
     std::size_t camIndex = 0;
 
-    auto addVideoStreamForCameraConfig = [&camIndex,
-                                          &videoStreams](Settings::VideoStream::Camera config) {
+    auto addVideoStreamForCameraConfig = [&camIndex, &videoStreams](Camera::Config config) {
         auto& videoStreamTree = videoStreams.put_child(fmt::format("Cam-{}", camIndex++), {});
 
         auto& cameraTree = videoStreamTree.put_child("camera", {});
@@ -78,15 +78,14 @@ boost::property_tree::ptree detectSettings()
             [&](auto&& value) {
                 using T = std::decay_t<decltype(value)>;
 
-                if constexpr (std::is_same_v<T, Settings::VideoStream::Camera::HardwareTrigger>)
+                if constexpr (std::is_same_v<T, Camera::Config::HardwareTrigger>)
                 {
                     triggerTree.put("type", "hardware");
                     triggerTree.put("source", value.source);
 
                     videoStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
                 }
-                else if constexpr (std::is_same_v<T,
-                                                  Settings::VideoStream::Camera::SoftwareTrigger>)
+                else if constexpr (std::is_same_v<T, Camera::Config::SoftwareTrigger>)
                 {
                     triggerTree.put("type", "software");
                     triggerTree.put("frames_per_second", value.framesPerSecond);
@@ -175,13 +174,13 @@ Settings::Settings()
         const auto triggerType = triggerTree.get<std::string>("type");
         if (triggerType == "hardware")
         {
-            VideoStream::Camera::HardwareTrigger trigger;
+            auto trigger          = Camera::Config::HardwareTrigger{};
             trigger.source        = triggerTree.get<int>("source");
             stream.camera.trigger = trigger;
         }
         else if (triggerType == "software")
         {
-            VideoStream::Camera::SoftwareTrigger trigger;
+            auto trigger            = Camera::Config::SoftwareTrigger{};
             trigger.framesPerSecond = triggerTree.get<float>("frames_per_second");
             stream.camera.trigger   = trigger;
         }
