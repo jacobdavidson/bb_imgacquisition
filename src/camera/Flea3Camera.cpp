@@ -367,9 +367,7 @@ void Flea3Camera::run()
                                                                                         end);
             duration > 400ms)
         {
-            logWarning("Warning: Video Stream {}: Processing time too long: {}",
-                       _videoStream.id,
-                       duration);
+            logWarning("{}: Processing time too long: {}", _videoStream.id, duration);
         }
 
         // Move image to buffer for further procession
