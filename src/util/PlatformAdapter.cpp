@@ -94,8 +94,10 @@ private:
             signalAction.sa_flags = SA_RESTART;
 
             signalAction.sa_handler = [](int signalNumber) {
-                char a = 1;
-                write(_signalSocketPairs.at(signalNumber)[0], &a, 1);
+                char                        a = 1;
+                [[maybe_unused]] const auto r = write(_signalSocketPairs.at(signalNumber)[0],
+                                                      &a,
+                                                      1);
             };
             if (sigaction(signalNumber, &signalAction, NULL))
             {
@@ -153,8 +155,8 @@ private:
                     {
                         if (sockets[i].revents & POLLIN)
                         {
-                            char a;
-                            read(sockets[i].fd, &a, 1);
+                            char                        a;
+                            [[maybe_unused]] const auto r = read(sockets[i].fd, &a, 1);
                             emitSignal(signalNumbers[i]);
                         }
                     }

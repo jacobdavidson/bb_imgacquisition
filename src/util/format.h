@@ -90,11 +90,9 @@ struct fmt::formatter<std::chrono::time_point<Clock, Duration>, Char>
             {
                 return format_to(ctx.out(), "{:%Y-%m-%dT%H:%M:%S}Z", tm);
             }
-
-            assert(false);
         }
 
-        assert(false);
+        throw std::logic_error("");
     }
 };
 
