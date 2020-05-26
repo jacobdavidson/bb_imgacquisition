@@ -384,6 +384,7 @@ void Flea3Camera::run()
         memcpy(&buf.data[0], cimg.GetData(), vwidth * vheight);
 
         _videoStream.push(buf);
+        emit imageCaptured(_videoStream.id, buf);
     }
 
     _Camera.StopCapture();

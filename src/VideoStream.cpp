@@ -2,7 +2,7 @@
 
 #include "VideoStream.h"
 
-VideoStream::VideoStream(std::string                                  _id,
+VideoStream::VideoStream(QString                                      _id,
                          std::tuple<size_t, size_t>                   _resolution,
                          float                                        _framesPerSecond,
                          size_t                                       _framesPerFile,

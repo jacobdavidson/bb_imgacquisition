@@ -486,6 +486,7 @@ void BaslerCamera::run()
         memcpy(&buf.data[0], wholeImageMatrix.data, vwidth * vheight);
 
         _videoStream.push(buf);
+        emit imageCaptured(_videoStream.id, buf);
     }
 
     return;

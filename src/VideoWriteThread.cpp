@@ -54,7 +54,7 @@ void VideoWriteThread::run()
 
         namespace fs = boost::filesystem;
 
-        const auto tmpDir = fs::path{set->tmpDirectory()} / videoStream.id;
+        const auto tmpDir = fs::path{set->tmpDirectory()} / videoStream.id.toStdString();
         if (!fs::exists(tmpDir))
         {
             fs::create_directories(tmpDir);
@@ -113,7 +113,7 @@ void VideoWriteThread::run()
         {
             try
             {
-                const auto outDir = fs::path{set->outDirectory()} / videoStream.id;
+                const auto outDir = fs::path{set->outDirectory()} / videoStream.id.toStdString();
                 if (!fs::exists(outDir))
                 {
                     fs::create_directories(outDir);

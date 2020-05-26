@@ -155,7 +155,7 @@ void SettingsIAC::loadNewSettings()
     {
         VideoStream stream;
 
-        stream.id = videoStreamId;
+        stream.id = QString::fromStdString(videoStreamId);
 
         const auto& cameraTree = videoStreamTree.get_child("camera");
 

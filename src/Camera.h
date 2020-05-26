@@ -33,6 +33,8 @@ protected:
 public:
     virtual ~Camera();
 
-public:
     static Camera* make(Config config, VideoStream videoStream, Watchdog* watchdog);
+
+signals:
+    void imageCaptured(QString videoStreamId, GrayscaleImage image);
 };

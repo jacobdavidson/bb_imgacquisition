@@ -5,6 +5,8 @@
 #include <tuple>
 #include <unordered_map>
 
+#include <QString>
+
 #include "ConcurrentQueue.h"
 #include "GrayscaleImage.h"
 
@@ -13,7 +15,7 @@ class VideoStream final
 public:
     using Image = GrayscaleImage;
 
-    VideoStream(std::string                                  id,
+    VideoStream(QString                                      id,
                 std::tuple<size_t, size_t>                   resolution,
                 float                                        _framesPerSecond,
                 size_t                                       _framesPerFile,
@@ -27,7 +29,7 @@ public:
 
     size_t size();
 
-    const std::string                                  id;
+    const QString                                      id;
     const std::tuple<size_t, size_t>                   resolution;
     const float                                        framesPerSecond;
     const size_t                                       framesPerFile;

@@ -65,6 +65,8 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     logInfo("Application: Source version: {}", g_SOURCE_VERSION);
     logInfo("Application: Build timestamp: {}", g_BUILD_TIMESTAMP);
 
+    qRegisterMetaType<GrayscaleImage>("GrayscaleImage");
+
     for (auto& [id, name] : set->videoEncoders())
     {
         _videoWriterThreads.emplace(id, name);

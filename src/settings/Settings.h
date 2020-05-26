@@ -17,6 +17,8 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
+#include <QString>
+
 class SettingsIAC
 {
 
@@ -45,7 +47,7 @@ public:
 
     struct VideoStream final
     {
-        std::string id;
+        QString id;
 
         struct Camera final
         {
