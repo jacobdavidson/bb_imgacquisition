@@ -45,15 +45,15 @@ Settings::Settings()
     if (configFile.good())
     {
         configFile.imbue(std::locale::classic());
-        boost::property_tree::read_json(configFile, _ptree);
+        boost::property_tree::read_json(configFile, _tree);
         loadNewSettings();
     }
     else
     {
         configFile.open(configFilename, std::ios::out | std::ios::trunc);
         configFile.imbue(std::locale::classic());
-        _ptree = detectSettings();
-        boost::property_tree::write_json(configFile, _ptree);
+        _tree = detectSettings();
+        boost::property_tree::write_json(configFile, _tree);
         logInfo("New settings file created: Edit it manually and run application again: {}",
                 configFilename);
         std::exit(0);
@@ -160,7 +160,7 @@ auto parseParam(const boost::property_tree::ptree& tree, const std::string& name
 
 void Settings::loadNewSettings()
 {
-    for (const auto& [videoStreamId, videoStreamTree] : _ptree.get_child("video_streams"))
+    for (const auto& [videoStreamId, videoStreamTree] : _tree.get_child("video_streams"))
     {
         VideoStream stream;
 
@@ -240,13 +240,13 @@ void Settings::loadNewSettings()
         _videoStreams.push_back(stream);
     }
 
-    for (auto& [id, name] : _ptree.get_child("video_encoders"))
+    for (auto& [id, name] : _tree.get_child("video_encoders"))
     {
         _videoEncoders.emplace(id, name.get_value<std::string>());
     }
 
-    _tmpDirectory = _ptree.get<std::string>("tmp_directory");
-    _outDirectory = _ptree.get<std::string>("out_directory");
+    _tmpDirectory = _tree.get<std::string>("tmp_directory");
+    _outDirectory = _tree.get<std::string>("out_directory");
 }
 
 const std::vector<Settings::VideoStream>& Settings::videoStreams() const

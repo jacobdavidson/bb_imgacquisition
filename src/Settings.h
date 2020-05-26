@@ -26,14 +26,12 @@ private:
 
     Settings();
 
-    // C++ 11 style
-    // =======
-    Settings(Settings const&) = delete;
-    void operator=(Settings const&) = delete;
+    Settings(const Settings&)     = delete;
+    Settings(Settings&&) noexcept = delete;
+    Settings& operator=(const Settings&) = delete;
+    Settings& operator=(Settings&&) noexcept = delete;
 
 public:
-    boost::property_tree::ptree _ptree;
-
     static const Settings& instance();
 
     struct VideoStream final
@@ -101,6 +99,8 @@ public:
     const std::string outDirectory() const;
 
 private:
+    boost::property_tree::ptree _tree;
+
     static const boost::property_tree::ptree getDefaultParams();
 
     std::vector<VideoStream> _videoStreams;
