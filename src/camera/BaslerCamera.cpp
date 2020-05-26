@@ -414,6 +414,15 @@ void BaslerCamera::run()
                 img_height = _grabbed->GetHeight();
                 p_image    = static_cast<uint8_t*>(_grabbed->GetBuffer());
 
+                if (!(img_width == _config.width && img_height == _config.height))
+                {
+                    throw std::logic_error(
+                        fmt::format("{}: Camera captured image of incorrect size: {}x{}",
+                                    _videoStream.id,
+                                    img_width,
+                                    img_height));
+                }
+
                 const auto currImageNumber = _grabbed->GetImageNumber();
 
                 // Get the timestamp
