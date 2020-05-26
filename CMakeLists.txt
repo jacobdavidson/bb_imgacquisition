@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/src/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 include(GetGitRevisionDescription)
 git_describe(SOURCE_VERSION --always --exclude *)
@@ -143,7 +143,7 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND}
 		-DSRC="${CMAKE_CURRENT_SOURCE_DIR}/src/build_timestamp.cpp.in"
 		-DDST="${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.cpp"
-		-P ${CMAKE_CURRENT_SOURCE_DIR}/src/cmake/BuildTimestamp.cmake
+		-P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildTimestamp.cmake
 	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/build_timestamp.cpp.in")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE build_timestamp)
