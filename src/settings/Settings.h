@@ -53,8 +53,11 @@ public:
         {
             std::string backend;
             std::string serial;
-            int         width;
-            int         height;
+
+            int offset_x;
+            int offset_y;
+            int width;
+            int height;
 
             struct HardwareTrigger final
             {

@@ -74,6 +74,9 @@ const boost::property_tree::ptree SettingsIAC::detectSettings() const
         auto& cameraTree = videoStreamTree.put_child("camera", {});
         cameraTree.put("backend", config.backend);
         cameraTree.put("serial", config.serial);
+
+        cameraTree.put("offset_x", config.offset_x);
+        cameraTree.put("offset_y", config.offset_y);
         cameraTree.put("width", config.width);
         cameraTree.put("height", config.height);
 
@@ -161,8 +164,11 @@ void SettingsIAC::loadNewSettings()
 
         stream.camera.backend = cameraTree.get<std::string>("backend");
         stream.camera.serial  = cameraTree.get<std::string>("serial");
-        stream.camera.width   = cameraTree.get<int>("width");
-        stream.camera.height  = cameraTree.get<int>("height");
+
+        stream.camera.offset_x = cameraTree.get<int>("offset_x");
+        stream.camera.offset_y = cameraTree.get<int>("offset_y");
+        stream.camera.width    = cameraTree.get<int>("width");
+        stream.camera.height   = cameraTree.get<int>("height");
 
         const auto& triggerTree = cameraTree.get_child("trigger");
 
