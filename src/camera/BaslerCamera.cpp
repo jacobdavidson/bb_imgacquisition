@@ -46,17 +46,7 @@ auto BaslerCamera::getAvailable() -> std::vector<Config>
         config.width    = camera.Width();
         config.height   = camera.Height();
 
-        if (camera.TriggerMode() == TriggerMode_On &&
-            TriggerSource_Line1 <= camera.TriggerSource() &&
-            camera.TriggerSource() <= TriggerSource_Line4)
-        {
-            config.trigger = Config::HardwareTrigger{camera.TriggerSource()};
-        }
-        else
-        {
-            config.trigger = Config::SoftwareTrigger{
-                static_cast<float>(camera.ResultingFrameRate())};
-        }
+        config.trigger = Config::SoftwareTrigger{static_cast<float>(camera.ResultingFrameRate())};
 
         config.blacklevel = Config::Parameter_Manual<float>(camera.BlackLevel());
 
