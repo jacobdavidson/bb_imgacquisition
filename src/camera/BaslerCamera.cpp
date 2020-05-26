@@ -8,14 +8,10 @@
 #include "Watchdog.h"
 #include "util/format.h"
 #include "util/log.h"
+#include "util/type_traits.h"
 #include "GrayscaleImage.h"
 
 #include <pylon/usb/BaslerUsbInstantCamera.h>
-
-template<typename T>
-struct dependent_false : std::false_type
-{
-};
 
 auto BaslerCamera::getAvailable() -> std::vector<Config>
 {
@@ -265,7 +261,7 @@ void BaslerCamera::initCamera()
                 }
                 else
                 {
-                    static_assert(dependent_false<Trigger>::value);
+                    static_assert(false_type<Trigger>::value);
                 }
             },
             _config.trigger);
@@ -282,7 +278,7 @@ void BaslerCamera::initCamera()
                     else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
                         _camera.BlackLevel = value;
                     else
-                        static_assert(dependent_false<T>::value);
+                        static_assert(false_type<T>::value);
                 },
                 *_config.blacklevel);
         }

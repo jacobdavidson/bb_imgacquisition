@@ -34,6 +34,7 @@ find_package(OpenCV REQUIRED)
 find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
 
 add_executable(${PROJECT_NAME}
+	src/util/type_traits.h
 	src/util/format.h
 	src/util/log.h
 	src/util/log.cpp

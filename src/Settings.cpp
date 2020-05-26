@@ -12,15 +12,11 @@
 
 #include "util/format.h"
 #include "util/log.h"
+#include "util/type_traits.h"
 
 #if defined(USE_BASLER) && USE_BASLER
     #include "camera/BaslerCamera.h"
 #endif
-
-template<typename T>
-struct dependent_false : std::false_type
-{
-};
 
 template<typename T>
 auto parseParam(const boost::property_tree::ptree& tree, const std::string& name)
@@ -93,7 +89,7 @@ boost::property_tree::ptree detectSettings()
                     videoStreamTree.put("frames_per_second", value.framesPerSecond);
                 }
                 else
-                    static_assert(dependent_false<T>::value);
+                    static_assert(false_type<T>::value);
             },
             config.trigger);
 

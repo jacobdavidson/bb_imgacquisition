@@ -7,12 +7,8 @@
 #include "Watchdog.h"
 #include "util/format.h"
 #include "util/log.h"
+#include "util/type_traits.h"
 #include "GrayscaleImage.h"
-
-template<typename T>
-struct dependent_false : std::false_type
-{
-};
 
 // Flea3Camera constructor
 Flea3Camera::Flea3Camera(Config config, VideoStream videoStream, Watchdog* watchdog)
@@ -204,7 +200,7 @@ void Flea3Camera::initCamera()
                     blacklevel.absValue       = value;
                 }
                 else
-                    static_assert(dependent_false<T>::value);
+                    static_assert(false_type<T>::value);
             },
             *_config.blacklevel);
 
@@ -238,7 +234,7 @@ void Flea3Camera::initCamera()
                     exposure.absValue       = value;
                 }
                 else
-                    static_assert(dependent_false<T>::value);
+                    static_assert(false_type<T>::value);
             },
             *_config.exposure);
 
@@ -271,7 +267,7 @@ void Flea3Camera::initCamera()
                     gain.absValue       = value;
                 }
                 else
-                    static_assert(dependent_false<T>::value);
+                    static_assert(false_type<T>::value);
             },
             *_config.gain);
 
