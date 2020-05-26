@@ -13,9 +13,6 @@
 
 #include "VideoStream.h"
 
-// Forward declare not-required types.
-class Watchdog;
-
 class Camera : public QThread
 {
     Q_OBJECT
@@ -62,16 +59,15 @@ public:
     };
 
 protected:
-    Camera(Config config, VideoStream videoStream, Watchdog* watchdog);
+    Camera(Config config, VideoStream videoStream);
 
     Config      _config;
     VideoStream _videoStream;
-    Watchdog*   _watchdog;
 
 public:
     virtual ~Camera();
 
-    static Camera* make(Config config, VideoStream videoStream, Watchdog* watchdog);
+    static Camera* make(Config config, VideoStream videoStream);
 
 signals:
     void imageCaptured(GrayscaleImage image);

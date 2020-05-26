@@ -3,18 +3,18 @@
 #pragma once
 
 #include <mutex>
-#include <thread>
-#include <unordered_map>
+#include <vector>
 #include <chrono>
 
 class Watchdog final
 {
 private:
-    std::mutex _mutex;
-    std::unordered_map<std::thread::id, std::chrono::time_point<std::chrono::steady_clock>>
-        _lastPulses;
+    std::mutex                                                      _mutex;
+    std::vector<std::string>                                        _ids;
+    std::vector<std::chrono::time_point<std::chrono::steady_clock>> _lastPulses;
 
 public:
-    void pulse();
-    void check();
+    std::size_t watch(std::string id);
+    void        pulse(std::size_t index);
+    void        check();
 };

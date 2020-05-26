@@ -9,13 +9,12 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "Watchdog.h"
 #include "util/format.h"
 #include "util/log.h"
 #include "GrayscaleImage.h"
 
-XimeaCamera::XimeaCamera(Config config, VideoStream videoStream, Watchdog* watchdog)
-: Camera(config, videoStream, watchdog)
+XimeaCamera::XimeaCamera(Config config, VideoStream videoStream)
+: Camera(config, videoStream)
 {
     initCamera();
     startCapture();
@@ -292,8 +291,6 @@ void XimeaCamera::run()
 
     for (std::size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
     {
-        _watchdog->pulse();
-
         XI_IMG image;
         image.size    = sizeof(XI_IMG);
         image.bp      = static_cast<LPVOID>(&imageBuffer[0]);

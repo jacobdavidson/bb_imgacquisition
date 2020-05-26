@@ -2,21 +2,32 @@
 
 #include "util/format.h"
 
-void Watchdog::pulse()
+std::size_t Watchdog::watch(std::string id)
 {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _lastPulses[std::this_thread::get_id()] = std::chrono::steady_clock::now();
+    auto       lock  = std::lock_guard(_mutex);
+    const auto index = _ids.size();
+    _ids.push_back(id);
+    _lastPulses.push_back({});
+    return index;
+}
+
+void Watchdog::pulse(std::size_t index)
+{
+    auto lock          = std::lock_guard(_mutex);
+    _lastPulses[index] = std::chrono::steady_clock::now();
 }
 
 void Watchdog::check()
 {
-    std::lock_guard<std::mutex> lock(_mutex);
-    const auto                  now = std::chrono::steady_clock::now();
-    for (const auto& [threadId, lastPulse] : _lastPulses)
+    using namespace std::chrono_literals;
+
+    auto       lock = std::lock_guard(_mutex);
+    const auto now  = std::chrono::steady_clock::now();
+    for (std::size_t i = 0; i < _lastPulses.size(); ++i)
     {
-        if (now - lastPulse > std::chrono::seconds(60))
+        if (now - _lastPulses[i] > 60s)
         {
-            throw std::runtime_error(fmt::format("Watchdog timeout for thread {}", threadId));
+            throw std::runtime_error(fmt::format("Watchdog timeout for {}", _ids[i]));
         }
     }
 }

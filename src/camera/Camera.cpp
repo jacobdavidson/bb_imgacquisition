@@ -16,10 +16,9 @@
     #include "BaslerCamera.h"
 #endif
 
-Camera::Camera(Config config, VideoStream videoStream, Watchdog* watchdog)
+Camera::Camera(Config config, VideoStream videoStream)
 : _config{config}
 , _videoStream{videoStream}
-, _watchdog{watchdog}
 {
 }
 
@@ -29,26 +28,26 @@ Camera::~Camera()
     _videoStream.push({});
 }
 
-Camera* Camera::make(Config config, VideoStream videoStream, Watchdog* watchdog)
+Camera* Camera::make(Config config, VideoStream videoStream)
 {
 #if defined(USE_FLEA3) && USE_FLEA3
     if (config.backend == "flea3")
     {
-        return new Flea3Camera(config, videoStream, watchdog);
+        return new Flea3Camera(config, videoStream);
     }
 #endif
 
 #if defined(USE_XIMEA) && USE_XIMEA
     if (config.backend == "ximea")
     {
-        return new XimeaCamera(config, videoStream, watchdog);
+        return new XimeaCamera(config, videoStream);
     }
 #endif
 
 #if defined(USE_BASLER) && USE_BASLER
     if (config.backend == "basler")
     {
-        return new BaslerCamera(config, videoStream, watchdog);
+        return new BaslerCamera(config, videoStream);
     }
 #endif
 

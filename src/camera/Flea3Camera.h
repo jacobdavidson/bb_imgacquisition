@@ -11,7 +11,7 @@ class Flea3Camera : public Camera
     Q_OBJECT
 
 public:
-    Flea3Camera(Config config, VideoStream videoStream, Watchdog* watchdog);
+    Flea3Camera(Config config, VideoStream videoStream);
 
 private:
     void initCamera();

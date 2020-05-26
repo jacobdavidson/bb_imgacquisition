@@ -13,7 +13,7 @@ class XimeaCamera : public Camera
     Q_OBJECT
 
 public:
-    XimeaCamera(Config config, VideoStream videoStream, Watchdog* watchdog);
+    XimeaCamera(Config config, VideoStream videoStream);
 
 private:
     void initCamera();

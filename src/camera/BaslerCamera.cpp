@@ -5,7 +5,6 @@
 #include <chrono>
 #include <optional>
 
-#include "Watchdog.h"
 #include "util/format.h"
 #include "util/log.h"
 #include "util/type_traits.h"
@@ -85,8 +84,8 @@ auto BaslerCamera::getAvailable() -> std::vector<Config>
     return cameraConfigs;
 }
 
-BaslerCamera::BaslerCamera(Config config, VideoStream videoStream, Watchdog* watchdog)
-: Camera(config, videoStream, watchdog)
+BaslerCamera::BaslerCamera(Config config, VideoStream videoStream)
+: Camera(config, videoStream)
 {
     initCamera();
     startCapture();
@@ -367,8 +366,6 @@ void BaslerCamera::run()
 
     for (std::size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
     {
-        _watchdog->pulse();
-
         if (_camera.IsGrabbing())
         {
             try

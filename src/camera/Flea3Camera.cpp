@@ -4,14 +4,13 @@
 
 #include <chrono>
 
-#include "Watchdog.h"
 #include "util/format.h"
 #include "util/log.h"
 #include "util/type_traits.h"
 #include "GrayscaleImage.h"
 
-Flea3Camera::Flea3Camera(Config config, VideoStream videoStream, Watchdog* watchdog)
-: Camera(config, videoStream, watchdog)
+Flea3Camera::Flea3Camera(Config config, VideoStream videoStream)
+: Camera(config, videoStream)
 {
     initCamera();
     startCapture();
@@ -349,7 +348,6 @@ void Flea3Camera::run()
 
     while (!isInterruptionRequested())
     {
-        _watchdog->pulse();
         FlyCapture2::Image cimg;
 
         const auto begin = std::chrono::steady_clock::now();

@@ -74,7 +74,12 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
                                        cfg.framesPerSecond,
                                        cfg.framesPerFile,
                                        cfg.encoder.options};
-        _cameraThreads.emplace_back(Camera::make(cfg.camera, videoStream, &_watchdog));
+        _cameraThreads.emplace_back(Camera::make(cfg.camera, videoStream));
+        const auto watchIndex = _watchdog.watch(cfg.id);
+        QObject::connect(
+            _cameraThreads.back().get(),
+            &Camera::imageCaptured,
+            [this, watchIndex](GrayscaleImage image) { _watchdog.pulse(watchIndex); });
 
         if (_videoWriterThreads.count(cfg.encoder.id))
         {
