@@ -266,7 +266,7 @@ const std::vector<Settings::ImageStream>& Settings::imageStreams() const
     return _imageStreams;
 }
 
-const std::unordered_map<std::string, std::string>& Settings::videoEncoders() const
+const std::map<std::string, std::string>& Settings::videoEncoders() const
 {
     return _videoEncoders;
 }
