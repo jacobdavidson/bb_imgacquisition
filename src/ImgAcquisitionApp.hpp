@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <vector>
-#include <unordered_map>
+#include <map>
 
 #include <QCoreApplication>
 
@@ -27,5 +27,5 @@ private:
 
     std::vector<std::unique_ptr<Camera>> _cameraThreads;
 
-    std::unordered_map<std::string, ImageStreamsWriter> _imageStreamsWriters;
+    std::map<std::string, ImageStreamsWriter> _imageStreamsWriters;
 };
