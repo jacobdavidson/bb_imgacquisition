@@ -93,6 +93,54 @@ boost::property_tree::ptree detectSettings()
             },
             config.trigger);
 
+        if (config.blacklevel)
+        {
+            std::visit(
+                [&](auto&& value) {
+                    using T = std::decay_t<decltype(value)>;
+
+                    if constexpr (std::is_same_v<T, Camera::Config::Parameter_Auto>)
+                        cameraTree.put("blacklevel", "auto");
+                    else if constexpr (std::is_same_v<T, Camera::Config::Parameter_Manual<float>>)
+                        cameraTree.put("blacklevel", value);
+                    else
+                        static_assert(false_type<T>::value);
+                },
+                *config.blacklevel);
+        }
+
+        if (config.exposure)
+        {
+            std::visit(
+                [&](auto&& value) {
+                    using T = std::decay_t<decltype(value)>;
+
+                    if constexpr (std::is_same_v<T, Camera::Config::Parameter_Auto>)
+                        cameraTree.put("exposure", "auto");
+                    else if constexpr (std::is_same_v<T, Camera::Config::Parameter_Manual<float>>)
+                        cameraTree.put("exposure", value);
+                    else
+                        static_assert(false_type<T>::value);
+                },
+                *config.exposure);
+        }
+
+        if (config.gain)
+        {
+            std::visit(
+                [&](auto&& value) {
+                    using T = std::decay_t<decltype(value)>;
+
+                    if constexpr (std::is_same_v<T, Camera::Config::Parameter_Auto>)
+                        cameraTree.put("gain", "auto");
+                    else if constexpr (std::is_same_v<T, Camera::Config::Parameter_Manual<float>>)
+                        cameraTree.put("gain", value);
+                    else
+                        static_assert(false_type<T>::value);
+                },
+                *config.gain);
+        }
+
         imageStreamTree.put("frames_per_file", 500);
 
         auto& encoderTree = imageStreamTree.put_child("encoder", {});
