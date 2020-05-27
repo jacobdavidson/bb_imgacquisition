@@ -57,7 +57,7 @@ boost::property_tree::ptree detectSettings()
     std::size_t camIndex = 0;
 
     auto addImageStreamForCameraConfig = [&camIndex, &imageStreams](Camera::Config config) {
-        auto& imageStreamTree = imageStreams.put_child(fmt::format("Cam-{}", camIndex++), {});
+        auto& imageStreamTree = imageStreams.put_child(fmt::format("cam-{}", camIndex++), {});
 
         auto& cameraTree = imageStreamTree.put_child("camera", {});
         cameraTree.put("backend", config.backend);
