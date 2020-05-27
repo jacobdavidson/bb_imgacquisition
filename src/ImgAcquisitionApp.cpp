@@ -87,8 +87,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
         }
         else
         {
-            logCritical("Encoder with id {} referenced, but not configured",
-                        cfg.encoder.id);
+            logCritical("Encoder with id {} referenced, but not configured", cfg.encoder.id);
         }
     }
 

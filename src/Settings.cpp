@@ -46,8 +46,8 @@ boost::property_tree::ptree detectSettings()
 {
     auto tree = boost::property_tree::ptree{};
 
-    tree.put("tmp_directory", "data/tmp");
-    tree.put("out_directory", "data/out");
+    tree.put("tmp_dir", "data/tmp");
+    tree.put("out_dir", "data/out");
 
     auto& videoEncoders = tree.put_child("encoders", {});
     videoEncoders.put("h265_sw_0", "libx265");
@@ -209,8 +209,8 @@ Settings::Settings()
         _videoEncoders.emplace(id, name.get_value<std::string>());
     }
 
-    _tmpDirectory = tree.get<std::string>("tmp_directory");
-    _outDirectory = tree.get<std::string>("out_directory");
+    _temporaryDirectory = tree.get<std::string>("tmp_dir");
+    _outputDirectory    = tree.get<std::string>("out_dir");
 }
 
 const std::vector<Settings::ImageStream>& Settings::imageStreams() const
@@ -223,12 +223,12 @@ const std::unordered_map<std::string, std::string>& Settings::videoEncoders() co
     return _videoEncoders;
 }
 
-const std::string Settings::tmpDirectory() const
+const std::string Settings::temporaryDirectory() const
 {
-    return _tmpDirectory;
+    return _temporaryDirectory;
 }
 
-const std::string Settings::outDirectory() const
+const std::string Settings::outputDirectory() const
 {
-    return _outDirectory;
+    return _outputDirectory;
 }

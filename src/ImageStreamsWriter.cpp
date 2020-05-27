@@ -54,7 +54,7 @@ void ImageStreamsWriter::run()
 
         namespace fs = boost::filesystem;
 
-        const auto tmpDir = fs::path{settings.tmpDirectory()} / imageStream.id;
+        const auto tmpDir = fs::path{settings.temporaryDirectory()} / imageStream.id;
         if (!fs::exists(tmpDir))
         {
             fs::create_directories(tmpDir);
@@ -112,7 +112,7 @@ void ImageStreamsWriter::run()
         {
             try
             {
-                const auto outDir = fs::path{settings.outDirectory()} / imageStream.id;
+                const auto outDir = fs::path{settings.outputDirectory()} / imageStream.id;
                 if (!fs::exists(outDir))
                 {
                     fs::create_directories(outDir);

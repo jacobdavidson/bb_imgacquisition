@@ -42,14 +42,14 @@ public:
     const std::vector<ImageStream>&                     imageStreams() const;
     const std::unordered_map<std::string, std::string>& videoEncoders() const;
 
-    const std::string tmpDirectory() const;
-    const std::string outDirectory() const;
+    const std::string temporaryDirectory() const;
+    const std::string outputDirectory() const;
 
 private:
     std::vector<ImageStream> _imageStreams;
 
     std::unordered_map<std::string, std::string> _videoEncoders;
 
-    std::string _tmpDirectory;
-    std::string _outDirectory;
+    std::string _temporaryDirectory;
+    std::string _outputDirectory;
 };
