@@ -139,9 +139,11 @@ void XimeaCamera::initCamera()
 
     // Select configured properties.
 
-    // The Ximea camera does not support 4000x3000 pixels.
-    // enforce(xiSetParamInt(_Camera, XI_PRM_WIDTH, 4000), "xiSetParamInt XI_PRM_WIDTH");
-    // enforce(xiSetParamInt(_Camera, XI_PRM_HEIGHT, 3000), "xiSetParamInt XI_PRM_HEIGHT");
+    // NOTE: The camera used in beesbook setup did not support setting a centered ROI with the desired resolution
+    // enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_X, _config.offset_x), "xiSetParamInt XI_PRM_OFFSET_X");
+    // enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_Y, _config.offset_y), "xiSetParamInt XI_PRM_OFFSET_Y");
+    // enforce(xiSetParamInt(_Camera, XI_PRM_WIDTH, _config.width), "xiSetParamInt XI_PRM_WIDTH");
+    // enforce(xiSetParamInt(_Camera, XI_PRM_HEIGHT, _config.height), "xiSetParamInt XI_PRM_HEIGHT");
 
     enforce(xiSetParamInt(_Camera, XI_PRM_TRG_SELECTOR, XI_TRG_SEL_FRAME_START),
             "xiSetParamInt XI_PRM_TRG_SELECTOR");
@@ -371,9 +373,8 @@ void XimeaCamera::run()
             logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
 
-        // Crop the image to the expected size (e.g. 4000x3000).
-        // This is necessary, because the encoder/codec requires the image sizes to be
-        // some multiple of X.
+        // NOTE: The camera used in beesbook setup did not support setting a centered camera ROI with the desired resolution,
+        //       so we get the full image from it and crop manually here to the desired ROI.
         cv::Mat wholeImageMatrix(
             cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)),
             CV_8UC1,
