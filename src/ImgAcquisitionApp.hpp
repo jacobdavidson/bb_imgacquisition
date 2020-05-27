@@ -7,9 +7,9 @@
 
 #include <QCoreApplication>
 
-#include "camera/Camera.h"
-#include "ImageStreamsWriter.h"
-#include "Watchdog.h"
+#include "camera/Camera.hpp"
+#include "ImageStreamsWriter.hpp"
+#include "Watchdog.hpp"
 
 class ImgAcquisitionApp : public QCoreApplication
 {

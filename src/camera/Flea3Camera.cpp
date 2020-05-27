@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "Flea3Camera.h"
+#include "Flea3Camera.hpp"
 
 #include <chrono>
 
-#include "util/format.h"
-#include "util/log.h"
-#include "util/type_traits.h"
-#include "GrayscaleImage.h"
+#include "util/format.hpp"
+#include "util/log.hpp"
+#include "util/type_traits.hpp"
+#include "GrayscaleImage.hpp"
 
 Flea3Camera::Flea3Camera(Config config, ImageStream imageStream)
 : Camera(config, imageStream)

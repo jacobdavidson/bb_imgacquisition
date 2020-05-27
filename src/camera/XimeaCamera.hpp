@@ -5,7 +5,7 @@
 
 #include <xiApi.h>
 
-#include "Camera.h"
+#include "Camera.hpp"
 
 class XimeaCamera : public Camera
 {

@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "ImgAcquisitionApp.h"
+#include "ImgAcquisitionApp.hpp"
 
 #include <iostream>
 
 #include <QTimer>
 
-#include "Settings.h"
-#include "Watchdog.h"
-#include "util/log.h"
-#include "util/PlatformAdapter.h"
+#include "Settings.hpp"
+#include "Watchdog.hpp"
+#include "util/log.hpp"
+#include "util/PlatformAdapter.hpp"
 
-#include "source_version.h"
-#include "build_timestamp.h"
+#include "source_version.hpp"
+#include "build_timestamp.hpp"
 
 ImgAcquisitionApp::~ImgAcquisitionApp()
 {

@@ -5,8 +5,8 @@
 #include <unordered_map>
 #include <string>
 
-#include "util/ConcurrentQueue.h"
-#include "GrayscaleImage.h"
+#include "util/ConcurrentQueue.hpp"
+#include "GrayscaleImage.hpp"
 
 class ImageStream final
 {

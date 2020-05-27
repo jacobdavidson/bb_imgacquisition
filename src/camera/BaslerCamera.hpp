@@ -9,7 +9,7 @@
 #include <pylon/PylonIncludes.h>
 #include <pylon/usb/BaslerUsbInstantCamera.h>
 
-#include "Camera.h"
+#include "Camera.hpp"
 
 class BaslerCamera : public Camera
 {

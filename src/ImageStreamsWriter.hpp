@@ -6,7 +6,7 @@
 
 #include <QThread>
 
-#include "ImageStream.h"
+#include "ImageStream.hpp"
 
 /**
  * @brief Writes image streams to respective video files with a single video encoder

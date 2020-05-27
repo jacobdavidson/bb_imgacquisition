@@ -1,6 +1,6 @@
-#include "Watchdog.h"
+#include "Watchdog.hpp"
 
-#include "util/format.h"
+#include "util/format.hpp"
 
 std::size_t Watchdog::watch(std::string id)
 {

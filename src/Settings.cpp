@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "Settings.h"
+#include "Settings.hpp"
 
 #include <fstream>
 
@@ -10,12 +10,12 @@
 #include <QStandardPaths>
 #include <QDir>
 
-#include "util/format.h"
-#include "util/log.h"
-#include "util/type_traits.h"
+#include "util/format.hpp"
+#include "util/log.hpp"
+#include "util/type_traits.hpp"
 
 #if defined(USE_BASLER) && USE_BASLER
-    #include "camera/BaslerCamera.h"
+    #include "camera/BaslerCamera.hpp"
 #endif
 
 template<typename T>

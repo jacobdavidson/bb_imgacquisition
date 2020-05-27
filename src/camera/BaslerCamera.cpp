@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "BaslerCamera.h"
+#include "BaslerCamera.hpp"
 
 #include <chrono>
 #include <optional>
 
-#include "util/format.h"
-#include "util/log.h"
-#include "util/type_traits.h"
-#include "GrayscaleImage.h"
+#include "util/format.hpp"
+#include "util/log.hpp"
+#include "util/type_traits.hpp"
+#include "GrayscaleImage.hpp"
 
 #include <pylon/usb/BaslerUsbInstantCamera.h>
 

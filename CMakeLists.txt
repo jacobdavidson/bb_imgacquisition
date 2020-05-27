@@ -34,28 +34,28 @@ find_package(OpenCV REQUIRED)
 find_package(FFmpeg COMPONENTS avformat avcodec avutil REQUIRED)
 
 add_executable(${PROJECT_NAME}
-	src/util/type_traits.h
-	src/util/format.h
-	src/util/log.h
+	src/util/type_traits.hpp
+	src/util/format.hpp
+	src/util/log.hpp
 	src/util/log.cpp
-	src/util/ConcurrentQueue.h
-	src/util/PlatformAdapter.h
+	src/util/ConcurrentQueue.hpp
+	src/util/PlatformAdapter.hpp
 	src/util/PlatformAdapter.cpp
-	src/GrayscaleImage.h
+	src/GrayscaleImage.hpp
 	src/GrayscaleImage.cpp
-	src/ImageStream.h
+	src/ImageStream.hpp
 	src/ImageStream.cpp
-	src/ImageStreamsWriter.h
+	src/ImageStreamsWriter.hpp
 	src/ImageStreamsWriter.cpp
-	src/VideoFileWriter.h
+	src/VideoFileWriter.hpp
 	src/VideoFileWriter.cpp
-	src/Watchdog.h
+	src/Watchdog.hpp
 	src/Watchdog.cpp
-	src/Settings.h
+	src/Settings.hpp
 	src/Settings.cpp
-	src/camera/Camera.h
+	src/camera/Camera.hpp
 	src/camera/Camera.cpp
-	src/ImgAcquisitionApp.h
+	src/ImgAcquisitionApp.hpp
 	src/ImgAcquisitionApp.cpp
 	src/main.cpp
 )
@@ -105,20 +105,20 @@ endif()
 
 if(Flea3 IN_LIST CAMERA_BACKENDS)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_FLEA3)
-	target_sources(${PROJECT_NAME} PRIVATE src/camera/Flea3Camera.h src/camera/Flea3Camera.cpp)
+	target_sources(${PROJECT_NAME} PRIVATE src/camera/Flea3Camera.hpp src/camera/Flea3Camera.cpp)
 
 	target_link_libraries(${PROJECT_NAME} PRIVATE FlyCapture2)
 endif()
 
 if(XIMEA IN_LIST CAMERA_BACKENDS)
-	target_sources(${PROJECT_NAME} PRIVATE src/camera/XimeaCamera.h src/camera/XimeaCamera.cpp)
+	target_sources(${PROJECT_NAME} PRIVATE src/camera/XimeaCamera.hpp src/camera/XimeaCamera.cpp)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_XIMEA)
 
 	target_link_libraries(${PROJECT_NAME} PRIVATE XIMEA)
 endif()
 
 if(Basler IN_LIST CAMERA_BACKENDS)
-	target_sources(${PROJECT_NAME} PRIVATE src/camera/BaslerCamera.h src/camera/BaslerCamera.cpp)
+	target_sources(${PROJECT_NAME} PRIVATE src/camera/BaslerCamera.hpp src/camera/BaslerCamera.cpp)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BASLER)
 
 	target_link_libraries(${PROJECT_NAME} PRIVATE Pylon5::Base Pylon5::Utility Pylon5::GenAPI Pylon5::GCBase)

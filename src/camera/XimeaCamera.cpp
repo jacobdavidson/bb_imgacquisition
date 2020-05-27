@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "XimeaCamera.h"
+#include "XimeaCamera.hpp"
 
 #include <array>
 #include <chrono>
@@ -9,9 +9,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "util/format.h"
-#include "util/log.h"
-#include "GrayscaleImage.h"
+#include "util/format.hpp"
+#include "util/log.hpp"
+#include "GrayscaleImage.hpp"
 
 XimeaCamera::XimeaCamera(Config config, ImageStream imageStream)
 : Camera(config, imageStream)

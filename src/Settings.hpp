@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "camera/Camera.h"
+#include "camera/Camera.hpp"
 
 class Settings
 {

@@ -3,7 +3,7 @@
 
 #include <FlyCapture2.h>
 
-#include "Camera.h"
+#include "Camera.hpp"
 
 class Flea3Camera : public Camera
 {

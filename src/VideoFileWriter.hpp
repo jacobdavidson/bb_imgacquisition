@@ -12,7 +12,7 @@ extern "C"
 #include <libavutil/frame.h>
 }
 
-#include "GrayscaleImage.h"
+#include "GrayscaleImage.hpp"
 
 class VideoFileWriter final
 {

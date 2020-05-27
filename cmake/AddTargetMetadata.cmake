@@ -12,7 +12,7 @@ function(add_target_metadata target)
 	target_include_directories(${target} PRIVATE "${METADATA_DIR}")
 
 	if(ARG_SOURCE_VERSION)
-		file(WRITE "${METADATA_DIR}/source_version.h"
+		file(WRITE "${METADATA_DIR}/source_version.hpp"
 "// SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
@@ -21,16 +21,16 @@ extern const char g_SOURCE_VERSION[];")
 		file(WRITE "${METADATA_DIR}/source_version.cpp.in"
 "// SPDX-License-Identifier: GPL-3.0-or-later
 
-#include \"source_version.h\"
+#include \"source_version.hpp\"
 
 const char g_SOURCE_VERSION[] = \"@SOURCE_VERSION@\";")
 
 		configure_file("${METADATA_DIR}/source_version.cpp.in" "${METADATA_DIR}/source_version.cpp" @ONLY)
-		target_sources(${target} PRIVATE "${METADATA_DIR}/source_version.h" "${METADATA_DIR}/source_version.cpp")
+		target_sources(${target} PRIVATE "${METADATA_DIR}/source_version.hpp" "${METADATA_DIR}/source_version.cpp")
 	endif()
 
 	if(ARG_BUILD_TIMESTAMP)
-		file(WRITE "${METADATA_DIR}/build_timestamp.h"
+		file(WRITE "${METADATA_DIR}/build_timestamp.hpp"
 "// SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
@@ -39,7 +39,7 @@ extern const char g_BUILD_TIMESTAMP[];")
 		file(WRITE "${METADATA_DIR}/build_timestamp.cpp.in"
 "// SPDX-License-Identifier: GPL-3.0-or-later
 
-#include \"build_timestamp.h\"
+#include \"build_timestamp.hpp\"
 
 const char g_BUILD_TIMESTAMP[] = \"@BUILD_TIMESTAMP@\";")
 

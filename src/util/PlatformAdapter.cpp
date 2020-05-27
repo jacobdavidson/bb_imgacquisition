@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "PlatformAdapter.h"
+#include "PlatformAdapter.hpp"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -40,7 +40,7 @@ extern "C"
     #error Platform unsupported
 #endif
 
-#include "util/log.h"
+#include "util/log.hpp"
 
 class Implementation final
 {

@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "Camera.h"
+#include "Camera.hpp"
 
-#include "util/format.h"
+#include "util/format.hpp"
 
 #if defined(USE_FLEA3) && USE_FLEA3
-    #include "Flea3Camera.h"
+    #include "Flea3Camera.hpp"
 #endif
 
 #if defined(USE_XIMEA) && USE_XIMEA
-    #include "XimeaCamera.h"
+    #include "XimeaCamera.hpp"
 #endif
 
 #if defined(USE_BASLER) && USE_BASLER
-    #include "BaslerCamera.h"
+    #include "BaslerCamera.hpp"
 #endif
 
 Camera::Camera(Config config, ImageStream imageStream)

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "ImageStream.h"
+#include "ImageStream.hpp"
 
 ImageStream::ImageStream(std::string                                  _id,
                          std::tuple<std::size_t, std::size_t>         _resolution,

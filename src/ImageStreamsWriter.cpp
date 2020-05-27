@@ -5,14 +5,14 @@
 
 #include <boost/filesystem.hpp>
 
-#include "Settings.h"
+#include "Settings.hpp"
 // NOTE: The order of the includes below is important to avoid name clashes!
-#include "ImageStreamsWriter.h"
+#include "ImageStreamsWriter.hpp"
 
-#include "VideoFileWriter.h"
+#include "VideoFileWriter.hpp"
 
-#include "util/format.h"
-#include "util/log.h"
+#include "util/format.hpp"
+#include "util/log.hpp"
 
 ImageStreamsWriter::ImageStreamsWriter(std::string encoderName)
 : _encoderName{encoderName}

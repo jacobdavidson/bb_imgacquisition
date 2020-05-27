@@ -3,7 +3,7 @@
 
 #include <QMessageLogger>
 
-#include "format.h"
+#include "format.hpp"
 
 namespace log_detail
 {

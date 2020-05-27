@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "VideoFileWriter.h"
+#include "VideoFileWriter.hpp"
 
 #include <array>
 #include <sstream>
 #include <cstring>
 #include <string_view>
 
-#include "util/format.h"
+#include "util/format.hpp"
 
 #if __has_include(<ffnvcodec/nvEncodeAPI.h>)
 extern "C"

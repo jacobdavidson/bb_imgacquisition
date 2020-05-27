@@ -10,7 +10,7 @@
 
 #include <QThread>
 
-#include "ImageStream.h"
+#include "ImageStream.hpp"
 
 class Camera : public QThread
 {
