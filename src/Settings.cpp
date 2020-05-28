@@ -78,15 +78,11 @@ boost::property_tree::ptree detectSettings()
                 {
                     triggerTree.put("type", "hardware");
                     triggerTree.put("source", value.source);
-
-                    imageStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
                 }
                 else if constexpr (std::is_same_v<T, Camera::Config::SoftwareTrigger>)
                 {
                     triggerTree.put("type", "software");
                     triggerTree.put("frames_per_second", value.framesPerSecond);
-
-                    imageStreamTree.put("frames_per_second", value.framesPerSecond);
                 }
                 else
                     static_assert(false_type<T>::value);
@@ -140,6 +136,23 @@ boost::property_tree::ptree detectSettings()
                 },
                 *config.gain);
         }
+
+        std::visit(
+            [&](auto&& value) {
+                using T = std::decay_t<decltype(value)>;
+
+                if constexpr (std::is_same_v<T, Camera::Config::HardwareTrigger>)
+                {
+                    imageStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
+                }
+                else if constexpr (std::is_same_v<T, Camera::Config::SoftwareTrigger>)
+                {
+                    imageStreamTree.put("frames_per_second", value.framesPerSecond);
+                }
+                else
+                    static_assert(false_type<T>::value);
+            },
+            config.trigger);
 
         imageStreamTree.put("frames_per_file", 500);
 
