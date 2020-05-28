@@ -17,44 +17,49 @@ class Camera : public QThread
     Q_OBJECT
 
 public:
-    struct Config final
+    struct HardwareTrigger final
     {
-        std::string backend;
-        std::string serial;
+        int source;
+    };
 
+    struct SoftwareTrigger final
+    {
+        float framesPerSecond;
+    };
+
+    struct Parameter_Auto final
+    {
+    };
+
+    template<typename T>
+    using Parameter_Manual = T;
+
+    template<typename T>
+    using Parameter = std::variant<Parameter_Auto, Parameter_Manual<T>>;
+
+    struct Parameters final
+    {
         int offset_x;
         int offset_y;
         int width;
         int height;
 
-        struct HardwareTrigger final
-        {
-            int source;
-        };
-
-        struct SoftwareTrigger final
-        {
-            float framesPerSecond;
-        };
-
-        struct Parameter_Auto final
-        {
-        };
-
-        template<typename T>
-        using Parameter_Manual = T;
-
-        template<typename T>
-        using Parameter = std::variant<Parameter_Auto, Parameter_Manual<T>>;
-
         std::variant<HardwareTrigger, SoftwareTrigger> trigger;
-
-        boost::optional<int> buffer_size;
-        boost::optional<int> throughput_limit;
 
         std::optional<Parameter<float>> blacklevel;
         std::optional<Parameter<float>> exposure;
         std::optional<Parameter<float>> gain;
+
+        boost::optional<int> buffer_size;
+        boost::optional<int> throughput_limit;
+    };
+
+    struct Config final
+    {
+        std::string backend;
+        std::string serial;
+
+        Parameters params;
     };
 
 protected:

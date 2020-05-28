@@ -117,10 +117,10 @@ void XimeaCamera::initCamera()
         }
     }
 
-    if (_config.throughput_limit)
+    if (_config.params.throughput_limit)
     {
         // Set the bandwidth limit.
-        enforce(xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH, *_config.throughput_limit),
+        enforce(xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH, *_config.params.throughput_limit),
                 "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH");
         enforce(xiSetParamInt(_Camera, XI_PRM_LIMIT_BANDWIDTH_MODE, XI_ON),
                 "xiSetParamInt XI_PRM_LIMIT_BANDWIDTH_MODE");
@@ -139,16 +139,18 @@ void XimeaCamera::initCamera()
 
     // Select configured properties.
 
-    // NOTE: The camera used in beesbook setup did not support setting a centered ROI with the desired resolution
-    // enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_X, _config.offset_x), "xiSetParamInt XI_PRM_OFFSET_X");
-    // enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_Y, _config.offset_y), "xiSetParamInt XI_PRM_OFFSET_Y");
-    // enforce(xiSetParamInt(_Camera, XI_PRM_WIDTH, _config.width), "xiSetParamInt XI_PRM_WIDTH");
-    // enforce(xiSetParamInt(_Camera, XI_PRM_HEIGHT, _config.height), "xiSetParamInt XI_PRM_HEIGHT");
+    // NOTE: The camera used in beesbook setup did not support setting a centered ROI with the
+    // desired resolution enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_X, _config.params.offset_x),
+    // "xiSetParamInt XI_PRM_OFFSET_X"); enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_Y,
+    // _config.params.offset_y), "xiSetParamInt XI_PRM_OFFSET_Y"); enforce(xiSetParamInt(_Camera,
+    // XI_PRM_WIDTH, _config.params.width), "xiSetParamInt XI_PRM_WIDTH");
+    // enforce(xiSetParamInt(_Camera, XI_PRM_HEIGHT, _config.params.height), "xiSetParamInt
+    // XI_PRM_HEIGHT");
 
     enforce(xiSetParamInt(_Camera, XI_PRM_TRG_SELECTOR, XI_TRG_SEL_FRAME_START),
             "xiSetParamInt XI_PRM_TRG_SELECTOR");
 
-    if (auto* trigger = std::get_if<Config::SoftwareTrigger>(&_config.trigger))
+    if (auto* trigger = std::get_if<SoftwareTrigger>(&_config.params.trigger))
     {
         if (xiSetParamInt(_Camera, XI_PRM_ACQ_TIMING_MODE, XI_ACQ_TIMING_MODE_FRAME_RATE) == XI_OK)
         {
@@ -158,7 +160,7 @@ void XimeaCamera::initCamera()
         enforce(xiSetParamInt(_Camera, XI_PRM_TRG_SOURCE, XI_TRG_OFF),
                 "xiSetParamInt XI_PRM_TRG_SOURCE");
     }
-    else if (auto* trigger = std::get_if<Config::HardwareTrigger>(&_config.trigger))
+    else if (auto* trigger = std::get_if<HardwareTrigger>(&_config.params.trigger))
     {
         enforce(xiSetParamInt(_Camera, XI_PRM_GPI_SELECTOR, trigger->source),
                 "xiSetParamInt XI_PRM_GPI_SELECTOR");
@@ -173,23 +175,22 @@ void XimeaCamera::initCamera()
         throw std::logic_error("Not implemented");
     }
 
-    if (_config.blacklevel)
+    if (_config.params.blacklevel)
     {
         logWarning("{}: Blacklevel parameter not implemented for Basler cameras", _imageStream.id);
     }
 
-    if (_config.exposure)
+    if (_config.params.exposure)
     {
         // Explicitly enforce 1 exposure per frame
         enforce(xiSetParamInt(_Camera, XI_PRM_EXPOSURE_BURST_COUNT, 1),
                 "xiSetParamInt XI_PRM_EXPOSURE_BURST_COUNT");
     }
 
-    if (_config.exposure && _config.gain)
+    if (_config.params.exposure && _config.params.gain)
     {
-        const auto autoExposure = std::holds_alternative<Config::Parameter_Auto>(
-            *_config.exposure);
-        const auto autoGain = std::holds_alternative<Config::Parameter_Auto>(*_config.exposure);
+        const auto autoExposure = std::holds_alternative<Parameter_Auto>(*_config.params.exposure);
+        const auto autoGain     = std::holds_alternative<Parameter_Auto>(*_config.params.exposure);
 
         if (autoExposure && autoGain)
         {
@@ -201,14 +202,14 @@ void XimeaCamera::initCamera()
 
             enforce(xiSetParamInt(_Camera,
                                   XI_PRM_EXPOSURE,
-                                  std::get<Config::Parameter_Manual<float>>(*_config.exposure)),
+                                  std::get<Parameter_Manual<float>>(*_config.params.exposure)),
                     "xiSetParamInt XI_PRM_EXPOSURE");
 
             enforce(xiSetParamInt(_Camera, XI_PRM_GAIN_SELECTOR, XI_GAIN_SELECTOR_ALL),
                     "xiSetParamInt XI_PRM_GAIN_SELECTOR");
             enforce(xiSetParamFloat(_Camera,
                                     XI_PRM_GAIN,
-                                    std::get<Config::Parameter_Manual<float>>(*_config.gain)),
+                                    std::get<Parameter_Manual<float>>(*_config.params.gain)),
                     "xiSetParamFloat XI_PRM_GAIN");
         }
         else
@@ -219,16 +220,16 @@ void XimeaCamera::initCamera()
                             _imageStream.id));
         }
     }
-    else if (_config.exposure)
+    else if (_config.params.exposure)
     {
         enforce(xiSetParamInt(_Camera, XI_PRM_AEAG, 0), "xiSetParamInt XI_PRM_AEAG");
 
         enforce(xiSetParamInt(_Camera,
                               XI_PRM_EXPOSURE,
-                              std::get<Config::Parameter_Manual<float>>(*_config.exposure)),
+                              std::get<Parameter_Manual<float>>(*_config.params.exposure)),
                 "xiSetParamInt XI_PRM_EXPOSURE");
     }
-    else if (_config.gain)
+    else if (_config.params.gain)
     {
         enforce(xiSetParamInt(_Camera, XI_PRM_AEAG, 0), "xiSetParamInt XI_PRM_AEAG");
 
@@ -236,14 +237,14 @@ void XimeaCamera::initCamera()
                 "xiSetParamInt XI_PRM_GAIN_SELECTOR");
         enforce(xiSetParamFloat(_Camera,
                                 XI_PRM_GAIN,
-                                std::get<Config::Parameter_Manual<float>>(*_config.gain)),
+                                std::get<Parameter_Manual<float>>(*_config.params.gain)),
                 "xiSetParamFloat XI_PRM_GAIN");
     }
 
     // The default is no buffering.
-    if (_config.buffer_size)
+    if (_config.params.buffer_size)
     {
-        const auto buffer_size = *_config.buffer_size;
+        const auto buffer_size = *_config.params.buffer_size;
 
         enforce(xiSetParamInt(_Camera, XI_PRM_BUFFERS_QUEUE_SIZE, buffer_size + 1),
                 "xiSetParamInt XI_PRM_BUFFERS_QUEUE_SIZE");
@@ -278,8 +279,8 @@ void XimeaCamera::run()
 {
     using namespace std::chrono_literals;
 
-    const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
-    const unsigned int vheight = static_cast<unsigned int>(_config.height);
+    const unsigned int vwidth  = static_cast<unsigned int>(_config.params.width);
+    const unsigned int vheight = static_cast<unsigned int>(_config.params.height);
 
     std::uint64_t lastImageSequenceNumber = 0;
 
@@ -373,7 +374,8 @@ void XimeaCamera::run()
             logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
 
-        // NOTE: The camera used in beesbook setup did not support setting a centered camera ROI with the desired resolution,
+        // NOTE: The camera used in beesbook setup did not support setting a centered camera ROI
+        // with the desired resolution,
         //       so we get the full image from it and crop manually here to the desired ROI.
         cv::Mat wholeImageMatrix(
             cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)),

@@ -20,17 +20,17 @@
 
 template<typename T>
 auto parseParam(const boost::property_tree::ptree& tree, const std::string& name)
-    -> std::optional<Camera::Config::Parameter<T>>
+    -> std::optional<Camera::Parameter<T>>
 {
     if (auto strValue = tree.get_optional<std::string>(name); strValue)
     {
         if (*strValue == "auto")
         {
-            return Camera::Config::Parameter_Auto{};
+            return Camera::Parameter_Auto{};
         }
         else if (auto value = tree.get_optional<T>(name); value)
         {
-            return Camera::Config::Parameter_Manual<T>{*value};
+            return Camera::Parameter_Manual<T>{*value};
         }
 
         throw std::runtime_error(
@@ -63,23 +63,25 @@ boost::property_tree::ptree detectSettings()
         cameraTree.put("backend", config.backend);
         cameraTree.put("serial", config.serial);
 
-        cameraTree.put("offset_x", config.offset_x);
-        cameraTree.put("offset_y", config.offset_y);
-        cameraTree.put("width", config.width);
-        cameraTree.put("height", config.height);
+        auto& cameraParamsTree = cameraTree.put_child("params", {});
 
-        auto& triggerTree = cameraTree.put_child("trigger", {});
+        cameraParamsTree.put("offset_x", config.params.offset_x);
+        cameraParamsTree.put("offset_y", config.params.offset_y);
+        cameraParamsTree.put("width", config.params.width);
+        cameraParamsTree.put("height", config.params.height);
+
+        auto& triggerTree = cameraParamsTree.put_child("trigger", {});
 
         std::visit(
             [&](auto&& value) {
                 using T = std::decay_t<decltype(value)>;
 
-                if constexpr (std::is_same_v<T, Camera::Config::HardwareTrigger>)
+                if constexpr (std::is_same_v<T, Camera::HardwareTrigger>)
                 {
                     triggerTree.put("type", "hardware");
                     triggerTree.put("source", value.source);
                 }
-                else if constexpr (std::is_same_v<T, Camera::Config::SoftwareTrigger>)
+                else if constexpr (std::is_same_v<T, Camera::SoftwareTrigger>)
                 {
                     triggerTree.put("type", "software");
                     triggerTree.put("frames_per_second", value.framesPerSecond);
@@ -87,72 +89,72 @@ boost::property_tree::ptree detectSettings()
                 else
                     static_assert(false_type<T>::value);
             },
-            config.trigger);
+            config.params.trigger);
 
-        if (config.blacklevel)
+        if (config.params.blacklevel)
         {
             std::visit(
                 [&](auto&& value) {
                     using T = std::decay_t<decltype(value)>;
 
-                    if constexpr (std::is_same_v<T, Camera::Config::Parameter_Auto>)
-                        cameraTree.put("blacklevel", "auto");
-                    else if constexpr (std::is_same_v<T, Camera::Config::Parameter_Manual<float>>)
-                        cameraTree.put("blacklevel", value);
+                    if constexpr (std::is_same_v<T, Camera::Parameter_Auto>)
+                        cameraParamsTree.put("blacklevel", "auto");
+                    else if constexpr (std::is_same_v<T, Camera::Parameter_Manual<float>>)
+                        cameraParamsTree.put("blacklevel", value);
                     else
                         static_assert(false_type<T>::value);
                 },
-                *config.blacklevel);
+                *config.params.blacklevel);
         }
 
-        if (config.exposure)
+        if (config.params.exposure)
         {
             std::visit(
                 [&](auto&& value) {
                     using T = std::decay_t<decltype(value)>;
 
-                    if constexpr (std::is_same_v<T, Camera::Config::Parameter_Auto>)
-                        cameraTree.put("exposure", "auto");
-                    else if constexpr (std::is_same_v<T, Camera::Config::Parameter_Manual<float>>)
-                        cameraTree.put("exposure", value);
+                    if constexpr (std::is_same_v<T, Camera::Parameter_Auto>)
+                        cameraParamsTree.put("exposure", "auto");
+                    else if constexpr (std::is_same_v<T, Camera::Parameter_Manual<float>>)
+                        cameraParamsTree.put("exposure", value);
                     else
                         static_assert(false_type<T>::value);
                 },
-                *config.exposure);
+                *config.params.exposure);
         }
 
-        if (config.gain)
+        if (config.params.gain)
         {
             std::visit(
                 [&](auto&& value) {
                     using T = std::decay_t<decltype(value)>;
 
-                    if constexpr (std::is_same_v<T, Camera::Config::Parameter_Auto>)
-                        cameraTree.put("gain", "auto");
-                    else if constexpr (std::is_same_v<T, Camera::Config::Parameter_Manual<float>>)
-                        cameraTree.put("gain", value);
+                    if constexpr (std::is_same_v<T, Camera::Parameter_Auto>)
+                        cameraParamsTree.put("gain", "auto");
+                    else if constexpr (std::is_same_v<T, Camera::Parameter_Manual<float>>)
+                        cameraParamsTree.put("gain", value);
                     else
                         static_assert(false_type<T>::value);
                 },
-                *config.gain);
+                *config.params.gain);
         }
 
         std::visit(
             [&](auto&& value) {
                 using T = std::decay_t<decltype(value)>;
 
-                if constexpr (std::is_same_v<T, Camera::Config::HardwareTrigger>)
+                if constexpr (std::is_same_v<T, Camera::HardwareTrigger>)
                 {
                     imageStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
                 }
-                else if constexpr (std::is_same_v<T, Camera::Config::SoftwareTrigger>)
+                else if constexpr (std::is_same_v<T, Camera::SoftwareTrigger>)
                 {
                     imageStreamTree.put("frames_per_second", value.framesPerSecond);
                 }
                 else
                     static_assert(false_type<T>::value);
             },
-            config.trigger);
+            config.params.trigger);
 
         imageStreamTree.put("frames_per_file", 500);
 
@@ -219,37 +221,40 @@ Settings::Settings()
         stream.camera.backend = cameraTree.get<std::string>("backend");
         stream.camera.serial  = cameraTree.get<std::string>("serial");
 
-        stream.camera.offset_x = cameraTree.get<int>("offset_x");
-        stream.camera.offset_y = cameraTree.get<int>("offset_y");
-        stream.camera.width    = cameraTree.get<int>("width");
-        stream.camera.height   = cameraTree.get<int>("height");
+        const auto& cameraParamsTree = cameraTree.get_child("params");
 
-        const auto& triggerTree = cameraTree.get_child("trigger");
+        stream.camera.params.offset_x = cameraParamsTree.get<int>("offset_x");
+        stream.camera.params.offset_y = cameraParamsTree.get<int>("offset_y");
+        stream.camera.params.width    = cameraParamsTree.get<int>("width");
+        stream.camera.params.height   = cameraParamsTree.get<int>("height");
+
+        const auto& triggerTree = cameraParamsTree.get_child("trigger");
 
         const auto triggerType = triggerTree.get<std::string>("type");
         if (triggerType == "hardware")
         {
-            auto trigger          = Camera::Config::HardwareTrigger{};
-            trigger.source        = triggerTree.get<int>("source");
-            stream.camera.trigger = trigger;
+            auto trigger                 = Camera::HardwareTrigger{};
+            trigger.source               = triggerTree.get<int>("source");
+            stream.camera.params.trigger = trigger;
         }
         else if (triggerType == "software")
         {
-            auto trigger            = Camera::Config::SoftwareTrigger{};
-            trigger.framesPerSecond = triggerTree.get<float>("frames_per_second");
-            stream.camera.trigger   = trigger;
+            auto trigger                 = Camera::SoftwareTrigger{};
+            trigger.framesPerSecond      = triggerTree.get<float>("frames_per_second");
+            stream.camera.params.trigger = trigger;
         }
         else
         {
             throw std::runtime_error(fmt::format("Invalid camera trigger type: {}", triggerType));
         }
 
-        stream.camera.buffer_size      = cameraTree.get_optional<int>("buffer_size");
-        stream.camera.throughput_limit = cameraTree.get_optional<int>("throughput_limit");
+        stream.camera.params.blacklevel = parseParam<float>(cameraParamsTree, "blacklevel");
+        stream.camera.params.exposure   = parseParam<float>(cameraParamsTree, "exposure");
+        stream.camera.params.gain       = parseParam<float>(cameraParamsTree, "gain");
 
-        stream.camera.blacklevel = parseParam<float>(cameraTree, "blacklevel");
-        stream.camera.exposure   = parseParam<float>(cameraTree, "exposure");
-        stream.camera.gain       = parseParam<float>(cameraTree, "gain");
+        stream.camera.params.buffer_size      = cameraParamsTree.get_optional<int>("buffer_size");
+        stream.camera.params.throughput_limit = cameraParamsTree.get_optional<int>(
+            "throughput_limit");
 
         stream.framesPerSecond = imageStreamTree.get<float>("frames_per_second");
         stream.framesPerFile   = imageStreamTree.get<std::size_t>("frames_per_file");

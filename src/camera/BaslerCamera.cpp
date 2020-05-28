@@ -41,31 +41,31 @@ auto BaslerCamera::getAvailable() -> std::vector<Config>
         auto camera = CBaslerUsbInstantCamera(factory.CreateDevice(deviceInfo));
         camera.Open();
 
-        config.offset_x = camera.OffsetX();
-        config.offset_y = camera.OffsetY();
-        config.width    = camera.Width();
-        config.height   = camera.Height();
+        config.params.offset_x = camera.OffsetX();
+        config.params.offset_y = camera.OffsetY();
+        config.params.width    = camera.Width();
+        config.params.height   = camera.Height();
 
-        config.trigger = Config::SoftwareTrigger{static_cast<float>(camera.ResultingFrameRate())};
+        config.params.trigger = SoftwareTrigger{static_cast<float>(camera.ResultingFrameRate())};
 
-        config.blacklevel = Config::Parameter_Manual<float>(camera.BlackLevel());
+        config.params.blacklevel = Parameter_Manual<float>(camera.BlackLevel());
 
         if (camera.ExposureAuto() == ExposureAuto_Off)
         {
-            config.exposure = Config::Parameter_Manual<float>(camera.ExposureTime());
+            config.params.exposure = Parameter_Manual<float>(camera.ExposureTime());
         }
         else
         {
-            config.exposure = Config::Parameter_Auto{};
+            config.params.exposure = Parameter_Auto{};
         }
 
         if (camera.GainAuto() == GainAuto_Off)
         {
-            config.gain = Config::Parameter_Manual<float>(camera.Gain());
+            config.params.gain = Parameter_Manual<float>(camera.Gain());
         }
         else
         {
-            config.gain = Config::Parameter_Auto{};
+            config.params.gain = Parameter_Auto{};
         }
 
         cameraConfigs.push_back(config);
@@ -180,10 +180,10 @@ void BaslerCamera::initCamera()
                 _camera.SensorWidth(),
                 _camera.SensorHeight());
 
-        _camera.OffsetX = _config.offset_x;
-        _camera.OffsetY = _config.offset_y;
-        _camera.Width   = _config.width;
-        _camera.Height  = _config.height;
+        _camera.OffsetX = _config.params.offset_x;
+        _camera.OffsetY = _config.params.offset_y;
+        _camera.Width   = _config.params.width;
+        _camera.Height  = _config.params.height;
 
         logInfo("{}: Camera region of interest: ({},{}),{}x{}",
                 _imageStream.id,
@@ -192,16 +192,18 @@ void BaslerCamera::initCamera()
                 _camera.Width(),
                 _camera.Height());
 
-        if (!(_camera.OffsetX() == _config.offset_x && _camera.OffsetY() == _config.offset_y &&
-              _camera.Width() == _config.width && _camera.Height() == _config.height))
+        if (!(_camera.OffsetX() == _config.params.offset_x &&
+              _camera.OffsetY() == _config.params.offset_y &&
+              _camera.Width() == _config.params.width &&
+              _camera.Height() == _config.params.height))
         {
             throw std::runtime_error(
                 fmt::format("{}: Could not set camera region of intereset to ({},{}),{}x{}",
                             _imageStream.id,
-                            _config.offset_x,
-                            _config.offset_y,
-                            _config.width,
-                            _config.height));
+                            _config.params.offset_x,
+                            _config.params.offset_y,
+                            _config.params.width,
+                            _config.params.height));
         }
 
         std::visit(
@@ -224,7 +226,7 @@ void BaslerCamera::initCamera()
 
                 using Trigger = std::decay_t<decltype(trigger)>;
 
-                if constexpr (std::is_same_v<Trigger, Config::HardwareTrigger>)
+                if constexpr (std::is_same_v<Trigger, HardwareTrigger>)
                 {
                     auto triggerSource = mapTriggerSource(trigger.source);
                     if (triggerSource)
@@ -240,7 +242,7 @@ void BaslerCamera::initCamera()
                         throw std::runtime_error("Invalid camera hardware trigger source");
                     }
                 }
-                else if constexpr (std::is_same_v<Trigger, Config::SoftwareTrigger>)
+                else if constexpr (std::is_same_v<Trigger, SoftwareTrigger>)
                 {
                     _camera.TriggerSelector = TriggerSelector_FrameStart;
                     _camera.TriggerMode     = TriggerMode_Off;
@@ -253,31 +255,30 @@ void BaslerCamera::initCamera()
                     static_assert(false_type<Trigger>::value);
                 }
             },
-            _config.trigger);
+            _config.params.trigger);
 
-        if (_config.blacklevel)
+        if (_config.params.blacklevel)
         {
             std::visit(
                 [this](auto&& value) {
                     using T = std::decay_t<decltype(value)>;
 
-                    if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
+                    if constexpr (std::is_same_v<T, Parameter_Auto>)
                         logWarning("{}: Automatic black level not supported on Basler cameras",
                                    _imageStream.id);
-                    else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
+                    else if constexpr (std::is_same_v<T, Parameter_Manual<float>>)
                         _camera.BlackLevel = value;
                     else
                         static_assert(false_type<T>::value);
                 },
-                *_config.blacklevel);
+                *_config.params.blacklevel);
         }
 
-        if (_config.exposure && _config.gain)
+        if (_config.params.exposure && _config.params.gain)
         {
-            const auto autoExposure = std::holds_alternative<Config::Parameter_Auto>(
-                *_config.exposure);
-            const auto autoGain = std::holds_alternative<Config::Parameter_Auto>(
-                *_config.exposure);
+            const auto autoExposure = std::holds_alternative<Parameter_Auto>(
+                *_config.params.exposure);
+            const auto autoGain = std::holds_alternative<Parameter_Auto>(*_config.params.exposure);
 
             if (autoExposure && autoGain)
             {
@@ -289,9 +290,8 @@ void BaslerCamera::initCamera()
                 _camera.ExposureAuto = ExposureAuto_Off;
                 _camera.GainAuto     = GainAuto_Off;
 
-                _camera.ExposureTime = std::get<Config::Parameter_Manual<float>>(
-                    *_config.exposure);
-                _camera.Gain = std::get<Config::Parameter_Manual<float>>(*_config.gain);
+                _camera.ExposureTime = std::get<Parameter_Manual<float>>(*_config.params.exposure);
+                _camera.Gain         = std::get<Parameter_Manual<float>>(*_config.params.gain);
             }
             else
             {
@@ -301,19 +301,19 @@ void BaslerCamera::initCamera()
                                 _imageStream.id));
             }
         }
-        else if (_config.exposure)
+        else if (_config.params.exposure)
         {
             _camera.ExposureAuto = ExposureAuto_Off;
             _camera.GainAuto     = GainAuto_Off;
 
-            _camera.ExposureTime = std::get<Config::Parameter_Manual<float>>(*_config.exposure);
+            _camera.ExposureTime = std::get<Parameter_Manual<float>>(*_config.params.exposure);
         }
-        else if (_config.gain)
+        else if (_config.params.gain)
         {
             _camera.ExposureAuto = ExposureAuto_Off;
             _camera.GainAuto     = GainAuto_Off;
 
-            _camera.Gain = std::get<Config::Parameter_Manual<float>>(*_config.gain);
+            _camera.Gain = std::get<Parameter_Manual<float>>(*_config.params.gain);
         }
     }
     catch (GenericException e)
@@ -345,8 +345,8 @@ void BaslerCamera::run()
     using namespace Pylon;
     using namespace Basler_UsbCameraParams;
 
-    const unsigned int vwidth  = static_cast<unsigned int>(_config.width);
-    const unsigned int vheight = static_cast<unsigned int>(_config.height);
+    const unsigned int vwidth  = static_cast<unsigned int>(_config.params.width);
+    const unsigned int vheight = static_cast<unsigned int>(_config.params.height);
 
     std::uint64_t lastImageNumber = 0;
 
@@ -366,14 +366,14 @@ void BaslerCamera::run()
             {
                 const auto begin = std::chrono::steady_clock::now();
 
-                if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
+                if (std::holds_alternative<HardwareTrigger>(_config.params.trigger))
                 {
                     // Watchdog demands heartbeats at an interval of at most 60 seconds
                     _camera.RetrieveResult(30 * 1000, _grabbed, TimeoutHandling_Return);
                     if (!_grabbed)
                         continue;
                 }
-                else if (std::holds_alternative<Config::SoftwareTrigger>(_config.trigger))
+                else if (std::holds_alternative<SoftwareTrigger>(_config.params.trigger))
                 {
                     _camera.RetrieveResult(1000, _grabbed, TimeoutHandling_Return);
                     if (!_grabbed)
@@ -395,7 +395,7 @@ void BaslerCamera::run()
                 img_height = _grabbed->GetHeight();
                 p_image    = static_cast<std::uint8_t*>(_grabbed->GetBuffer());
 
-                if (!(img_width == _config.width && img_height == _config.height))
+                if (!(img_width == _config.params.width && img_height == _config.params.height))
                 {
                     throw std::logic_error(
                         fmt::format("{}: Camera captured image of incorrect size: {}x{}",
@@ -469,8 +469,8 @@ void BaslerCamera::run()
             throw std::runtime_error(fmt::format("{}: Camera stopped capturing", _imageStream.id));
         }
 
-        auto buf = GrayscaleImage(_config.width, _config.height, currCameraTime);
-        memcpy(&buf.data[0], p_image, _config.width * _config.height);
+        auto buf = GrayscaleImage(_config.params.width, _config.params.height, currCameraTime);
+        memcpy(&buf.data[0], p_image, _config.params.width * _config.params.height);
 
         _imageStream.push(buf);
         emit imageCaptured(buf);

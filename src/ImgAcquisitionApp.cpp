@@ -70,7 +70,7 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
     for (const auto& cfg : settings.imageStreams())
     {
         auto imageStream = ImageStream{cfg.id,
-                                       {cfg.camera.width, cfg.camera.height},
+                                       {cfg.camera.params.width, cfg.camera.params.height},
                                        cfg.framesPerSecond,
                                        cfg.framesPerFile,
                                        cfg.encoder.options};

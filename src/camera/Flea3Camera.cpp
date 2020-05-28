@@ -29,8 +29,8 @@ void Flea3Camera::initCamera()
     fmt7ImageSettings.mode        = fmt7Mode;
     fmt7ImageSettings.offsetX     = 0;
     fmt7ImageSettings.offsetY     = 0;
-    fmt7ImageSettings.width       = _config.width;
-    fmt7ImageSettings.height      = _config.height;
+    fmt7ImageSettings.width       = _config.params.width;
+    fmt7ImageSettings.height      = _config.params.height;
     fmt7ImageSettings.pixelFormat = fmt7PixFmt;
 
     FlyCapture2::Format7PacketInfo fmt7PacketInfo;
@@ -133,13 +133,13 @@ void Flea3Camera::initCamera()
 
     /////////////////// ALL THE PROCESS WITH FC2Config  ////////////////////////////////
 
-    if (_config.buffer_size)
+    if (_config.params.buffer_size)
     {
         // Grab the current configuration from the camera in ss_BufferFrame
         enforce(_Camera.GetConfiguration(&BufferFrame));
 
         // Modify the maximum number of frames to be buffered and send it back to the camera
-        BufferFrame.numBuffers = *_config.buffer_size;
+        BufferFrame.numBuffers = *_config.params.buffer_size;
         BufferFrame.grabMode   = FlyCapture2::BUFFER_FRAMES;
 
         enforce(_Camera.SetConfiguration(&BufferFrame));
@@ -181,7 +181,7 @@ void Flea3Camera::initCamera()
 
     //-------------------- BLACKLEVEL STARTS        -----------------------------------
 
-    if (_config.blacklevel)
+    if (_config.params.blacklevel)
     {
         enforce(_Camera.GetProperty(&blacklevel));
 
@@ -190,9 +190,9 @@ void Flea3Camera::initCamera()
             [&blacklevel](auto&& value) {
                 using T = std::decay_t<decltype(value)>;
 
-                if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
+                if constexpr (std::is_same_v<T, Parameter_Auto>)
                     blacklevel.autoManualMode = true;
-                else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
+                else if constexpr (std::is_same_v<T, Parameter_Manual<float>>)
                 {
                     blacklevel.autoManualMode = false;
                     blacklevel.absValue       = value;
@@ -200,7 +200,7 @@ void Flea3Camera::initCamera()
                 else
                     static_assert(false_type<T>::value);
             },
-            *_config.blacklevel);
+            *_config.params.blacklevel);
 
         enforce(_Camera.SetProperty(&blacklevel));
     }
@@ -215,7 +215,7 @@ void Flea3Camera::initCamera()
     //-------------------- BLACKLEVEL ENDS          -----------------------------------
 
     //-------------------- EXPOSURE STARTS          -----------------------------------
-    if (_config.exposure)
+    if (_config.params.exposure)
     {
         enforce(_Camera.GetProperty(&exposure));
 
@@ -224,9 +224,9 @@ void Flea3Camera::initCamera()
             [&exposure](auto&& value) {
                 using T = std::decay_t<decltype(value)>;
 
-                if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
+                if constexpr (std::is_same_v<T, Parameter_Auto>)
                     exposure.autoManualMode = true;
-                else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
+                else if constexpr (std::is_same_v<T, Parameter_Manual<float>>)
                 {
                     exposure.autoManualMode = false;
                     exposure.absValue       = value;
@@ -234,7 +234,7 @@ void Flea3Camera::initCamera()
                 else
                     static_assert(false_type<T>::value);
             },
-            *_config.exposure);
+            *_config.params.exposure);
 
         enforce(_Camera.SetProperty(&exposure));
     }
@@ -248,7 +248,7 @@ void Flea3Camera::initCamera()
     //-------------------- EXPOSURE ENDS -----------------------------------
 
     //-------------------- GAIN STARTS              -----------------------------------
-    if (_config.gain)
+    if (_config.params.gain)
     {
         enforce(_Camera.GetProperty(&gain));
 
@@ -257,9 +257,9 @@ void Flea3Camera::initCamera()
             [&gain](auto&& value) {
                 using T = std::decay_t<decltype(value)>;
 
-                if constexpr (std::is_same_v<T, Config::Parameter_Auto>)
+                if constexpr (std::is_same_v<T, Parameter_Auto>)
                     gain.autoManualMode = true;
-                else if constexpr (std::is_same_v<T, Config::Parameter_Manual<float>>)
+                else if constexpr (std::is_same_v<T, Parameter_Manual<float>>)
                 {
                     gain.autoManualMode = false;
                     gain.absValue       = value;
@@ -267,7 +267,7 @@ void Flea3Camera::initCamera()
                 else
                     static_assert(false_type<T>::value);
             },
-            *_config.gain);
+            *_config.params.gain);
 
         enforce(_Camera.SetProperty(&gain));
     }
@@ -281,7 +281,7 @@ void Flea3Camera::initCamera()
 
     //-------------------- TRIGGER MODE STARTS      -----------------------------------
 
-    if (std::holds_alternative<Config::HardwareTrigger>(_config.trigger))
+    if (std::holds_alternative<HardwareTrigger>(_config.params.trigger))
     {
         // Get current trigger settings
         FlyCapture2::TriggerMode triggerMode;
@@ -293,7 +293,7 @@ void Flea3Camera::initCamera()
         triggerMode.parameter = 0;
 
         // Triggering the camera externally using source 0.
-        triggerMode.source = std::get<Config::HardwareTrigger>(_config.trigger).source;
+        triggerMode.source = std::get<HardwareTrigger>(_config.params.trigger).source;
 
         enforce(_Camera.SetTriggerMode(&triggerMode));
     }
@@ -302,14 +302,14 @@ void Flea3Camera::initCamera()
 
     //-------------------- FRAME RATE STARTS        -----------------------------------
 
-    if (std::holds_alternative<Config::SoftwareTrigger>(_config.trigger))
+    if (std::holds_alternative<SoftwareTrigger>(_config.params.trigger))
     {
         enforce(_Camera.GetProperty(&frmRate));
 
         frmRate.absControl     = true;
         frmRate.onOff          = true;
         frmRate.autoManualMode = false;
-        frmRate.absValue = std::get<Config::SoftwareTrigger>(_config.trigger).framesPerSecond;
+        frmRate.absValue       = std::get<SoftwareTrigger>(_config.params.trigger).framesPerSecond;
 
         enforce(_Camera.SetProperty(&frmRate));
 
@@ -336,8 +336,8 @@ void Flea3Camera::run()
 {
     using namespace std::chrono_literals;
 
-    int vwidth  = _config.width;
-    int vheight = _config.height;
+    int vwidth  = _config.params.width;
+    int vheight = _config.params.height;
 
     // The first frame usually contains weird metadata. So we grab it and discard it.
     {
