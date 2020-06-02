@@ -62,12 +62,12 @@ ImgAcquisitionApp::ImgAcquisitionApp(int& argc, char** argv)
 
     qRegisterMetaType<GrayscaleImage>("GrayscaleImage");
 
-    for (auto& [id, name] : settings.videoEncoders())
+    for (auto& [id, name] : settings.encoders())
     {
         _imageStreamsWriters.emplace(id, name);
     }
 
-    for (const auto& cfg : settings.imageStreams())
+    for (const auto& cfg : settings.streams())
     {
         auto imageStream = ImageStream{cfg.id,
                                        {cfg.camera.params.width, cfg.camera.params.height},

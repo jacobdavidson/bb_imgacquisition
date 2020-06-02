@@ -49,17 +49,17 @@ boost::property_tree::ptree detectSettings()
     tree.put("tmp_dir", "data/tmp");
     tree.put("out_dir", "data/out");
 
-    auto& videoEncoders = tree.put_child("encoders", {});
-    videoEncoders.put("h265_sw_0", "libx265");
+    auto& encoders = tree.put_child("encoders", {});
+    encoders.put("h265_sw_0", "libx265");
 
-    auto& imageStreams = tree.put_child("streams", {});
+    auto& streams = tree.put_child("streams", {});
 
     std::size_t camIndex = 0;
 
-    auto addImageStreamForCameraConfig = [&camIndex, &imageStreams](Camera::Config config) {
-        auto& imageStreamTree = imageStreams.put_child(fmt::format("cam-{}", camIndex++), {});
+    auto addImageStreamForCameraConfig = [&camIndex, &streams](Camera::Config config) {
+        auto& streamTree = streams.put_child(fmt::format("cam-{}", camIndex++), {});
 
-        auto& cameraTree = imageStreamTree.put_child("camera", {});
+        auto& cameraTree = streamTree.put_child("camera", {});
         cameraTree.put("backend", config.backend);
         cameraTree.put("serial", config.serial);
 
@@ -145,20 +145,20 @@ boost::property_tree::ptree detectSettings()
 
                 if constexpr (std::is_same_v<T, Camera::HardwareTrigger>)
                 {
-                    imageStreamTree.put("frames_per_second", "FRAMES_PER_SECOND");
+                    streamTree.put("frames_per_second", "FRAMES_PER_SECOND");
                 }
                 else if constexpr (std::is_same_v<T, Camera::SoftwareTrigger>)
                 {
-                    imageStreamTree.put("frames_per_second", value.framesPerSecond);
+                    streamTree.put("frames_per_second", value.framesPerSecond);
                 }
                 else
                     static_assert(false_type<T>::value);
             },
             config.params.trigger);
 
-        imageStreamTree.put("frames_per_file", 500);
+        streamTree.put("frames_per_file", 500);
 
-        auto& encoderTree = imageStreamTree.put_child("encoder", {});
+        auto& encoderTree = streamTree.put_child("encoder", {});
 
         encoderTree.put("id", "h265_sw_0");
 
@@ -210,13 +210,13 @@ Settings::Settings()
     auto tree = boost::property_tree::ptree{};
     boost::property_tree::read_json(configFile, tree);
 
-    for (const auto& [imageStreamId, imageStreamTree] : tree.get_child("streams"))
+    for (const auto& [streamId, streamTree] : tree.get_child("streams"))
     {
-        ImageStream stream;
+        Stream stream;
 
-        stream.id = imageStreamId;
+        stream.id = streamId;
 
-        const auto& cameraTree = imageStreamTree.get_child("camera");
+        const auto& cameraTree = streamTree.get_child("camera");
 
         stream.camera.backend = cameraTree.get<std::string>("backend");
         stream.camera.serial  = cameraTree.get<std::string>("serial");
@@ -256,10 +256,10 @@ Settings::Settings()
         stream.camera.params.throughput_limit = cameraParamsTree.get_optional<int>(
             "throughput_limit");
 
-        stream.framesPerSecond = imageStreamTree.get<float>("frames_per_second");
-        stream.framesPerFile   = imageStreamTree.get<std::size_t>("frames_per_file");
+        stream.framesPerSecond = streamTree.get<float>("frames_per_second");
+        stream.framesPerFile   = streamTree.get<std::size_t>("frames_per_file");
 
-        const auto& encoderTree = imageStreamTree.get_child("encoder");
+        const auto& encoderTree = streamTree.get_child("encoder");
         stream.encoder.id       = encoderTree.get<std::string>("id");
 
         for (const auto& [key, value] : encoderTree.get_child("options"))
@@ -267,26 +267,26 @@ Settings::Settings()
             stream.encoder.options.emplace(key, value.get_value<std::string>());
         }
 
-        _imageStreams.push_back(stream);
+        _streams.push_back(stream);
     }
 
     for (auto& [id, name] : tree.get_child("encoders"))
     {
-        _videoEncoders.emplace(id, name.get_value<std::string>());
+        _encoders.emplace(id, name.get_value<std::string>());
     }
 
     _temporaryDirectory = tree.get<std::string>("tmp_dir");
     _outputDirectory    = tree.get<std::string>("out_dir");
 }
 
-const std::vector<Settings::ImageStream>& Settings::imageStreams() const
+const std::vector<Settings::Stream>& Settings::streams() const
 {
-    return _imageStreams;
+    return _streams;
 }
 
-const std::map<std::string, std::string>& Settings::videoEncoders() const
+const std::map<std::string, std::string>& Settings::encoders() const
 {
-    return _videoEncoders;
+    return _encoders;
 }
 
 const std::string Settings::temporaryDirectory() const

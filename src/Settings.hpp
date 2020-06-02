@@ -21,7 +21,13 @@ private:
 public:
     static const Settings& instance();
 
-    struct ImageStream final
+    struct Encoder final
+    {
+        std::string                                  id;
+        std::unordered_map<std::string, std::string> options;
+    };
+
+    struct Stream final
     {
         std::string id;
 
@@ -30,26 +36,20 @@ public:
         float       framesPerSecond;
         std::size_t framesPerFile;
 
-        struct Encoder final
-        {
-            std::string                                  id;
-            std::unordered_map<std::string, std::string> options;
-        };
-
         Encoder encoder;
     };
 
-    const std::vector<ImageStream>&           imageStreams() const;
-    const std::map<std::string, std::string>& videoEncoders() const;
+    const std::vector<Stream>&                streams() const;
+    const std::map<std::string, std::string>& encoders() const;
 
     const std::string temporaryDirectory() const;
     const std::string outputDirectory() const;
 
 private:
-    std::vector<ImageStream> _imageStreams;
-
-    std::map<std::string, std::string> _videoEncoders;
-
     std::string _temporaryDirectory;
     std::string _outputDirectory;
+
+    std::map<std::string, std::string> _encoders;
+
+    std::vector<Stream> _streams;
 };
