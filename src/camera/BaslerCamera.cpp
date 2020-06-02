@@ -366,106 +366,95 @@ void BaslerCamera::run()
     {
         if (_camera.IsGrabbing())
         {
-            try
+            const auto begin = std::chrono::steady_clock::now();
+
+            if (std::holds_alternative<HardwareTrigger>(_config.params.trigger))
             {
-                const auto begin = std::chrono::steady_clock::now();
-
-                if (std::holds_alternative<HardwareTrigger>(_config.params.trigger))
+                // Watchdog demands heartbeats at an interval of at most 60 seconds
+                _camera.RetrieveResult(30 * 1000, _grabbed, TimeoutHandling_Return);
+                if (!_grabbed)
+                    continue;
+            }
+            else if (std::holds_alternative<SoftwareTrigger>(_config.params.trigger))
+            {
+                _camera.RetrieveResult(1000, _grabbed, TimeoutHandling_Return);
+                if (!_grabbed)
                 {
-                    // Watchdog demands heartbeats at an interval of at most 60 seconds
-                    _camera.RetrieveResult(30 * 1000, _grabbed, TimeoutHandling_Return);
-                    if (!_grabbed)
-                        continue;
-                }
-                else if (std::holds_alternative<SoftwareTrigger>(_config.params.trigger))
-                {
-                    _camera.RetrieveResult(1000, _grabbed, TimeoutHandling_Return);
-                    if (!_grabbed)
-                    {
-                        logCritical("{}: Failed to grab camera image: {}",
-                                    _imageStream.id,
-                                    _grabbed->GetErrorDescription());
-                        continue;
-                    }
-                }
-                else
-                {
-                    throw std::logic_error("Not implemented");
-                }
-
-                const auto end = std::chrono::steady_clock::now();
-
-                img_width  = _grabbed->GetWidth();
-                img_height = _grabbed->GetHeight();
-                p_image    = static_cast<std::uint8_t*>(_grabbed->GetBuffer());
-
-                if (!(img_width == _config.params.width && img_height == _config.params.height))
-                {
-                    throw std::runtime_error(
-                        fmt::format("{}: Camera captured image of incorrect size: {}x{}",
-                                    _imageStream.id,
-                                    img_width,
-                                    img_height));
-                }
-
-                const auto currImageNumber = _grabbed->GetImageNumber();
-
-                const auto currWallClockTime = std::chrono::system_clock::now();
-                // NOTE: Camera time starts when the camera is powered on.
-                //       It thus resets whenever power is turned off and on again.
-                const auto currCameraTimestamp = _nsPerTick * _grabbed->GetTimeStamp();
-
-                // Image sequence sanity check.
-                if (lastImageNumber != 0 && currImageNumber != lastImageNumber + 1)
-                {
-                    logWarning(
-                        "{}: Camera lost frame: This frame: #{} last frame: #{} timestamp: {}",
-                        _imageStream.id,
-                        currImageNumber,
-                        lastImageNumber,
-                        currWallClockTime);
-                }
-                lastImageNumber = currImageNumber;
-
-                if (lastCameraTimestamp == 0ns || lastCameraTimestamp > currCameraTimestamp)
-                {
-                    if (lastCameraTimestamp != 0ns && currCameraTime > currWallClockTime &&
-                        loopCount > 0)
-                    {
-                        logWarning(
-                            "{}: Camera clock faster than wall time. Last camera time: {:e.6} "
-                            "wall "
-                            "clock: {:e.6}",
-                            _imageStream.id,
-                            currCameraTime,
-                            currWallClockTime);
-                    }
-                    currCameraTime = currWallClockTime;
-                }
-                else
-                {
-                    const auto elapsed = currCameraTimestamp - lastCameraTimestamp;
-                    assert(elapsed >= 0ns);
-                    currCameraTime += elapsed;
-                }
-                lastCameraTimestamp = currCameraTimestamp;
-
-                // Check if processing a frame took longer than X seconds. If
-                // so, log the event.
-                // TODO: Why this number: 2 * (1000000 / 6)
-                const std::int64_t duration =
-                    std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-                if (duration > 2 * (1000000 / 6))
-                {
-                    logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
+                    logCritical("{}: Failed to grab camera image: {}",
+                                _imageStream.id,
+                                _grabbed->GetErrorDescription());
+                    continue;
                 }
             }
-            catch (GenericException e) // could not retrieve grab result
+            else
             {
-                logWarning("{}: Camera error: {}", _imageStream.id, e.what());
+                throw std::logic_error("Not implemented");
+            }
 
-                // TODO: Terminate application if the problem persists and we get this error
-                // repeatedly
+            const auto end = std::chrono::steady_clock::now();
+
+            img_width  = _grabbed->GetWidth();
+            img_height = _grabbed->GetHeight();
+            p_image    = static_cast<std::uint8_t*>(_grabbed->GetBuffer());
+
+            if (!(img_width == _config.params.width && img_height == _config.params.height))
+            {
+                throw std::runtime_error(
+                    fmt::format("{}: Camera captured image of incorrect size: {}x{}",
+                                _imageStream.id,
+                                img_width,
+                                img_height));
+            }
+
+            const auto currImageNumber = _grabbed->GetImageNumber();
+
+            const auto currWallClockTime = std::chrono::system_clock::now();
+            // NOTE: Camera time starts when the camera is powered on.
+            //       It thus resets whenever power is turned off and on again.
+            const auto currCameraTimestamp = _nsPerTick * _grabbed->GetTimeStamp();
+
+            // Image sequence sanity check.
+            if (lastImageNumber != 0 && currImageNumber != lastImageNumber + 1)
+            {
+                logWarning("{}: Camera lost frame: This frame: #{} last frame: #{} timestamp: {}",
+                           _imageStream.id,
+                           currImageNumber,
+                           lastImageNumber,
+                           currWallClockTime);
+            }
+            lastImageNumber = currImageNumber;
+
+            if (lastCameraTimestamp == 0ns || lastCameraTimestamp > currCameraTimestamp)
+            {
+                if (lastCameraTimestamp != 0ns && currCameraTime > currWallClockTime &&
+                    loopCount > 0)
+                {
+                    logWarning(
+                        "{}: Camera clock faster than wall time. Last camera time: {:e.6} "
+                        "wall "
+                        "clock: {:e.6}",
+                        _imageStream.id,
+                        currCameraTime,
+                        currWallClockTime);
+                }
+                currCameraTime = currWallClockTime;
+            }
+            else
+            {
+                const auto elapsed = currCameraTimestamp - lastCameraTimestamp;
+                assert(elapsed >= 0ns);
+                currCameraTime += elapsed;
+            }
+            lastCameraTimestamp = currCameraTimestamp;
+
+            // Check if processing a frame took longer than X seconds. If
+            // so, log the event.
+            // TODO: Why this number: 2 * (1000000 / 6)
+            const std::int64_t duration =
+                std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+            if (duration > 2 * (1000000 / 6))
+            {
+                logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
             }
         }
         else
