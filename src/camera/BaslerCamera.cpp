@@ -5,6 +5,8 @@
 #include <chrono>
 #include <optional>
 
+#include <opencv2/core/mat.hpp>
+
 #include "util/format.hpp"
 #include "util/log.hpp"
 #include "util/type_traits.hpp"
@@ -350,9 +352,6 @@ void BaslerCamera::run()
     using namespace Pylon;
     using namespace Basler_UsbCameraParams;
 
-    const unsigned int vwidth  = static_cast<unsigned int>(_config.params.width);
-    const unsigned int vheight = static_cast<unsigned int>(_config.params.height);
-
     std::uint64_t lastImageNumber = 0;
 
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
@@ -402,7 +401,7 @@ void BaslerCamera::run()
 
                 if (!(img_width == _config.params.width && img_height == _config.params.height))
                 {
-                    throw std::logic_error(
+                    throw std::runtime_error(
                         fmt::format("{}: Camera captured image of incorrect size: {}x{}",
                                     _imageStream.id,
                                     img_width,
@@ -474,11 +473,20 @@ void BaslerCamera::run()
             throw std::runtime_error(fmt::format("{}: Camera stopped capturing", _imageStream.id));
         }
 
-        auto buf = GrayscaleImage(_config.params.width, _config.params.height, currCameraTime);
-        memcpy(&buf.data[0], p_image, _config.params.width * _config.params.height);
+        auto cvImage = cv::Mat{cv::Size{static_cast<int>(img_width), static_cast<int>(img_height)},
+                               CV_8UC1,
+                               p_image};
+        if (!(img_width == _config.width && img_height == _config.height))
+        {
+            cvImage = cvImage(
+                cv::Rect{_config.offset_x, _config.offset_y, _config.width, _config.height});
+        }
 
-        _imageStream.push(buf);
-        emit imageCaptured(buf);
+        auto capturedImage = GrayscaleImage(cvImage.cols, cvImage.rows, currCameraTime);
+        std::memcpy(&capturedImage.data[0], cvImage.data, cvImage.cols * cvImage.rows);
+
+        _imageStream.push(capturedImage);
+        emit imageCaptured(capturedImage);
     }
 
     return;

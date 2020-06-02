@@ -5,9 +5,7 @@
 #include <array>
 #include <chrono>
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/core/mat.hpp>
 
 #include "util/format.hpp"
 #include "util/log.hpp"
@@ -139,13 +137,40 @@ void XimeaCamera::initCamera()
 
     // Select configured properties.
 
-    // NOTE: The camera used in beesbook setup did not support setting a centered ROI with the
-    // desired resolution enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_X, _config.params.offset_x),
-    // "xiSetParamInt XI_PRM_OFFSET_X"); enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_Y,
-    // _config.params.offset_y), "xiSetParamInt XI_PRM_OFFSET_Y"); enforce(xiSetParamInt(_Camera,
-    // XI_PRM_WIDTH, _config.params.width), "xiSetParamInt XI_PRM_WIDTH");
-    // enforce(xiSetParamInt(_Camera, XI_PRM_HEIGHT, _config.params.height), "xiSetParamInt
-    // XI_PRM_HEIGHT");
+    enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_X, _config.params.offset_x),
+            "xiSetParamInt XI_PRM_OFFSET_X");
+    enforce(xiSetParamInt(_Camera, XI_PRM_OFFSET_Y, _config.params.offset_y),
+            "xiSetParamInt XI_PRM_OFFSET_Y");
+    enforce(xiSetParamInt(_Camera, XI_PRM_WIDTH, _config.params.width),
+            "xiSetParamInt XI_PRM_WIDTH");
+    enforce(xiSetParamInt(_Camera, XI_PRM_HEIGHT, _config.params.height),
+            "xiSetParamInt XI_PRM_HEIGHT");
+
+    {
+        int offsetX;
+        int offsetY;
+        int width;
+        int height;
+
+        enforce(xiGetParamInt(_Camera, XI_PRM_OFFSET_X, &offsetX),
+                "xiGetParamInt XI_PRM_OFFSET_X");
+        enforce(xiGetParamInt(_Camera, XI_PRM_OFFSET_Y, &offsetY),
+                "xiGetParamInt XI_PRM_OFFSET_Y");
+        enforce(xiGetParamInt(_Camera, XI_PRM_WIDTH, &width), "xiGetParamInt XI_PRM_WIDTH");
+        enforce(xiGetParamInt(_Camera, XI_PRM_HEIGHT, &height), "xiGetParamInt XI_PRM_HEIGHT");
+
+        if (!(offsetX == _config.params.offset_x && offsetY == _config.params.offset_y &&
+              width == _config.params.width && height == _config.params.height))
+        {
+            throw std::runtime_error(
+                fmt::format("{}: Could not set camera region of intereset to ({},{}),{}x{}",
+                            _imageStream.id,
+                            _config.params.offset_x,
+                            _config.params.offset_y,
+                            _config.params.width,
+                            _config.params.height));
+        }
+    }
 
     enforce(xiSetParamInt(_Camera, XI_PRM_TRG_SELECTOR, XI_TRG_SEL_FRAME_START),
             "xiSetParamInt XI_PRM_TRG_SELECTOR");
@@ -279,9 +304,6 @@ void XimeaCamera::run()
 {
     using namespace std::chrono_literals;
 
-    const unsigned int vwidth  = static_cast<unsigned int>(_config.params.width);
-    const unsigned int vheight = static_cast<unsigned int>(_config.params.height);
-
     std::uint64_t lastImageSequenceNumber = 0;
 
     // The camera timestamp will be used to get a more accurate idea of when the image was taken.
@@ -374,31 +396,30 @@ void XimeaCamera::run()
             logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
 
-        // NOTE: The camera used in beesbook setup did not support setting a centered camera ROI
-        // with the desired resolution,
-        //       so we get the full image from it and crop manually here to the desired ROI.
-        cv::Mat wholeImageMatrix(
-            cv::Size(static_cast<int>(image.width), static_cast<int>(image.height)),
-            CV_8UC1,
-            image.bp,
-            cv::Mat::AUTO_STEP);
-        const unsigned int marginToBeCroppedX = (image.width > vwidth) ? image.width - vwidth : 0;
-        const unsigned int marginToBeCroppedY = (image.height > vheight) ? image.height - vheight
-                                                                         : 0;
-        if (marginToBeCroppedX > 0 || marginToBeCroppedY > 0)
+        if (!(image.width == _config.params.width && image.height == _config.params.height))
         {
-            const int cropLeft           = marginToBeCroppedX / 2;
-            const int cropTop            = marginToBeCroppedY / 2;
-            cv::Mat   croppedImageMatrix = wholeImageMatrix(
-                cv::Rect(cropLeft, cropTop, static_cast<int>(vwidth), static_cast<int>(vheight)));
-            croppedImageMatrix.copyTo(wholeImageMatrix);
+            throw std::runtime_error(
+                fmt::format("{}: Camera captured image of incorrect size: {}x{}",
+                            _imageStream.id,
+                            image.width,
+                            image.height));
         }
 
-        auto buf = GrayscaleImage(vwidth, vheight, currCameraTime);
-        memcpy(&buf.data[0], wholeImageMatrix.data, vwidth * vheight);
+        auto cvImage = cv::Mat{
+            cv::Size{static_cast<int>(image.width), static_cast<int>(image.height)},
+            CV_8UC1,
+            image.bp};
+        if (!(image.width == _config.width && image.height == _config.height))
+        {
+            cvImage = cvImage(
+                cv::Rect{_config.offset_x, _config.offset_y, _config.width, _config.height});
+        }
 
-        _imageStream.push(buf);
-        emit imageCaptured(buf);
+        auto capturedImage = GrayscaleImage(cvImage.cols, cvImage.rows, currCameraTime);
+        std::memcpy(&capturedImage.data[0], cvImage.data, cvImage.cols * cvImage.rows);
+
+        _imageStream.push(capturedImage);
+        emit imageCaptured(capturedImage);
     }
 
     enforce(xiStopAcquisition(_Camera), "xiStopAcquisition");
