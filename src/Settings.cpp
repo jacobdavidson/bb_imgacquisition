@@ -277,6 +277,16 @@ Settings::Settings()
             stream.encoder.options.emplace(key, value.get_value<std::string>());
         }
 
+        if (!(stream.camera.offset_x + stream.camera.width == stream.camera.params.width))
+        {
+            throw std::runtime_error(fmt::format("{}: Camera offset_x + Camera width != Camera parameter width", stream.id));
+        }
+
+        if (!(stream.camera.offset_y + stream.camera.height == stream.camera.params.height))
+        {
+            throw std::runtime_error(fmt::format("{}: Camera offset_y + Camera height != Camera parameter height", stream.id));
+        }
+
         _streams.push_back(stream);
     }
 
