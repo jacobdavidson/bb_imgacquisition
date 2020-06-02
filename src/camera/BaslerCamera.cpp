@@ -68,6 +68,11 @@ auto BaslerCamera::getAvailable() -> std::vector<Config>
             config.params.gain = Parameter_Auto{};
         }
 
+        config.offset_x = 0;
+        config.offset_y = 0;
+        config.width    = config.params.width;
+        config.height   = config.params.height;
+
         cameraConfigs.push_back(config);
     }
 

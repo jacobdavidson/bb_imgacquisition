@@ -60,6 +60,11 @@ public:
         std::string serial;
 
         Parameters params;
+
+        int offset_x;
+        int offset_y;
+        int width;
+        int height;
     };
 
 protected:

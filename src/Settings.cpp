@@ -139,6 +139,11 @@ boost::property_tree::ptree detectSettings()
                 *config.params.gain);
         }
 
+        cameraTree.put("offset_x", config.offset_x);
+        cameraTree.put("offset_y", config.offset_y);
+        cameraTree.put("width", config.width);
+        cameraTree.put("height", config.height);
+
         std::visit(
             [&](auto&& value) {
                 using T = std::decay_t<decltype(value)>;
@@ -255,6 +260,11 @@ Settings::Settings()
         stream.camera.params.buffer_size      = cameraParamsTree.get_optional<int>("buffer_size");
         stream.camera.params.throughput_limit = cameraParamsTree.get_optional<int>(
             "throughput_limit");
+
+        stream.camera.offset_x = cameraTree.get<int>("offset_x");
+        stream.camera.offset_y = cameraTree.get<int>("offset_y");
+        stream.camera.width    = cameraTree.get<int>("width");
+        stream.camera.height   = cameraTree.get<int>("height");
 
         stream.framesPerSecond = streamTree.get<float>("frames_per_second");
         stream.framesPerFile   = streamTree.get<std::size_t>("frames_per_file");
