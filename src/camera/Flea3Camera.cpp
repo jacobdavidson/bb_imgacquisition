@@ -361,9 +361,8 @@ void Flea3Camera::run()
         // Get the timestamp
         const auto currWallClockTime = std::chrono::system_clock::now();
 
-        // Check if processing a frame took longer than 0.4 seconds. If so, log the event.
-        if (const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(begin -
-                                                                                        end);
+        if (const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                                        begin);
             duration > 400ms)
         {
             logWarning("{}: Processing time too long: {}", _imageStream.id, duration);

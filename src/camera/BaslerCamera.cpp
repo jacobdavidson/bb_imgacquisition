@@ -446,12 +446,9 @@ void BaslerCamera::run()
         }
         lastCameraTimestamp = currCameraTimestamp;
 
-        // Check if processing a frame took longer than X seconds. If
-        // so, log the event.
-        // TODO: Why this number: 2 * (1000000 / 6)
-        const std::int64_t duration =
-            std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-        if (duration > 2 * (1000000 / 6))
+        if (const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                                        begin);
+            duration > 333333us)
         {
             logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
