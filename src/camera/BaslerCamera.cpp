@@ -361,11 +361,6 @@ void BaslerCamera::run()
 
     for (std::size_t loopCount = 0; !isInterruptionRequested(); loopCount += 1)
     {
-        if (!_camera.IsGrabbing())
-        {
-            throw std::runtime_error(fmt::format("{}: Camera stopped capturing", _imageStream.id));
-        }
-
         const auto begin = std::chrono::steady_clock::now();
 
         if (!_camera.RetrieveResult(2000, _grabbed, TimeoutHandling_Return))
