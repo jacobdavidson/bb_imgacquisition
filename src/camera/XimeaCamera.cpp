@@ -5,8 +5,6 @@
 #include <array>
 #include <chrono>
 
-#include <opencv2/core/mat.hpp>
-
 #include "util/format.hpp"
 #include "util/log.hpp"
 #include "GrayscaleImage.hpp"
@@ -394,24 +392,9 @@ void XimeaCamera::run()
             logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
 
-        if (!(image.width == _config.params.width && image.height == _config.params.height))
-        {
-            throw std::runtime_error(
-                fmt::format("{}: Camera captured image of incorrect size: {}x{}",
-                            _imageStream.id,
-                            image.width,
-                            image.height));
-        }
-
-        auto cvImage = cv::Mat{
-            cv::Size{static_cast<int>(image.width), static_cast<int>(image.height)},
-            CV_8UC1,
-            image.bp};
-        if (!(image.width == _config.width && image.height == _config.height))
-        {
-            cvImage = cvImage(
-                cv::Rect{_config.offset_x, _config.offset_y, _config.width, _config.height});
-        }
+        auto cvImage = transform(static_cast<int>(image.width),
+                                 static_cast<int>(image.height),
+                                 image.bp);
 
         auto capturedImage = GrayscaleImage(cvImage.cols, cvImage.rows, currCameraTime);
         std::memcpy(&capturedImage.data[0], cvImage.data, cvImage.cols * cvImage.rows);

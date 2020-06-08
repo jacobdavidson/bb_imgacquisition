@@ -393,19 +393,6 @@ void BaslerCamera::run()
 
         const auto end = std::chrono::steady_clock::now();
 
-        const auto img_width  = _grabbed->GetWidth();
-        const auto img_height = _grabbed->GetHeight();
-        auto*      p_image    = static_cast<std::uint8_t*>(_grabbed->GetBuffer());
-
-        if (!(img_width == _config.params.width && img_height == _config.params.height))
-        {
-            throw std::runtime_error(
-                fmt::format("{}: Camera captured image of incorrect size: {}x{}",
-                            _imageStream.id,
-                            img_width,
-                            img_height));
-        }
-
         const auto currImageNumber = _grabbed->GetImageNumber();
 
         const auto currWallClockTime = std::chrono::system_clock::now();
@@ -453,14 +440,9 @@ void BaslerCamera::run()
             logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
 
-        auto cvImage = cv::Mat{cv::Size{static_cast<int>(img_width), static_cast<int>(img_height)},
-                               CV_8UC1,
-                               p_image};
-        if (!(img_width == _config.width && img_height == _config.height))
-        {
-            cvImage = cvImage(
-                cv::Rect{_config.offset_x, _config.offset_y, _config.width, _config.height});
-        }
+        auto cvImage = transform(static_cast<int>(_grabbed->GetWidth()),
+                                 static_cast<int>(_grabbed->GetHeight()),
+                                 _grabbed->GetBuffer());
 
         auto capturedImage = GrayscaleImage(cvImage.cols, cvImage.rows, currCameraTime);
         std::memcpy(&capturedImage.data[0], cvImage.data, cvImage.cols * cvImage.rows);

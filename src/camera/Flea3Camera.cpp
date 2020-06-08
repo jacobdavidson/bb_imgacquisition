@@ -4,8 +4,6 @@
 
 #include <chrono>
 
-#include <opencv2/core/mat.hpp>
-
 #include "util/format.hpp"
 #include "util/log.hpp"
 #include "util/type_traits.hpp"
@@ -368,26 +366,9 @@ void Flea3Camera::run()
             logWarning("{}: Processing time too long: {}", _imageStream.id, duration);
         }
 
-        const auto img_width  = cimg.GetCols();
-        const auto img_height = cimg.GetRows();
-
-        if (!(img_width == _config.params.width && img_height == _config.params.height))
-        {
-            throw std::runtime_error(
-                fmt::format("{}: Camera captured image of incorrect size: {}x{}",
-                            _imageStream.id,
-                            img_width,
-                            img_height));
-        }
-
-        auto cvImage = cv::Mat{cv::Size{static_cast<int>(img_width), static_cast<int>(img_height)},
-                               CV_8UC1,
-                               cimg.GetData()};
-        if (!(img_width == _config.width && img_height == _config.height))
-        {
-            cvImage = cvImage(
-                cv::Rect{_config.offset_x, _config.offset_y, _config.width, _config.height});
-        }
+        auto cvImage = transform(static_cast<int>(cimg.GetCols()),
+                                 static_cast<int>(cimg.GetRows()),
+                                 cimg.GetData());
 
         auto capturedImage = GrayscaleImage(cvImage.cols, cvImage.rows, currWallClockTime);
         std::memcpy(&capturedImage.data[0], cvImage.data, cvImage.cols * cvImage.rows);

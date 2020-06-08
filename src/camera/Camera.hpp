@@ -8,6 +8,8 @@
 
 #include <boost/optional.hpp>
 
+#include <opencv2/core/mat.hpp>
+
 #include <QThread>
 
 #include "ImageStream.hpp"
@@ -72,6 +74,8 @@ protected:
 
     Config      _config;
     ImageStream _imageStream;
+
+    cv::Mat transform(int width, int height, void* data);
 
 public:
     virtual ~Camera();
