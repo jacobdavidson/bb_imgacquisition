@@ -368,27 +368,11 @@ void BaslerCamera::run()
 
         const auto begin = std::chrono::steady_clock::now();
 
-        if (std::holds_alternative<HardwareTrigger>(_config.params.trigger))
+        if (!_camera.RetrieveResult(2000, _grabbed, TimeoutHandling_Return))
         {
-            // Watchdog demands heartbeats at an interval of at most 60 seconds
-            _camera.RetrieveResult(30 * 1000, _grabbed, TimeoutHandling_Return);
-            if (!_grabbed)
-                continue;
-        }
-        else if (std::holds_alternative<SoftwareTrigger>(_config.params.trigger))
-        {
-            _camera.RetrieveResult(1000, _grabbed, TimeoutHandling_Return);
-            if (!_grabbed)
-            {
-                logCritical("{}: Failed to grab camera image: {}",
-                            _imageStream.id,
-                            _grabbed->GetErrorDescription());
-                continue;
-            }
-        }
-        else
-        {
-            throw std::logic_error("Not implemented");
+            throw std::runtime_error(fmt::format("{}: Failed to grab camera image: {}",
+                                                 _imageStream.id,
+                                                 _grabbed->GetErrorDescription()));
         }
 
         const auto end = std::chrono::steady_clock::now();
