@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <optional>
 
 #include <boost/filesystem.hpp>
 
@@ -50,7 +51,7 @@ void ImageStreamsWriter::run()
         auto imageStream           = _imageStreams[maxSizeIndex];
         const auto [width, height] = imageStream.resolution;
 
-        const auto startTime = std::chrono::system_clock::now();
+        const auto startProcessingTime = std::chrono::system_clock::now();
 
         namespace fs = boost::filesystem;
 
@@ -60,7 +61,7 @@ void ImageStreamsWriter::run()
             fs::create_directories(tmpDir);
         }
 
-        const auto tmpVideoFilename = tmpDir / fmt::format("{}.mp4", startTime);
+        const auto tmpVideoFilename = tmpDir / fmt::format("{}.mp4", startProcessingTime);
 
         // FIXME: framesPerSecond is a float, should be properly converted to rational
         VideoFileWriter f(tmpVideoFilename.string(),
@@ -70,12 +71,16 @@ void ImageStreamsWriter::run()
                            {_encoderName, imageStream.encoderOptions}});
         logDebug("{}: New video file", tmpVideoFilename);
 
-        const auto tmpFrameTimestampsFilename = tmpDir / fmt::format("{}.txt", startTime);
+        const auto tmpFrameTimestampsFilename = tmpDir /
+                                                fmt::format("{}.txt", startProcessingTime);
 
         std::fstream frameTimestamps(tmpFrameTimestampsFilename.string(),
                                      std::ios::trunc | std::ios::out);
 
         const std::size_t debugInterval = 100;
+
+        auto startFrameTime = std::optional<std::chrono::system_clock::time_point>{};
+        auto endFrameTime   = std::optional<std::chrono::system_clock::time_point>{};
 
         bool        imageStreamClosedEarly = false;
         std::size_t frameIndex             = 0;
@@ -96,6 +101,12 @@ void ImageStreamsWriter::run()
                 logDebug("{}: Wrote video frame {}", tmpVideoFilename, frameIndex);
             }
 
+            if (!startFrameTime)
+            {
+                startFrameTime = img.timestamp;
+            }
+            endFrameTime = img.timestamp;
+
             if (frameTimestamps.is_open())
             {
                 frameTimestamps << fmt::format("{:e.6}\n", img.timestamp);
@@ -105,8 +116,6 @@ void ImageStreamsWriter::run()
 
         f.close();
         frameTimestamps.close();
-
-        const auto endTime = std::chrono::system_clock::now();
 
         if (!imageStreamClosedEarly)
         {
@@ -121,8 +130,9 @@ void ImageStreamsWriter::run()
                                         fs::others_exe);
                 }
 
-                const auto outVideoFilename = outDir /
-                                              fmt::format("{}--{}.mp4", startTime, endTime);
+                const auto outVideoFilename = outDir / fmt::format("{}--{}.mp4",
+                                                                   *startFrameTime,
+                                                                   *endFrameTime);
 
                 fs::rename(tmpVideoFilename, outVideoFilename);
                 fs::permissions(outVideoFilename,
@@ -130,8 +140,8 @@ void ImageStreamsWriter::run()
                                     fs::group_write | fs::others_read | fs::others_write);
 
                 const auto outFrameTimestampsFilename = outDir / fmt::format("{}--{}.txt",
-                                                                             startTime,
-                                                                             endTime);
+                                                                             *startFrameTime,
+                                                                             *endFrameTime);
 
                 fs::rename(tmpFrameTimestampsFilename, outFrameTimestampsFilename);
                 fs::permissions(outFrameTimestampsFilename,
