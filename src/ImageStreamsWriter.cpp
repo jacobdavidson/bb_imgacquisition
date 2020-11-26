@@ -109,7 +109,7 @@ void ImageStreamsWriter::run()
 
             if (frameTimestamps.is_open())
             {
-                frameTimestamps << fmt::format("{}_{:e.6}\n", imageStream.id, img.timestamp);
+                frameTimestamps << fmt::format("{}_{:.6}\n", imageStream.id, img.timestamp);
                 frameTimestamps.flush();
             }
         }
