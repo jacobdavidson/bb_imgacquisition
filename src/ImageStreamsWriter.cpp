@@ -130,7 +130,7 @@ void ImageStreamsWriter::run()
                                         fs::others_exe);
                 }
 
-                const auto outVideoFilename = outDir / fmt::format("{}_{}--{}.mp4",
+                const auto outVideoFilename = outDir / fmt::format("{}_{.6}--{.6}.mp4",
                                                                    imageStream.id,
                                                                    *startFrameTime,
                                                                    *endFrameTime);
@@ -140,7 +140,7 @@ void ImageStreamsWriter::run()
                                 fs::owner_read | fs::owner_write | fs::group_read |
                                     fs::group_write | fs::others_read | fs::others_write);
 
-                const auto outFrameTimestampsFilename = outDir / fmt::format("{}_{}--{}.txt",
+                const auto outFrameTimestampsFilename = outDir / fmt::format("{}_{.6}--{.6}.txt",
                                                                              imageStream.id,
                                                                              *startFrameTime,
                                                                              *endFrameTime);
