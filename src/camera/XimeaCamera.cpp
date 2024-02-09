@@ -100,19 +100,6 @@ void XimeaCamera::initCamera()
         }
     }
 
-    if (tryAllXimeaCamSettings)
-    {
-        float focusDistance = 0;
-        if (xiGetParamFloat(_Camera, XI_PRM_LENS_FOCUS_DISTANCE, &focusDistance) == XI_OK)
-        {
-            logInfo("{}: Camera focus distance at {:.5f} cm", _imageStream.id, focusDistance);
-        }
-        else
-        {
-            logInfo("{}: Camera focus distance unavailable", _imageStream.id);
-        }
-    }
-
     if (_config.params.throughput_limit)
     {
         // Set the bandwidth limit.
