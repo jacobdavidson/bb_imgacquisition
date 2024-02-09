@@ -72,7 +72,27 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	Boost::headers Boost::system Boost::filesystem Boost::program_options Boost::date_time Boost::disable_autolinking
 	FFmpeg::avformat FFmpeg::avcodec FFmpeg::avutil
 	${OpenCV_LIBRARIES}
+	dl # Added explicitly to ensure the linker finds libdl
+	z  # Added explicit linking
 )
+
+# Find pkg-config
+find_package(PkgConfig REQUIRED)
+
+# Use pkg-config to get the flags for compiling and linking against FFmpeg libraries
+pkg_check_modules(AVCODEC REQUIRED libavcodec)
+pkg_check_modules(AVFORMAT REQUIRED libavformat)
+pkg_check_modules(AVUTIL REQUIRED libavutil)
+pkg_check_modules(SWSCALE REQUIRED libswscale)
+
+# Include directories
+include_directories(${AVCODEC_INCLUDE_DIRS} ${AVFORMAT_INCLUDE_DIRS} ${AVUTIL_INCLUDE_DIRS} ${SWSCALE_INCLUDE_DIRS})
+
+# Link against FFmpeg libraries
+target_link_libraries(${PROJECT_NAME} PRIVATE ${AVCODEC_LIBRARIES} ${AVFORMAT_LIBRARIES} ${AVUTIL_LIBRARIES} ${SWSCALE_LIBRARIES})
+
+# For other libraries like x264, x265, mp3lame, opus, vorbis, explicitly link them as well
+target_link_libraries(${PROJECT_NAME} PRIVATE x264 x265 mp3lame opus vorbis)
 
 if(CAMERA_BACKENDS)
 	foreach(camera_backend ${CAMERA_BACKENDS})
