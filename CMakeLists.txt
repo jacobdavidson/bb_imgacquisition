@@ -105,7 +105,7 @@ if(CAMERA_BACKENDS)
 			find_package(pylon 7.4 QUIET)
 			if(NOT pylon_FOUND)
 				# If Pylon 7.4 is not found, attempt to find Pylon 6
-				find_package(pylon 6 QUIET)
+				find_package(pylon 6.0 QUIET)
 			endif()
 			if(NOT pylon_FOUND)
 				# If neither Pylon 7 nor Pylon 6 is found, fallback to Pylon 5
@@ -142,7 +142,7 @@ else()
 	find_package(pylon 7.4 QUIET)
 	if(NOT pylon_FOUND)
 		# If Pylon 7.4 is not found, attempt to find Pylon 6
-		find_package(pylon 6 QUIET)
+		find_package(pylon 6.0 QUIET)
 	endif()
 	if(NOT pylon_FOUND)
 		# If neither Pylon 7 nor Pylon 6 is found, fallback to Pylon 5
