@@ -1,5 +1,3 @@
-Here's how you can format your instructions as a nicely formatted `README.md` file for GitHub:
-
 ```markdown
 # bb_imgacquisition with Basler Camera Support
 
