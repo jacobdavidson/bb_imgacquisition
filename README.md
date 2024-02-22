@@ -27,7 +27,7 @@ sudo apt install git cmake g++ libavcodec-dev libavformat-dev libavutil-dev libf
 ### Install Pylon (Basler Cameras)
 
 Download and install Pylon for Basler cameras:
-Can download from [Basler website](https://www2.baslerweb.com/en/downloads/software-downloads/software-pylon-7-4-0-linux-x86-64bit-debian/) to search versions, or use the command here:
+Can download from the [Basler website](https://www2.baslerweb.com/en/downloads/software-downloads/software-pylon-7-4-0-linux-x86-64bit-debian/) to search versions, or use the command here:
 ```bash
 wget https://www2.baslerweb.com/media/downloads/software/pylon_software/pylon_7_4_0_14900_linux_x86_64_debs.tar.gz
 tar -zxvf pylon_7_4_0_14900_linux_x86_64_debs.tar.gz 
