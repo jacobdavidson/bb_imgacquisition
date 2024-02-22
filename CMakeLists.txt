@@ -101,12 +101,8 @@ if(CAMERA_BACKENDS)
 		elseif(${camera_backend} STREQUAL XIMEA)
 			find_package(XIMEA REQUIRED)
 		elseif(${camera_backend} STREQUAL Basler)
-			# Attempt to find Pylon 7.4 or higher
-			find_package(pylon 7.4 QUIET)
-			if(NOT pylon_FOUND)
-				# If Pylon 7.4 is not found, attempt to find Pylon 6
-				find_package(pylon 6.0 QUIET)
-			endif()
+			# Attempt to find Pylon.  ideal is 7.4 or higher
+			find_package(pylon QUIET)
 			if(NOT pylon_FOUND)
 				# If neither Pylon 7 nor Pylon 6 is found, fallback to Pylon 5
 				find_package(Pylon5 QUIET)
@@ -138,12 +134,8 @@ else()
 		list(APPEND CAMERA_BACKENDS XIMEA)
 	endif()
 
-	# Attempt to find Pylon 7.4 or higher
-	find_package(pylon 7.4 QUIET)
-	if(NOT pylon_FOUND)
-		# If Pylon 7.4 is not found, attempt to find Pylon 6
-		find_package(pylon 6.0 QUIET)
-	endif()
+	# Attempt to find Pylon.  Ideal is 7.4 or higher
+	find_package(pylon QUIET)
 	if(NOT pylon_FOUND)
 		# If neither Pylon 7 nor Pylon 6 is found, fallback to Pylon 5
 		find_package(Pylon5 QUIET)
@@ -177,8 +169,7 @@ if(Basler IN_LIST CAMERA_BACKENDS)
 
 	# Check which version of Pylon is found and link the appropriate libraries
 	if(pylon_FOUND)
-		# For Pylon 6 or 7.4 (since we use the same target for linking)
-		message(STATUS "Linking against Pylon version 7.4 or 6")
+		message(STATUS "Linking against Pylon ${pylon_VERSION}")
 		target_link_libraries(${PROJECT_NAME} PRIVATE pylon::pylon)
 	elseif(Pylon5_FOUND)
 		# For Pylon 5
