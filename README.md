@@ -1,4 +1,3 @@
-```markdown
 # bb_imgacquisition with Basler Camera Support
 
 This is an edited version of bb_imgacquisition that includes support for Basler cameras. It is recommended to install the latest version of Pylon (currently 7.4 at the time of writing). The code also compiles with Pylon version 5 (tested with version 5.2).
@@ -102,5 +101,4 @@ tar -zxvf flycapture2-2.13.3.31-amd64-pkg_Ubuntu16.04.tgz
 cd flycapture2-2.13.3.31-amd64/
 sudo bash install_flycapture.sh
 cd ../../..
-```
 ```
