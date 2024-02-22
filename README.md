@@ -13,7 +13,7 @@ First, ensure that Nvidia drivers are installed (needed for hardware acceleratio
 ```bash
 sudo add-apt-repository ppa:graphics-drivers/ppa
 sudo apt update
-sudo apt install nvidia-driver-5
+sudo apt install nvidia-driver-545
 ```
 
 ### Dependencies
