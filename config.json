@@ -1,0 +1,44 @@
+{ "_comment": "this is an example file that needs to be adjusted.  it should be located at ~/.config/bb_imgacquisition/config.json",
+  "tmp_dir": "data/tmp",
+  "out_dir": "data/out",
+  "encoders": {
+    "h265_hw_0": "hevc_nvenc"
+  },
+  "streams": {
+    "cam-0": {
+      "camera": {
+        "backend": "basler",
+        "serial": "40012219",
+        "offset_x": 0,
+        "offset_y": 0,
+        "width": 4096,
+        "height": 3000,
+        "params": {
+          "offset_x": 0,
+          "offset_y": 0,
+          "width": 4096,
+          "height": 3000,
+          "trigger": {
+            "type": "software",
+            "frames_per_second": 10
+          },
+          "bitrate": 1000000,
+          "rcmode": 0,
+          "qp": 24,
+          "brightness": 0,
+          "shutter": 3,
+          "gain": 0,
+          "whitebalance": 0
+        }
+      },
+      "frames_per_second": 10,
+      "frames_per_file": 100,
+      "encoder": {
+        "id": "h265_hw_0",
+        "options": {
+          "preset": "p4"
+        }
+      }
+    }
+  }
+}

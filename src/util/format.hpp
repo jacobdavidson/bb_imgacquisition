@@ -13,6 +13,7 @@
 
 #include <fmt/format.h>
 #include <fmt/chrono.h>
+#include <optional>
 
 template<typename Clock, typename Duration, typename Char>
 struct fmt::formatter<std::chrono::time_point<Clock, Duration>, Char>
