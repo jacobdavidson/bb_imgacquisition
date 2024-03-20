@@ -145,6 +145,8 @@ void BaslerCamera::initCamera()
         const auto cameraSeries = [](auto code) {
             if (code == "ac")
                 return "ace";
+            else if (code == "a2")
+                return "ace2";            
             else if (code == "da")
                 return "dart";
             else if (code == "pu")
@@ -170,13 +172,13 @@ void BaslerCamera::initCamera()
         //
         // clang-format on
 
-        if (cameraSeries == "ace" && cameraInterface == BaslerUsbDeviceClass)
+        if ((cameraSeries == "ace" || cameraSeries == "ace2") && cameraInterface == BaslerUsbDeviceClass)        {
         {
             _nsPerTick = 1ns;
         }
         else
         {
-            throw std::runtime_error(fmt::format("{}: Only ace USB 3.0 cameras supported"));
+            throw std::runtime_error(fmt::format("{}: Only ace and ace2 USB 3.0 cameras supported"));
         }
 
         _camera.Attach(factory.CreateDevice(*camDeviceInfo));

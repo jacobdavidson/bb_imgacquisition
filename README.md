@@ -6,23 +6,33 @@ This is an edited version of bb_imgacquisition that includes support for Basler 
 
 These were tested on Ubuntu 20.04 and 22.04.
 
-### Prerequisites
+### Dependencies
 
-First, ensure that Nvidia drivers are installed (needed for hardware acceleration with ffmpeg). Note that CUDA is not needed.
+First install the necessary dependencies:
+
+```bash
+sudo apt install git cmake g++ libavcodec-dev libavformat-dev libavutil-dev libfmt-dev qtbase5-dev libboost-all-dev libopencv-dev libglademm-2.4-1v5 libgtkmm-2.4-dev libglademm-2.4-dev libgtkglextmm-x11-1.2-dev libfdk-aac-dev nasm libass-dev libmp3lame-dev libopus-dev libvorbis-dev libx264-dev libx265-dev libxcb-xinput0 yasm libtool libc6 libc6-dev unzip wget libnuma1 libnuma-dev
+```
+### Nvidia drivers, CUDA, and Video Codec SDK for ffmpeg
+
+Ensure that Nvidia drivers are installed (needed for hardware acceleration with ffmpeg).  CUDA is also needed.  There may be a newer driver than 545 available now.
 
 ```bash
 sudo add-apt-repository ppa:graphics-drivers/ppa
 sudo apt update
 sudo apt install nvidia-driver-545
+sudo reboot
+sudo apt install nvidia-cuda-toolkit
 ```
 
-### Dependencies
-
-Install the necessary dependencies:
+The ffnvcodec is also needed.  The install instructions can also be found [on Nvidia's website](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#setup) or [here](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/).
 
 ```bash
-sudo apt install git cmake g++ libavcodec-dev libavformat-dev libavutil-dev libfmt-dev qtbase5-dev libboost-all-dev libopencv-dev libglademm-2.4-1v5 libgtkmm-2.4-dev libglademm-2.4-dev libgtkglextmm-x11-1.2-dev libfmt-dev libfdk-aac-dev nasm libass-dev libmp3lame-dev libopus-dev libvorbis-dev libx264-dev libx265-dev libxcb-xinput0
+git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git
+cd nv-codec-headers && sudo make install
+cd ..
 ```
+
 
 ### Install Pylon (Basler Cameras)
 
@@ -36,15 +46,20 @@ sudo dpkg -i pylon_7.4.0.14900-deb0_amd64.deb
 
 ### Compile FFmpeg from Source
 
-Download and compile FFmpeg from source with the required packages enabled. If you have FFmpeg installed through Conda or a package manager, you need to remove it first.
+Download and compile FFmpeg from source with the required packages enabled. If you have FFmpeg installed through Conda or a package manager, you need to remove it first.  Cuda library locations need to be changed if they are installed other than the default locations
 
 ```bash
 git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg
 cd ffmpeg
-./configure --prefix=/usr/local --enable-gpl --enable-nonfree --enable-libass --enable-libfreetype --enable-zlib --enable-libmp3lame --enable-libopus --enable-libvorbis --enable-libx264 --enable-libx265 --enable-libfdk-aac --extra-libs=-lpthread --extra-libs=-lm
-make
+./configure --prefix=/usr/local --enable-gpl --enable-nonfree --enable-libass --enable-libfreetype --enable-zlib --enable-libmp3lame --enable-libopus --enable-libvorbis --enable-libx264 --enable-libx265 --enable-libfdk-aac --extra-libs=-lpthread --extra-libs=-lm --enable-nvenc --enable-cuda-nvcc --enable-libnpp --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64
+make -j 10
 sudo make install
 cd ..
+```
+
+After compiling, verify that the nvenc encoder is installed.  This should highlight the encoder.
+```bash
+ffmpeg -encoders | grep hevc_nvenc
 ```
 
 ### Clone and Build bb_imgacquisition
@@ -57,7 +72,7 @@ git checkout basler_support_update2024
 
 mkdir build && cd build
 cmake ..
-make
+make -j 10
 ```
 
 ### Running
