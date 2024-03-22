@@ -172,7 +172,7 @@ void BaslerCamera::initCamera()
         //
         // clang-format on
 
-        if ((cameraSeries == "ace" || cameraSeries == "ace2") && cameraInterface == BaslerUsbDeviceClass)        {
+        if ((cameraSeries == "ace" || cameraSeries == "ace2") && cameraInterface == BaslerUsbDeviceClass) 
         {
             _nsPerTick = 1ns;
         }
