@@ -10,6 +10,7 @@
 #include "Watchdog.hpp"
 #include "util/log.hpp"
 #include "util/PlatformAdapter.hpp"
+#include "util/format.hpp"
 
 #include "source_version.hpp"
 #include "build_timestamp.hpp"
