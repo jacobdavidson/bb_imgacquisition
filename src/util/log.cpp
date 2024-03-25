@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "log.hpp"
+#include "format.hpp"
 
 #include <mutex>
 #include <chrono>
