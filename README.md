@@ -83,7 +83,9 @@ Execute the application:
 ./bb_imgacquisition
 ```
 
-Note that the first time running will generate a blank `config.json` located at `~/.config/bb_imgacquisition/config.json`. This needs to be edited to include the camera serial numbers and other parameters. See the included `config.json` for an example that can be adapted.
+The first time running will generate a blank `config.json` located at `~/.config/bb_imgacquisition/config.json`. This needs to be edited to include the camera serial numbers and other parameters. See the included `config.json` for an example that can be adapted.
+
+Note!  For high resolutions, the ffmpeg encoding only supports multiples of 64 (for example, 5312x4608).  Other resolutions will lead to jumbled videos due to the encoder. 
 
 ### Optional - Install these before building to have XIMEA and/or FLIR camera support
 
