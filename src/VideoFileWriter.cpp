@@ -119,7 +119,11 @@ VideoFileWriter::~VideoFileWriter()
 
     if (_formatContext)
     {
+        if (_formatContext->pb) {
+                avio_closep(&_formatContext->pb);
+            }
         avformat_free_context(_formatContext);
+        _formatContext = nullptr;
     }
 }
 
