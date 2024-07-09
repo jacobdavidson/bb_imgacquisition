@@ -44,6 +44,20 @@ tar -zxvf pylon_7_4_0_14900_linux_x86_64_debs.tar.gz
 sudo dpkg -i pylon_7.4.0.14900-deb0_amd64.deb
 ```
 
+### Run the Basler USB script for system settings
+This increases the USB kernel spade and file handle limit.  These commands automatically find the installed location and run the script
+```bash
+# Find the path to the pylon installation directory
+PYLON_PATH=$(dpkg -L pylon | grep 'pylon/share/pylon/setup-usb.sh' | sed 's|/share/pylon/setup-usb.sh||')
+
+# Run the setup script
+if [ -f "$PYLON_PATH/share/pylon/setup-usb.sh" ]; then
+  sudo bash "$PYLON_PATH/share/pylon/setup-usb.sh"
+else
+  echo "Setup script not found or not executable. Please check your installation."
+fi
+```
+
 ### Compile FFmpeg from Source
 
 Download and compile FFmpeg from source with the required packages enabled. If you have FFmpeg installed through Conda or a package manager, you need to remove it first.  Cuda library locations need to be changed if they are installed other than the default locations
@@ -75,11 +89,22 @@ cmake ..
 make -j 10
 ```
 
-### Running
+### Set permission to enable high priority runing
+```
+# sudo nano /etc/security/limits.conf
+# add this line:
+# beesbook  -  nice    -20
+```
 
-Execute the application:
+Restart in order for changes in USB settings and permissions to take effect
+
+
+## Running
+
+Execute the application for the first time:
 
 ```bash
+cd build
 ./bb_imgacquisition
 ```
 
@@ -87,7 +112,13 @@ The first time running will generate a blank `config.json` located at `~/.config
 
 Note!  For high resolutions, the ffmpeg encoding only supports multiples of 64 (for example, 5312x4608).  Other resolutions will lead to jumbled videos due to the encoder. 
 
-### Optional - Install these before building to have XIMEA and/or FLIR camera support
+Running for long times:  Use the script 'run_bb_imgacquisition.sh', to automatically restart with a date of crashes
+```bash
+./run_bb_imgacquisition.sh
+```
+
+
+## Optional - Install these before building to have XIMEA and/or FLIR camera support
 
 #### Install XIMEA SDK
 
