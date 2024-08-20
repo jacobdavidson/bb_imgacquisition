@@ -4,18 +4,18 @@ This is an edited version of bb_imgacquisition that includes support for Basler 
 
 ## Instructions for compiling and running
 
-These were tested on Ubuntu 20.04 and 22.04.
+These were tested on Ubuntu 20.04, 22.04, and 24.04 (see note for FLIR camera / Flycapture2 compatibility for 24.04)
 
 ### Dependencies
 
 First install the necessary dependencies:
 
 ```bash
-sudo apt install git cmake g++ libavcodec-dev libavformat-dev libavutil-dev libfmt-dev qtbase5-dev libboost-all-dev libopencv-dev libglademm-2.4-1v5 libgtkmm-2.4-dev libglademm-2.4-dev libgtkglextmm-x11-1.2-dev libfdk-aac-dev nasm libass-dev libmp3lame-dev libopus-dev libvorbis-dev libx264-dev libx265-dev libxcb-xinput0 yasm libtool libc6 libc6-dev unzip wget libnuma1 libnuma-dev
+sudo apt install git cmake g++ libavcodec-dev libavformat-dev libavutil-dev libfmt-dev qtbase5-dev libboost-all-dev libopencv-dev libfdk-aac-dev nasm libass-dev libmp3lame-dev libopus-dev libvorbis-dev libx264-dev libx265-dev libxcb-xinput0 yasm libtool libc6 libc6-dev unzip wget libnuma1 libnuma-dev
 ```
 ### Nvidia drivers, CUDA, and Video Codec SDK for ffmpeg
 
-Ensure that Nvidia drivers are installed (needed for hardware acceleration with ffmpeg).  CUDA is also needed.  There may be a newer driver than 545 available now.
+Ensure that Nvidia drivers are installed (needed for hardware acceleration with ffmpeg).  CUDA is also needed.  There may be a newer driver than 550 available now.
 
 ```bash
 sudo add-apt-repository ppa:graphics-drivers/ppa
@@ -66,7 +66,7 @@ Download and compile FFmpeg from source with the required packages enabled. If y
 git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg
 cd ffmpeg
 ./configure --prefix=/usr/local --enable-gpl --enable-nonfree --enable-libass --enable-libfreetype --enable-zlib --enable-libmp3lame --enable-libopus --enable-libvorbis --enable-libx264 --enable-libx265 --enable-libfdk-aac --extra-libs=-lpthread --extra-libs=-lm --enable-nvenc --enable-cuda-nvcc --enable-libnpp --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64
-make -j 10
+make -j 8
 sudo make install
 cd ..
 ```
@@ -86,12 +86,12 @@ git checkout basler_support_update2024
 
 mkdir build && cd build
 cmake ..
-make -j 10
+make -j 8
 ```
 
 ### Set permission to enable high priority runing
 ```
-# sudo nano /etc/security/limits.conf
+d# sudo nano /etc/security/limits.conf
 # add this line:
 # beesbook  -  nice    -20
 ```
@@ -138,9 +138,16 @@ bash install
 cd ..
 ```
 
-#### Install FlyCapture2
+#### Install FlyCapture2 for FLIR camera support
 
 Download and install FlyCapture2:
+
+Note!  For Ubuntu 24, there are compatibility issues, because flycapture2 is no longer being updated.  So, need to add Ubuntu 22 repositories in order to install.
+```bash
+## Needed for Ubunt 24.04 only
+sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu jammy main universe'
+sudo apt update
+```
 
 ```bash
 git clone https://github.com/ErnestDeiven/flycapture2
@@ -148,5 +155,6 @@ cd flycapture2/
 tar -zxvf flycapture2-2.13.3.31-amd64-pkg_Ubuntu16.04.tgz
 cd flycapture2-2.13.3.31-amd64/
 sudo bash install_flycapture.sh
+sudo systemctl restart udev  # this will restart udev, in case the error " /etc/init.d/udev: not found" comes up
 cd ../../..
 ```
