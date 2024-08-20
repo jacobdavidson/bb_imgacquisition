@@ -104,8 +104,8 @@ if(CAMERA_BACKENDS)
 			find_package(XIMEA REQUIRED)
 		elseif(${camera_backend} STREQUAL Basler)
 			# Attempt to find Pylon.  ideal is 7.4 or higher
-			find_package(pylon QUIET)
-			if(NOT pylon_FOUND)
+			find_package(PYLON QUIET)
+			if(NOT PYLON_FOUND)
 				# If neither Pylon 7 nor Pylon 6 is found, fallback to Pylon 5
 				find_package(Pylon5 QUIET)
 				if(Pylon5_FOUND)
@@ -115,8 +115,8 @@ if(CAMERA_BACKENDS)
 					message(FATAL_ERROR "Pylon (version 5, 6, or 7.4 and above) not found for Basler cameras.")
 				endif()
 			else()
-				message(STATUS "Using Pylon ${pylon_VERSION} for Basler cameras.")
-				set(PYLON_TARGET pylon::pylon)
+				message(STATUS "Using Pylon ${PYLON_VERSION} for Basler cameras.")
+				set(PYLON_TARGET PYLON::PYLON)
 			endif()
 			if(NOT PYLON_TARGET)
 				message(FATAL_ERROR "Pylon target not set for Basler cameras.")
@@ -137,14 +137,14 @@ else()
 	endif()
 
 	# Attempt to find Pylon.  Ideal is 7.4 or higher
-	find_package(pylon QUIET)
-	if(NOT pylon_FOUND)
+	find_package(PYLON QUIET)
+	if(NOT PYLON_FOUND)
 		# If neither Pylon 7 nor Pylon 6 is found, fallback to Pylon 5
 		find_package(Pylon5 QUIET)
 	endif()
 
 	# Check if any version of Pylon was found and append Basler to CAMERA_BACKENDS
-	if(pylon_FOUND OR Pylon5_FOUND)
+	if(PYLON_FOUND OR Pylon5_FOUND)
 		list(APPEND CAMERA_BACKENDS Basler)
 	endif()
 
@@ -170,9 +170,9 @@ if(Basler IN_LIST CAMERA_BACKENDS)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BASLER)
 
 	# Check which version of Pylon is found and link the appropriate libraries
-	if(pylon_FOUND)
-		message(STATUS "Linking against Pylon ${pylon_VERSION}")
-		target_link_libraries(${PROJECT_NAME} PRIVATE pylon::pylon)
+	if(PYLON_FOUND)
+		message(STATUS "Linking against Pylon ${PYLON_VERSION}")
+		target_link_libraries(${PROJECT_NAME} PRIVATE PYLON::PYLON)
 	elseif(Pylon5_FOUND)
 		# For Pylon 5
 		message(STATUS "Linking against Pylon version 5")
