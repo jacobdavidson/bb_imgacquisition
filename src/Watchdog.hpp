@@ -4,6 +4,7 @@
 #include <mutex>
 #include <vector>
 #include <chrono>
+#include <string>
 
 class Watchdog final
 {
